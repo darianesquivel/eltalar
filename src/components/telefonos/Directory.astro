@@ -1,0 +1,45 @@
+---
+import PhoneCard from "../telefonos/PhoneCard.astro";
+---
+
+<section>
+  <div class="mb-6 flex items-center justify-between">
+    <h2 class="text-2xl font-bold">Directorio General</h2>
+    <!-- <a href="#" class="text-sm font-semibold text-green-600"> Ver todos → </a> -->
+  </div>
+
+  <div class="grid gap-6 md:grid-cols-3">
+    <PhoneCard
+      title="Delegación Municipal"
+      subtitle="Lunes a Viernes 8–14hs"
+      phone="tel:0800"
+    />
+
+    <PhoneCard
+      title="Edenor - Reclamos"
+      subtitle="Guardia técnica"
+      phone="tel:0800"
+    />
+
+    <PhoneCard title="AySA" subtitle="Atención al usuario" phone="tel:0800" />
+
+    <PhoneCard
+      title="Hospital de Pacheco"
+      subtitle="Guardia general"
+      phone="tel:0800"
+    />
+
+    <div class="rounded-2xl border border-dashed p-6 text-center">
+      <h3 class="font-semibold">¿Falta algún número?</h3>
+      <p class="mt-2 text-sm text-gray-600">
+        Ayudanos a mejorar el directorio.
+      </p>
+
+      <button
+        class="mt-4 rounded-full bg-green-500 px-4 py-2 text-sm font-semibold text-white"
+      >
+        Sugerir contacto
+      </button>
+    </div>
+  </div>
+</section>

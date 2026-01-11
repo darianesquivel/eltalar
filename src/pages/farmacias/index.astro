@@ -1,0 +1,17 @@
+---
+import Layout from "../../layouts/Layout.astro";
+
+import Hero from "../../components/farmacias/Hero.astro";
+import CurrentTurn from "../../components/farmacias/CurrentTurn.astro";
+import NextTurns from "../../components/farmacias/NextTurns.astro";
+import MapPreview from "../../components/farmacias/MapPreview.astro";
+---
+
+<Layout title="Farmacias de Turno en El Talar">
+  <section class="sm:px-12 sm:py-12 px-3 py-3">
+    <Hero />
+    <CurrentTurn />
+    <NextTurns />
+    <MapPreview />
+  </section>
+</Layout>

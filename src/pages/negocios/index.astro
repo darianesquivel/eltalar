@@ -1,0 +1,19 @@
+---
+export const prerender = false;
+
+import Layout from "../../layouts/Layout.astro";
+import Hero from "../../components/negocios/Hero.astro";
+import CategoryFilter from "../../components/negocios/CategoryFilter.astro";
+import BusinessGrid from "../../components/negocios/BusinessGrid.astro";
+const category = Astro.url.searchParams.get("categoria");
+---
+
+<Layout title="Negocios y Comercios en El Talar">
+  <section
+    class="sm:px-12 sm:py-12 px-3 py-3 flex flex-col gap-6 justify-center items-center"
+  >
+    <Hero />
+    <CategoryFilter activeCategory={category} />
+    <BusinessGrid category={category} />
+  </section>
+</Layout>

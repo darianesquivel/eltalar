@@ -1,0 +1,15 @@
+---
+const { title, subtitle, phone } = Astro.props;
+---
+
+<div class="rounded-2xl bg-white p-6 shadow-sm">
+  <h3 class="text-lg font-bold">{title}</h3>
+  <p class="text-sm text-gray-600">{subtitle}</p>
+
+  <a
+    href={phone}
+    class="mt-6 inline-flex w-full items-center justify-center gap-2 rounded-full bg-green-500 py-3 font-semibold text-white"
+  >
+    📞 Llamar
+  </a>
+</div>

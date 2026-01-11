@@ -1,0 +1,51 @@
+---
+import { Cross, Phone, Store } from "@lucide/astro";
+---
+
+<section class="mx-auto max-w-6xl px-6">
+  <h2 class="mb-6 text-2xl font-bold">Accesos Rápidos</h2>
+
+  <div class="grid gap-6 md:grid-cols-3">
+    <a href="/farmacias">
+      <div
+        class="rounded-2xl bg-white shadow-sm hover:scale-105 transition-all h-40 flex flex-col justify-center p-5 gap-5"
+      >
+        <Cross size={30} color="red" />
+        <div class="flex flex-col gap-2">
+          <h3 class="font-semibold">Farmacias de Turno</h3>
+          <p class="text-xs text-primary">
+            Encuentra qué farmacia está abierta ahora en El Talar.
+          </p>
+        </div>
+      </div>
+    </a>
+
+    <a href="/negocios">
+      <div
+        class="rounded-2xl bg-white shadow-sm hover:scale-105 transition-all h-40 flex flex-col justify-center p-5 gap-5"
+      >
+        <Store size={30} color="green" />
+        <div class="flex flex-col gap-2">
+          <h3 class="font-semibold">Farmacias de Turno</h3>
+          <p class="text-xs text-primary">
+            Encuentra qué farmacia está abierta ahora en El Talar.
+          </p>
+        </div>
+      </div>
+    </a>
+
+    <a href="/telefonos">
+      <div
+        class="rounded-2xl bg-white shadow-sm hover:scale-105 transition-all h-40 flex flex-col justify-center p-5 gap-5"
+      >
+        <Phone size={30} color="blue" />
+        <div class="flex flex-col gap-2">
+          <h3 class="font-semibold">Teléfonos Útiles</h3>
+          <p class="text-xs text-primary">
+            Bomberos, Policía, Hospitales y más.
+          </p>
+        </div>
+      </div>
+    </a>
+  </div>
+</section>

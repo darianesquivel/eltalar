@@ -1,0 +1,73 @@
+---
+import { supabase } from "../../lib/supabase";
+
+const {
+  activeCategory,
+  hideAll = false,
+  hideSearch = false,
+  searchQuery,
+} = Astro.props;
+
+const { data: categories, error } = await supabase
+  .from("categories")
+  .select("id, name, slug")
+  .order("name");
+
+if (error) console.error(error);
+
+const buildUrl = (categoria: any) => {
+  if (!categoria) return "/negocios";
+  return `/negocios?categoria=${categoria}`;
+};
+---
+
+<div class="flex flex-col gap-4">
+  {
+    !hideSearch && (
+      <form method="get" action="/negocios">
+        <input
+          type="text"
+          name="buscar"
+          value={searchQuery ?? ""}
+          placeholder="Buscar comercio..."
+          class="w-full rounded-full border px-4 py-2 focus:outline-none focus:ring-2 focus:ring-primary"
+        />
+      </form>
+    )
+  }
+
+  <div class="flex flex-wrap gap-2">
+    {
+      !hideAll && (
+        <a
+          href="/negocios"
+          class={`px-4 py-2 rounded-full transition ${
+            !activeCategory
+              ? "bg-primary text-white"
+              : "bg-white text-gray-700 hover:bg-gray-100"
+          }`}
+        >
+          Todos
+        </a>
+      )
+    }
+
+    {
+      categories?.map((cat) => {
+        const isActive = activeCategory === cat.slug;
+        return (
+          <a
+            href={buildUrl(cat.slug)}
+            class={`px-4 py-2 rounded-full transition ${
+              isActive
+                ? "bg-primary text-white"
+                : "bg-white text-gray-700 hover:bg-primary hover:text-white"
+            }`}
+          >
+            {cat.name}
+          </a>
+        );
+      })
+    }
+  </div>
+</div>

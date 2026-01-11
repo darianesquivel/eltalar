@@ -1,0 +1,91 @@
+@import "tailwindcss";
+
+@font-face {
+  font-family: "Stack Sans";
+  src: url("/fonts/StackSansText-ExtraLight.ttf") format("truetype");
+  font-weight: 100;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Stack Sans";
+  src: url("/fonts/StackSansText-Light.ttf") format("truetype");
+  font-weight: 200;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Stack Sans";
+  src: url("/fonts/StackSansText-Regular.ttf") format("truetype");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Stack Sans";
+  src: url("/fonts/StackSansText-Medium.ttf") format("truetype");
+  font-weight: 500;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Stack Sans";
+  src: url("/fonts/StackSansText-SemiBold.ttf") format("truetype");
+  font-weight: 600;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Stack Sans";
+  src: url("/fonts/StackSansText-Bold.ttf") format("truetype");
+  font-weight: 800;
+  font-style: normal;
+  font-display: swap;
+}
+
+body {
+  font-family: "Stack Sans", sans-serif;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+@theme {
+  /* Brand */
+  --color-primary: #16a34a; /* Verde principal (CTA, links, botones) */
+  --color-primary-hover: #15803d;
+  --color-primary-soft: #dcfce7;
+
+  --color-secondary: #0f172a; /* Texto fuerte / títulos */
+  --color-secondary-soft: #334155;
+
+  /* Backgrounds */
+  --color-bg-main: #f9fafb; /* Fondo general */
+  --color-bg-card: #ffffff; /* Cards */
+  --color-bg-muted: #f3f4f6; /* Secciones suaves */
+
+  /* Text */
+  --color-text-main: #111827; /* Texto principal */
+  --color-text-muted: #6b7280; /* Texto secundario */
+  --color-text-inverted: #ffffff;
+
+  /* Borders */
+  --color-border: #e5e7eb;
+
+  /* Status */
+  --color-success: #16a34a;
+  --color-warning: #f59e0b;
+  --color-error: #ef4444;
+  --color-info: #2563eb;
+
+  /* Category / Accents */
+  --color-emergency: #ef4444; /* Emergencias */
+  --color-health: #22c55e; /* Salud */
+  --color-services: #3b82f6; /* Servicios */
+}
