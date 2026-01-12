@@ -3,49 +3,95 @@ import { Cross, Phone, Store } from "@lucide/astro";
 ---
 
 <section class="mx-auto max-w-6xl px-6">
-  <h2 class="mb-6 text-2xl font-bold">Accesos Rápidos</h2>
+  <div class="flex flex-col gap-8 items-center">
+    <h2 class="text-2xl font-bold">Accesos Rápidos</h2>
 
-  <div class="grid gap-6 md:grid-cols-3">
-    <a href="/farmacias">
-      <div
-        class="rounded-2xl bg-white shadow-sm hover:scale-105 transition-all h-40 flex flex-col justify-center p-5 gap-5"
-      >
-        <Cross size={30} color="red" />
-        <div class="flex flex-col gap-2">
-          <h3 class="font-semibold">Farmacias de Turno</h3>
-          <p class="text-xs text-primary">
-            Encuentra qué farmacia está abierta ahora en El Talar.
-          </p>
+    <div class="grid gap-6 md:grid-cols-3">
+      <a href="/farmacias">
+        <div
+          class="rounded-2xl bg-white shadow-sm hover:scale-105 transition-transform h-40 flex flex-col justify-center p-5 gap-5"
+        >
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            width="24"
+            height="24"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            class="lucide lucide-pill-icon lucide-pill"
+            ><path
+              d="m10.5 20.5 10-10a4.95 4.95 0 1 0-7-7l-10 10a4.95 4.95 0 1 0 7 7Z"
+            ></path><path d="m8.5 8.5 7 7"></path></svg
+          >
+          <div class="flex flex-col gap-2">
+            <h3 class="font-semibold">Farmacias de Turno</h3>
+            <p class="text-xs text-primary">
+              Encuentra qué farmacia está abierta ahora en El Talar.
+            </p>
+          </div>
         </div>
-      </div>
-    </a>
+      </a>
 
-    <a href="/negocios">
-      <div
-        class="rounded-2xl bg-white shadow-sm hover:scale-105 transition-all h-40 flex flex-col justify-center p-5 gap-5"
-      >
-        <Store size={30} color="green" />
-        <div class="flex flex-col gap-2">
-          <h3 class="font-semibold">Farmacias de Turno</h3>
-          <p class="text-xs text-primary">
-            Encuentra qué farmacia está abierta ahora en El Talar.
-          </p>
+      <a href="/negocios">
+        <div
+          class="rounded-2xl bg-white shadow-sm hover:scale-105 transition-transform h-40 flex flex-col justify-center p-5 gap-5"
+        >
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            width="24"
+            height="24"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            class="lucide lucide-store-icon lucide-store"
+            ><path d="M15 21v-5a1 1 0 0 0-1-1h-4a1 1 0 0 0-1 1v5"></path><path
+              d="M17.774 10.31a1.12 1.12 0 0 0-1.549 0 2.5 2.5 0 0 1-3.451 0 1.12 1.12 0 0 0-1.548 0 2.5 2.5 0 0 1-3.452 0 1.12 1.12 0 0 0-1.549 0 2.5 2.5 0 0 1-3.77-3.248l2.889-4.184A2 2 0 0 1 7 2h10a2 2 0 0 1 1.653.873l2.895 4.192a2.5 2.5 0 0 1-3.774 3.244"
+            ></path><path d="M4 10.95V19a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8.05"
+            ></path></svg
+          >
+          <div class="flex flex-col gap-2">
+            <h3 class="font-semibold">Guía de comercios</h3>
+            <p class="text-xs text-primary">
+              Explora locales y servicios del barrio
+            </p>
+          </div>
         </div>
-      </div>
-    </a>
+      </a>
 
-    <a href="/telefonos">
-      <div
-        class="rounded-2xl bg-white shadow-sm hover:scale-105 transition-all h-40 flex flex-col justify-center p-5 gap-5"
-      >
-        <Phone size={30} color="blue" />
-        <div class="flex flex-col gap-2">
-          <h3 class="font-semibold">Teléfonos Útiles</h3>
-          <p class="text-xs text-primary">
-            Bomberos, Policía, Hospitales y más.
-          </p>
+      <a href="/telefonos">
+        <div
+          class="rounded-2xl bg-white shadow-sm hover:scale-105 transition-transform h-40 flex flex-col justify-center p-5 gap-5"
+        >
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            width="24"
+            height="24"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            class="lucide lucide-phone-call-icon lucide-phone-call"
+            ><path d="M13 2a9 9 0 0 1 9 9"></path><path d="M13 6a5 5 0 0 1 5 5"
+            ></path><path
+              d="M13.832 16.568a1 1 0 0 0 1.213-.303l.355-.465A2 2 0 0 1 17 15h3a2 2 0 0 1 2 2v3a2 2 0 0 1-2 2A18 18 0 0 1 2 4a2 2 0 0 1 2-2h3a2 2 0 0 1 2 2v3a2 2 0 0 1-.8 1.6l-.468.351a1 1 0 0 0-.292 1.233 14 14 0 0 0 6.392 6.384"
+            ></path></svg
+          >
+          <div class="flex flex-col gap-2">
+            <h3 class="font-semibold">Teléfonos Útiles</h3>
+            <p class="text-xs text-primary">
+              Bomberos, Policía, Hospitales y más.
+            </p>
+          </div>
         </div>
-      </div>
-    </a>
+      </a>
+    </div>
   </div>
 </section>

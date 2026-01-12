@@ -1,8 +1,7 @@
 ---
 import { supabase } from "../../lib/supabase";
-import BusinessCard from "../negocios/BusinessCard.astro";
+import BusinessCard from "../negocios/BusinessCard";
 import { getBusinessStatus } from "../../lib/businessHours";
-import CategoryFilter from "../negocios/CategoryFilter.astro";
 
 const { data: featuredBusinesses, error } = await supabase
   .from("businesses")
@@ -37,8 +36,6 @@ const businessesWithStatus = featuredBusinesses?.map((business) => {
   <div class="flex flex-col gap-8 items-center">
     <h2 class="text-2xl font-bold text-gray-800">Comercios Destacados</h2>
 
-    <CategoryFilter hideAll hideSearch />
-
     <div class="grid gap-6 sm:grid-cols-2 md:grid-cols-4">
       {
         businessesWithStatus?.map((business) => (
@@ -47,10 +44,10 @@ const businessesWithStatus = featuredBusinesses?.map((business) => {
       }
     </div>
 
-    <div class="transition-all hover:scale-102">
+    <div class="transition-transform hover:scale-102">
       <a
         href="/negocios"
-        class="rounded-xl bg-primary px-6 py-3 font-semibold text-white transition-all hover:scale-110 hover:bg-green-700"
+        class="rounded-xl bg-primary px-6 py-3 font-semibold text-white transition-transform hover:scale-110 hover:bg-green-700"
       >
         Ver todos
       </a>
