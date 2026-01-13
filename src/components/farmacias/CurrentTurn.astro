@@ -1,60 +1,64 @@
 ---
-const pharmacies = [
-  {
-    name: "Farmacia El Talar Centro",
-    address: "Av. Hipólito Yrigoyen 2450, El Talar",
-    phone: "tel:01112345678",
-    whatsapp: "#",
-    image: "/images/pharmacy.jpg",
-    today: "Hoy, martes 24 de octubre",
-  },
-];
+import { supabase } from "../../lib/supabase";
+import PharmacyCard from "./PharmacyCard.astro";
+
+const now = new Date().toISOString();
+
+const { data: pharmacies, error } = await supabase
+  .from("pharmacy_turns")
+  .select(
+    `
+    starts_at,
+    ends_at,
+    businesses!inner (
+      id,
+      name,
+      address,
+      phone,
+      whatsapp
+    )
+  `
+  )
+  .lte("starts_at", now)
+  .gt("ends_at", now);
+
+if (error) {
+  console.error("Error farmacias de turno:", error);
+}
+
+const hasTurns = pharmacies && pharmacies.length > 0;
 ---
 
-<section class="mb-14">
-  {
-    pharmacies.map((pharmacy) => (
-      <div class="grid gap-6 md:grid-cols-2">
-        {/* <div class="overflow-hidden rounded-2xl">
-          <img
-            src={pharmacy.image}
-            alt={pharmacy.name}
-            class="h-full w-full object-cover"
-          />
-        </div> */}
+<section>
+  <div class="mb-6 flex items-center justify-between">
+    <h2 class="text-2xl font-bold">Accesos Rápidos</h2>
+  </div>
 
-        <div class="flex flex-col justify-center rounded-2xl bg-white p-6 shadow-sm">
-          <span class="mb-2 inline-flex w-fit items-center gap-2 rounded-full bg-green-100 px-3 py-1 text-xs font-semibold text-green-700">
-            🟢 De turno ahora
-          </span>
+  <div class="grid gap-6 md:grid-cols-3">
+    {
+      hasTurns ? (
+        pharmacies.map((turn) => {
+          const business = Array.isArray(turn.businesses)
+            ? turn.businesses[0]
+            : turn.businesses;
 
-          <p class="text-sm text-green-600 font-semibold">{pharmacy.today}</p>
-
-          <h2 class="mt-2 text-3xl font-bold">{pharmacy.name}</h2>
-
-          <p class="mt-2 text-gray-600">📍 {pharmacy.address}</p>
-
-          <div class="mt-6 flex flex-wrap gap-4">
-            <a
-              href={pharmacy.phone}
-              class="rounded-full bg-green-500 px-6 py-3 font-semibold text-white"
-            >
-              📞 Llamar ahora
-            </a>
-
-            <a
-              href={pharmacy.whatsapp}
-              class="rounded-full bg-gray-100 px-6 py-3 font-semibold text-gray-800"
-            >
-              💬 WhatsApp
-            </a>
-          </div>
-
-          <a href="#" class="mt-4 text-sm font-semibold text-green-600">
-            📍 Ver ubicación en el mapa
-          </a>
+          return (
+            <PharmacyCard
+              name={business.name}
+              address={business.address}
+              badge="🟢 De turno ahora"
+              subtitle="Hoy · hasta las 8 hs"
+              phone={business.phone}
+              whatsapp={business.whatsapp}
+              highlight
+            />
+          );
+        })
+      ) : (
+        <div class="rounded-2xl bg-gray-50 p-6 text-center text-gray-500">
+          No hay farmacias de turno en este momento.
         </div>
-      </div>
-    ))
-  }
+      )
+    }
+  </div>
 </section>

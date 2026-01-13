@@ -2,14 +2,29 @@
 const { title, subtitle, phone } = Astro.props;
 ---
 
-<div class="rounded-2xl bg-white p-6 shadow-sm">
+<div
+  class="flex flex-col gap-3 justify-between rounded-2xl border border-blue-100 p-6"
+>
   <h3 class="text-lg font-bold">{title}</h3>
   <p class="text-sm text-gray-600">{subtitle}</p>
 
   <a
     href={phone}
-    class="mt-6 inline-flex w-full items-center justify-center gap-2 rounded-full bg-green-500 py-3 font-semibold text-white"
+    class="inline-flex w-full items-center justify-center gap-2 rounded-full bg-primary py-1 font-semibold text-white"
   >
-    📞 Llamar
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      width="20"
+      height="20"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      stroke-width="2"
+      stroke-linecap="round"
+      stroke-linejoin="round"
+      ><path
+        d="M13.832 16.568a1 1 0 0 0 1.213-.303l.355-.465A2 2 0 0 1 17 15h3a2 2 0 0 1 2 2v3a2 2 0 0 1-2 2A18 18 0 0 1 2 4a2 2 0 0 1 2-2h3a2 2 0 0 1 2 2v3a2 2 0 0 1-.8 1.6l-.468.351a1 1 0 0 0-.292 1.233 14 14 0 0 0 6.392 6.384"
+      ></path></svg
+    > Llamar
   </a>
 </div>

@@ -5,17 +5,15 @@ import Logo from "../../assets/logo.svg";
 <footer class="bg-secondary-soft">
   <div class="mx-auto max-w-6xl px-6 py-10">
     <div
-      class="flex flex-col gap-6 md:flex-row md:items-center md:justify-between"
+      class="flex flex-col gap-6 md:flex-row items-center md:justify-between"
     >
-      <!-- Brand -->
-      <div>
+      <div class="flex flex-col items-center sm:items-start">
         <img src={Logo.src} alt="" class="w-17" />
         <p class="mt-2 text-sm text-text-inverted">
           Hecho con ❤️ para los vecinos de El Talar.
         </p>
       </div>
 
-      <!-- Links -->
       <nav class="flex gap-6 text-sm text-text-inverted">
         <a href="/terminos" class="hover:text-primary">Términos</a>
         <a href="/privacidad" class="hover:text-primary">Privacidad</a>
@@ -24,7 +22,7 @@ import Logo from "../../assets/logo.svg";
     </div>
 
     <div class="mt-8 text-center text-xs text-text-inverted">
-      © {new Date().getFullYear()} El Talar Portal. Todos los derechos reservados.
+      © {new Date().getFullYear()} El Talar. Todos los derechos reservados.
     </div>
   </div>
 </footer>

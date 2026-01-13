@@ -81,16 +81,16 @@ export default function CategoryFilter() {
   };
 
   return (
-    <div className="flex flex-col gap-4  items-center w-full sm:w-2xl justify-center">
+    <div className="min-w-full flex flex-col justify-center items-center gap-4 sm:w-2xl">
       <input
         type="text"
         value={searchQuery}
         onChange={(e) => setSearchQuery(e.target.value)}
         placeholder="Buscar comercio..."
-        className="w-full rounded-full border px-4 py-2 focus:outline-none focus:ring-2 focus:ring-primary"
+        className="w-full sm:w-2xl rounded-full border px-4 py-2 focus:outline-none focus:ring-2 focus:ring-primary"
       />
 
-      <div className="flex flex-wrap items-center justify-center gap-2">
+      <div className="flex flex-wrap gap-2 w-full sm:w-2xl justify-center">
         {loading ? (
           <>
             {Array.from({ length: 6 }).map((_, i) => (
@@ -104,9 +104,9 @@ export default function CategoryFilter() {
           <>
             <button
               onClick={() => setCategory(null)}
-              className={`px-4 py-2 rounded-full transition ${
+              className={`px-2 py-1 rounded-full transition ${
                 !activeCategory
-                  ? "bg-primary text-white"
+                  ? "bg-blue-500 text-white"
                   : "bg-white text-gray-700 hover:bg-gray-100"
               }`}
             >
@@ -120,10 +120,10 @@ export default function CategoryFilter() {
                 <button
                   key={cat.id}
                   onClick={() => setCategory(cat.slug)}
-                  className={`px-4 py-2 rounded-full transition-transform duration-300 hover:scale-105 ${
+                  className={`px-2 py-1 rounded-full transition-transform duration-300 hover:scale-105 ${
                     isActive
-                      ? "bg-primary text-white"
-                      : "bg-white text-gray-700 hover:bg-primary hover:text-white"
+                      ? "bg-blue-500 text-white"
+                      : "bg-white text-gray-700 hover:bg-blue-500 hover:text-white"
                   }`}
                 >
                   {cat.name}

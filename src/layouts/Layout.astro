@@ -2,7 +2,7 @@
 import Header from "../components/header/Header.astro";
 import Footer from "../components/footer/Footer.astro";
 import { ClientRouter } from "astro:transitions";
-const { title = "El Talar Portal" } = Astro.props;
+const { title = "El Talar - Inicio" } = Astro.props;
 
 import "../styles/global.css";
 ---
@@ -17,9 +17,9 @@ import "../styles/global.css";
     <ClientRouter />
   </head>
 
-  <body class="bg-gray-100 text-gray-900">
+  <body class="bg-gray-100">
     <Header />
-    <main>
+    <main class="flex flex-col gap-20 sm:mx-20 sm:my-10 mx-4 my-5">
       <slot />
     </main>
     <Footer />

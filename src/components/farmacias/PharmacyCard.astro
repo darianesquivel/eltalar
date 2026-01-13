@@ -1,0 +1,90 @@
+---
+import MapPreview from "./MapPreview.astro";
+
+interface Props {
+  name: string;
+  address?: string;
+  badge?: string;
+  subtitle?: string;
+  phone?: string | null;
+  whatsapp?: string | null;
+  highlight?: boolean;
+}
+
+const {
+  name,
+  address,
+  badge,
+  subtitle,
+  phone,
+  whatsapp,
+  highlight = false,
+} = Astro.props;
+---
+
+<div class={"flex flex-col gap-2 rounded-2xl bg-white p-6 shadow-sm"}>
+  {
+    badge && (
+      <span
+        class={`inline-flex w-fit items-center rounded-full px-3 py-1 text-xs font-semibold ${
+          highlight
+            ? "bg-green-100 text-green-700"
+            : "bg-gray-100 text-gray-700"
+        }`}
+      >
+        {badge}
+      </span>
+    )
+  }
+
+  {subtitle && <p class="text-sm font-semibold text-green-600">{subtitle}</p>}
+
+  <h3 class="text-2xl font-bold text-gray-900">{name}</h3>
+
+  {address && <p class="text-sm text-gray-600">📍 {address}</p>}
+
+  {
+    (phone || whatsapp) && (
+      <div class="flex flex-wrap gap-3">
+        {phone && (
+          <a
+            href={`tel:${phone}`}
+            class={`rounded-full px-5 py-2 text-sm font-semibold flex items-center gap-2 ${
+              highlight
+                ? "bg-green-500 text-white"
+                : "bg-gray-100 text-gray-800"
+            }`}
+          >
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              width="15"
+              height="15"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              class="lucide lucide-phone-icon lucide-phone"
+            >
+              <path d="M13.832 16.568a1 1 0 0 0 1.213-.303l.355-.465A2 2 0 0 1 17 15h3a2 2 0 0 1 2 2v3a2 2 0 0 1-2 2A18 18 0 0 1 2 4a2 2 0 0 1 2-2h3a2 2 0 0 1 2 2v3a2 2 0 0 1-.8 1.6l-.468.351a1 1 0 0 0-.292 1.233 14 14 0 0 0 6.392 6.384" />
+            </svg>{" "}
+            Llamar
+          </a>
+        )}
+
+        {whatsapp && (
+          <a
+            href={`https://wa.me/${whatsapp}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            class="rounded-full bg-gray-100 px-5 py-2 text-sm font-semibold text-gray-800"
+          >
+            💬 WhatsApp
+          </a>
+        )}
+      </div>
+    )
+  }
+  <MapPreview address={address} />
+</div>

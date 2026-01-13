@@ -1,24 +1,56 @@
-<section class="relative overflow-hidden rounded-3xl bg-black h-[500px]">
+<section
+  class="relative overflow-hidden flex justify-center items-center py-20 rounded-3xl"
+>
   <img
     src="/src/images/hero-bg.jpg"
-    alt=""
-    class="absolute inset-0 h-full w-full object-cover opacity-60"
+    alt="El Talar"
+    class="absolute inset-0 h-full w-full object-cover"
   />
 
-  <div class="relative mx-auto max-w-5xl px-6 py-24 text-center text-white">
+  <div
+    class="absolute inset-0 bg-linear-to-b from-black/70 via-black/50 to-black/70"
+  >
+  </div>
+
+  <div
+    class="relative z-10 flex h-full flex-col items-center justify-center px-6 text-center text-white"
+  >
     <span
-      class="inline-block rounded-full bg-primary px-4 py-1 text-sm font-semibold"
+      class="inline-flex items-center gap-2 rounded-full bg-primary/90 px-4 py-1 text-xs font-semibold uppercase tracking-wide"
     >
       Tu comunidad online
     </span>
 
-    <h1 class="mt-6 text-4xl font-extrabold md:text-5xl">
-      Conectando a los vecinos de <br /> El Talar
+    <h1
+      class="mt-6 max-w-3xl text-4xl font-extrabold leading-tight md:text-5xl lg:text-6xl"
+    >
+      Conectando a los vecinos de
+      <span class="text-primary"> El Talar</span>
     </h1>
 
-    <p class="mt-4 text-lg text-white/90">
-      Encuentra comercios, servicios, farmacias de turno y todas las novedades
-      de tu barrio en un solo lugar.
+    <p class="mt-5 max-w-2xl text-lg text-white/90">
+      Comercios, servicios, farmacias de turno y teléfonos útiles. Todo lo que
+      necesitás del barrio, en un solo lugar.
     </p>
+
+    <div class="flex flex-col gap-4 sm:flex-row">
+      <a
+        href="/negocios"
+        class="rounded-full bg-primary px-7 py-3 text-sm font-semibold text-white shadow-lg hover:scale-105 transition-transform"
+      >
+        Explorar el barrio
+      </a>
+
+      <a
+        href="/farmacias"
+        class="rounded-full border border-white/30 px-7 py-3 text-sm font-semibold text-white hover:bg-white/10 transition"
+      >
+        Farmacias de turno
+      </a>
+    </div>
+
+    <!-- <p class="mt-10 text-xs text-white/60">
+      Hecho por y para vecinos de El Talar ❤️
+    </p> -->
   </div>
 </section>

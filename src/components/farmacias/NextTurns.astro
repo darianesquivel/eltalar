@@ -1,53 +1,66 @@
 ---
-const nextTurns = [
-  {
-    day: "Mié",
-    date: "25",
-    name: "Farmacia Nueva Era",
-    address: "Ruta 197 km 12.5, El Talar",
-  },
-  {
-    day: "Jue",
-    date: "26",
-    name: "Farmacia Pasteur",
-    address: "Brasil 450, El Talar",
-  },
-  {
-    day: "Vie",
-    date: "27",
-    name: "Farmacia Social Talar",
-    address: "Las Dalias 1200, El Talar",
-  },
-];
+import { supabase } from "../../lib/supabase";
+import PharmacyCard from "./PharmacyCard.astro";
+
+const now = new Date().toISOString();
+
+const { data: nextTurns, error } = await supabase
+  .from("pharmacy_turns")
+  .select(
+    `
+    starts_at,
+    businesses!inner (
+      name,
+      address,
+      phone
+    )
+  `
+  )
+  .gt("starts_at", now)
+  .order("starts_at", { ascending: true })
+  .limit(6);
+
+if (error) {
+  console.error("Error próximos turnos:", error);
+}
+
+const formatDay = (date: string) =>
+  new Date(date).toLocaleDateString("es-AR", { weekday: "long" }).toUpperCase();
+
+const formatDate = (date: string) =>
+  new Date(date).toLocaleDateString("es-AR", { day: "numeric" });
+
+const hasTurns = nextTurns && nextTurns.length > 0;
 ---
 
-<section class="mb-16">
+<section>
   <div class="mb-6 flex items-center justify-between">
     <h2 class="text-2xl font-bold">Próximos Turnos</h2>
-    <!-- <a href="#" class="text-sm font-semibold text-green-600">
-      Ver calendario completo →
-    </a> -->
   </div>
 
-  <div class="grid gap-6 md:grid-cols-3">
-    {
-      nextTurns.map((turn) => (
-        <div class="rounded-2xl bg-white p-6 shadow-sm">
-          <div class="mb-4 flex items-center gap-3">
-            <div class="rounded-lg bg-gray-100 px-3 py-2 text-center">
-              <div class="text-xs font-semibold text-gray-500">{turn.day}</div>
-              <div class="text-lg font-bold">{turn.date}</div>
-            </div>
-          </div>
+  {
+    hasTurns ? (
+      <div class="grid gap-6 md:grid-cols-3">
+        {nextTurns.map((turn) => {
+          const business = Array.isArray(turn.businesses)
+            ? turn.businesses[0]
+            : turn.businesses;
 
-          <h3 class="font-bold">{turn.name}</h3>
-          <p class="mt-1 text-sm text-gray-600">{turn.address}</p>
-
-          <button class="mt-4 w-full rounded-full bg-green-100 py-2 text-sm font-semibold text-green-700">
-            Llamar
-          </button>
-        </div>
-      ))
-    }
-  </div>
+          return (
+            <PharmacyCard
+              name={business.name}
+              address={business.address}
+              badge={`📅 ${formatDay(turn.starts_at)} ${formatDate(
+                turn.starts_at
+              )}`}
+            />
+          );
+        })}
+      </div>
+    ) : (
+      <div class="rounded-2xl bg-gray-50 p-6 text-center text-gray-500">
+        No hay turnos próximos cargados.
+      </div>
+    )
+  }
 </section>

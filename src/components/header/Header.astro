@@ -2,7 +2,7 @@
 import Logo from "../../assets/logo.svg";
 ---
 
-<header class="relative z-50">
+<header class="relative z-50 h-20">
   <div class="mx-auto flex max-w-6xl items-center justify-between px-6 py-4">
     <a href="/">
       <img src={Logo.src} alt="" class="w-17" />
@@ -103,20 +103,28 @@ import Logo from "../../assets/logo.svg";
   </style>
 
   <script>
-    const button = document.getElementById("menu-button");
-    const menu = document.getElementById("mobile-menu");
+    const setupMobileMenu = () => {
+      const button = document.getElementById("menu-button");
+      const menu = document.getElementById("mobile-menu");
 
-    button?.addEventListener("click", () => {
-      const isOpen = menu?.classList.contains("opacity-100");
+      if (!button || !menu) return;
 
-      menu?.classList.toggle("opacity-0", isOpen);
-      menu?.classList.toggle("-translate-y-2", isOpen);
-      menu?.classList.toggle("pointer-events-none", isOpen);
+      button.onclick = () => {
+        const isOpen = menu.classList.contains("opacity-100");
 
-      menu?.classList.toggle("opacity-100", !isOpen);
-      menu?.classList.toggle("translate-y-0", !isOpen);
+        menu.classList.toggle("opacity-0", isOpen);
+        menu.classList.toggle("-translate-y-2", isOpen);
+        menu.classList.toggle("pointer-events-none", isOpen);
 
-      button.classList.toggle("open");
-    });
+        menu.classList.toggle("opacity-100", !isOpen);
+        menu.classList.toggle("translate-y-0", !isOpen);
+
+        button.classList.toggle("open");
+      };
+    };
+
+    setupMobileMenu();
+
+    document.addEventListener("astro:page-load", setupMobileMenu);
   </script>
 </header>
