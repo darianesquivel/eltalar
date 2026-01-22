@@ -1,0 +1,168 @@
+---
+const { business } = Astro.props;
+
+import MapPreview from "../MapPreview.astro";
+import { getHours } from "../../lib/getHours";
+const hours = getHours(business);
+---
+
+<section class="max-w-6xl mx-auto px-4 space-y-8">
+  <!-- VOLVER -->
+  <a
+    href="/negocios"
+    class="inline-flex items-center gap-2 text-sm text-primary hover:underline"
+  >
+    ← Volver a comercios
+  </a>
+
+  <!-- HERO -->
+  <div class="relative overflow-hidden rounded-3xl shadow">
+    <img
+      transition:name={`img-${business.slug}`}
+      src={business?.coverPhoto?.url}
+      alt={business.name}
+      class="h-[260px] w-full object-cover md:h-[340px]"
+    />
+
+    <div
+      class="absolute inset-0 bg-linear-to-t from-black/70 via-black/30 to-transparent"
+    >
+    </div>
+
+    <div class="absolute bottom-6 left-6 text-white space-y-2">
+      <div class="flex gap-2">
+        <span class="rounded-full bg-green-500 px-3 py-1 text-xs font-semibold">
+          {business.category}
+        </span>
+
+        {
+          business.tag && (
+            <span class="rounded-full bg-white/20 px-3 py-1 text-xs">
+              {business.tag}
+            </span>
+          )
+        }
+      </div>
+
+      <h1 class="text-3xl font-bold md:text-4xl">
+        {business.name}
+      </h1>
+    </div>
+  </div>
+
+  <!-- CONTENIDO -->
+  <div class="grid gap-6 md:grid-cols-3">
+    <!-- INFO -->
+    <div class="md:col-span-2 space-y-6">
+      <!-- SOBRE -->
+      <div class="rounded-2xl bg-white p-6 shadow-sm">
+        <h2 class="mb-3 text-lg font-semibold flex items-center gap-2">
+          ℹ️ Sobre el comercio
+        </h2>
+        <p class="text-gray-600 whitespace-pre-line">
+          {business.description}
+        </p>
+      </div>
+
+      <!-- ACCIONES -->
+      <div class="flex gap-4">
+        {
+          business.whatsapp && (
+            <a
+              href={`https://wa.me/${business.whatsapp}`}
+              target="_blank"
+              class="flex-1 rounded-xl bg-green-500 py-3 text-center font-semibold text-white hover:bg-green-600 transition"
+            >
+              WhatsApp
+            </a>
+          )
+        }
+
+        {
+          business.phone && (
+            <a
+              href={`tel:${business.phone}`}
+              class="flex-1 rounded-xl bg-gray-900 py-3 text-center font-semibold text-white hover:bg-black transition"
+            >
+              Llamar ahora
+            </a>
+          )
+        }
+      </div>
+
+      <!-- UBICACIÓN -->
+      <MapPreview address={business.address} />
+    </div>
+
+    <!-- SIDEBAR -->
+    <div class="space-y-6">
+      <!-- HORARIOS -->
+      <div class="rounded-2xl bg-white p-6 shadow-sm">
+        <h2 class="mb-4 text-lg font-semibold flex items-center gap-2">
+          🕒 Horarios
+        </h2>
+
+        <ul class="space-y-2 text-sm">
+          {
+            hours.map((day) => (
+              <li class="flex justify-between items-start gap-4">
+                <span class={day.isToday ? "font-semibold text-green-600" : ""}>
+                  {day.label}
+                  {day.isToday && (
+                    <span class="ml-1 rounded bg-green-100 px-2 text-xs">
+                      HOY
+                    </span>
+                  )}
+                </span>
+
+                <span
+                  class={
+                    day.status === "closed"
+                      ? "text-red-500"
+                      : day.status === "not_loaded"
+                        ? "text-gray-400"
+                        : "text-gray-700"
+                  }
+                >
+                  {day.status === "open" && (
+                    <div class="flex flex-col text-right">
+                      {day.ranges.map((r: any) => (
+                        <span>
+                          {r.open} – {r.close}
+                        </span>
+                      ))}
+                    </div>
+                  )}
+
+                  {day.status === "closed" && "Cerrado"}
+                  {day.status === "not_loaded" && "—"}
+                </span>
+              </li>
+            ))
+          }
+        </ul>
+      </div>
+
+      <!-- COMPARTIR -->
+      <div class="rounded-2xl bg-green-50 p-6 text-center space-y-3">
+        <p class="text-sm text-gray-700">
+          ¿Te gusta este lugar?
+          <br />Compartilo con tus vecinos
+        </p>
+
+        <div class="flex justify-center gap-4">
+          <button
+            class="rounded-full bg-white p-3 shadow hover:scale-105 transition"
+          >
+            🔗
+          </button>
+          <button
+            class="rounded-full bg-white p-3 shadow hover:scale-105 transition"
+          >
+            📋
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>

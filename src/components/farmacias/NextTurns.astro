@@ -9,12 +9,12 @@ const { data: nextTurns, error } = await supabase
   .select(
     `
     starts_at,
-    businesses!inner (
+    businesses (
       name,
       address,
       phone
     )
-  `
+    `
   )
   .gt("starts_at", now)
   .order("starts_at", { ascending: true })
@@ -35,7 +35,9 @@ const hasTurns = nextTurns && nextTurns.length > 0;
 
 <section>
   <div class="mb-6 flex items-center justify-between">
-    <h2 class="text-2xl font-bold">Próximos Turnos</h2>
+    <h2 id="farmacias-proximos-turnos" class="text-2xl font-bold">
+      Próximos Turnos
+    </h2>
   </div>
 
   {

@@ -12,7 +12,6 @@ export function getBusinessStatus(hours: BusinessHour[]) {
 
   const today = hours.find((h) => h.day_of_week === currentDay);
 
-  // Si hoy no abre
   if (!today || today.is_closed || !today.open_time || !today.close_time) {
     const nextOpen = getNextOpenDay(hours, currentDay);
     return {
@@ -21,7 +20,6 @@ export function getBusinessStatus(hours: BusinessHour[]) {
     };
   }
 
-  // Está abierto ahora
   if (currentTime >= today.open_time && currentTime <= today.close_time) {
     return {
       is_open: true,
@@ -29,7 +27,6 @@ export function getBusinessStatus(hours: BusinessHour[]) {
     };
   }
 
-  // Está cerrado pero abre hoy
   if (currentTime < today.open_time) {
     return {
       is_open: false,
@@ -37,7 +34,6 @@ export function getBusinessStatus(hours: BusinessHour[]) {
     };
   }
 
-  // Cerró por hoy → buscar próximo día
   const nextOpen = getNextOpenDay(hours, currentDay);
   return {
     is_open: false,

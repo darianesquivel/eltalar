@@ -1,0 +1,21 @@
+---
+const { address } = Astro.props;
+
+const fallbackAddress = "El Talar, Buenos Aires, Argentina";
+
+const query =
+  typeof address === "string" && address.trim().length > 0
+    ? address
+    : fallbackAddress;
+
+const mapUrl = `https://www.google.com/maps?q=${encodeURIComponent(query)}&output=embed`;
+---
+
+<section class="relative overflow-hidden rounded-2xl shadow-sm">
+  <iframe
+    src={mapUrl}
+    class="h-[260px] w-full border-0"
+    loading="lazy"
+    referrerpolicy="no-referrer-when-downgrade"
+    aria-label="Mapa de ubicación"></iframe>
+</section>

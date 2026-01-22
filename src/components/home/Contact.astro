@@ -4,12 +4,51 @@ import Logo from "../../assets/logo.svg";
 
 <section class="flex justify-center w-full">
   <div
-    class="rounded-3xl flex flex-col gap-12 bg-white p-8 shadow-sm md:flex-row md:items-center md:p-12"
+    id="contact-container"
+    class="relative flex w-full max-w-4xl flex-col gap-12 rounded-3xl bg-white p-8 shadow-sm md:flex-row md:items-center md:p-12 overflow-hidden"
   >
-    <div class="flex flex-col flex-1 gap-5 h-full justify-start">
-      <div class="flex flex-col justify-center items-center gap-5">
-        <img src={Logo.src} alt="" class="w-17" />
-        <h2 class="text-2xl font-bold text-gray-900 md:text-3xl text-center">
+    <div
+      id="success-overlay"
+      class="absolute inset-0 z-20 flex flex-col items-center justify-center bg-white opacity-0 pointer-events-none transition-all duration-500"
+    >
+      <div
+        id="success-check"
+        class="mb-6 scale-50 text-green-600 transition-transform duration-500"
+        style="font-size: 6rem"
+      >
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          width="72"
+          height="72"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          class="lucide lucide-mail-check-icon lucide-mail-check"
+          ><path d="M22 13V6a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2v12c0 1.1.9 2 2 2h8"
+          ></path><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"
+          ></path><path d="m16 19 2 2 4-4"></path></svg
+        >
+      </div>
+
+      <h3 class="text-2xl font-bold text-gray-900 mb-2">
+        ¡Gracias por escribirnos!
+      </h3>
+      <p class="text-center text-gray-600 max-w-sm">
+        Recibimos tu mensaje correctamente. En breve nos estaremos comunicando
+        con vos.
+      </p>
+    </div>
+
+    <div
+      id="contact-content"
+      class="flex flex-1 flex-col gap-5 transition-opacity duration-300"
+    >
+      <div class="flex flex-col items-center gap-5 text-center">
+        <img src={Logo.src} alt="Logo" class="w-16" />
+        <h2 class="text-2xl font-bold text-gray-900 md:text-3xl">
           ¿Tenés alguna sugerencia?
         </h2>
       </div>
@@ -19,7 +58,7 @@ import Logo from "../../assets/logo.svg";
         actualizado.
       </p>
 
-      <ul class="space-y-1 text-gray-700">
+      <ul class="space-y-2 text-gray-700">
         <li class="flex gap-3">
           <span class="text-primary">✔</span>
           Si encontrás un error o falta información
@@ -41,60 +80,92 @@ import Logo from "../../assets/logo.svg";
     </div>
 
     <form
-      class="space-y-6 flex flex-col flex-1"
-      action="mailto:contacto@eltalar.com.ar"
-      method="POST"
-      enctype="text/plain"
+      id="contact-form"
+      class="flex flex-1 flex-col gap-5 rounded-2xl bg-gray-50 p-6 transition-opacity duration-300"
     >
-      <div>
-        <label class="block text-sm font-medium text-gray-700">Nombre</label>
-        <input
-          type="text"
-          name="nombre"
-          placeholder="Tu nombre"
-          required
-          class="mt-2 w-full rounded-xl border border-gray-200 px-4 py-3 focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
-        />
-      </div>
+      <input
+        name="name"
+        required
+        placeholder="Tu nombre"
+        class="rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
+      />
 
-      <div>
-        <label class="block text-sm font-medium text-gray-700">Email</label>
-        <input
-          type="email"
-          name="email"
-          placeholder="tu@email.com"
-          required
-          class="mt-2 w-full rounded-xl border border-gray-200 px-4 py-3 focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
-        />
-      </div>
+      <input
+        name="email"
+        type="email"
+        required
+        placeholder="tu@email.com"
+        class="rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
+      />
 
-      <div>
-        <label class="block text-sm font-medium text-gray-700">Mensaje</label>
-        <textarea
-          name="mensaje"
-          rows="4"
-          placeholder="Contanos tu sugerencia, comentario o consulta..."
-          required
-          class="mt-2 w-full resize-none rounded-xl border border-gray-200 px-4 py-3 focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
-        ></textarea>
-      </div>
+      <textarea
+        name="message"
+        required
+        rows="4"
+        placeholder="Mensaje"
+        class="resize-none rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
+      ></textarea>
+
+      <input
+        type="text"
+        name="company"
+        tabindex="-1"
+        autocomplete="off"
+        class="hidden"
+      />
 
       <button
+        id="submit-btn"
         type="submit"
-        class="w-full rounded-xl bg-primary px-6 py-3 font-semibold text-white transition-transform hover:bg-green-700 hover:scale-102"
+        class="rounded-xl bg-primary px-6 py-3 text-sm font-semibold text-white transition hover:bg-green-700 disabled:opacity-60"
       >
         Enviar mensaje
       </button>
-
-      <p class="text-center text-xs text-gray-500">
-        O escribinos a
-        <a
-          href="mailto:contacto@eltalar.com.ar"
-          class="font-medium text-primary hover:underline"
-        >
-          contacto@eltalar.com.ar
-        </a>
-      </p>
     </form>
   </div>
 </section>
+
+<script is:inline>
+  const form = document.getElementById("contact-form");
+  const button = document.getElementById("submit-btn");
+  const overlay = document.getElementById("success-overlay");
+  const check = document.getElementById("success-check");
+  const content = document.getElementById("contact-content");
+
+  form.addEventListener("submit", async (e) => {
+    e.preventDefault();
+
+    button.disabled = true;
+    button.textContent = "Enviando…";
+
+    const data = new FormData(form);
+    if (data.get("company")) return;
+
+    try {
+      const res = await fetch("/api/contact", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: data.get("name"),
+          email: data.get("email"),
+          message: data.get("message"),
+        }),
+      });
+
+      if (!res.ok) throw new Error();
+
+      form.style.opacity = "0";
+      content.style.opacity = "0";
+
+      setTimeout(() => {
+        overlay.classList.remove("pointer-events-none");
+        overlay.style.opacity = "1";
+        check.style.transform = "scale(1)";
+      }, 300);
+    } catch {
+      button.disabled = false;
+      button.textContent = "Enviar mensaje";
+      alert("Error al enviar el mensaje 😞");
+    }
+  });
+</script>

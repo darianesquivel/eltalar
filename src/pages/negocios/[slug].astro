@@ -1,0 +1,23 @@
+---
+import Layout from "../../layouts/Layout.astro";
+import BusinessDetail from "../../components/negocios/BusinessDetail.astro";
+import { getBusinessBySlug } from "../../lib/repositories/business.repository";
+
+export const prerender = false;
+
+const { slug } = Astro.params;
+
+if (!slug) {
+  return Astro.redirect("/404");
+}
+
+const business = await getBusinessBySlug(slug);
+
+if (!business) {
+  return Astro.redirect("/404");
+}
+---
+
+<Layout title={`${business.name} | El Talar`}>
+  <BusinessDetail business={business} />
+</Layout>

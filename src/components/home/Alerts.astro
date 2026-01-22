@@ -1,11 +1,52 @@
-<section class="mx-auto max-w-6xl px-6">
-  <div
-    class="flex items-center gap-3 rounded-xl bg-blue-100 px-4 py-3 text-sm text-blue-800"
-  >
-    <span class="font-semibold">Corte de calle programado</span>
-    <span class="text-blue-700">
-      La Av. Hipólito Yrigoyen estará cerrada por reparaciones este sábado de
-      8:00 a 14:00hs.
-    </span>
-  </div>
+---
+import { supabase } from "../../lib/supabase";
+
+const { data: alerts, error } = await supabase
+  .from("site_alerts")
+  .select("id, title, description")
+  .eq("is_active", true)
+  .order("created_at", { ascending: false });
+
+if (error) {
+  console.error("Error cargando avisos importantes:", error);
+}
+
+const hasAlerts = Array.isArray(alerts) && alerts.length > 0;
+---
+
+<section class="mx-auto max-w-6xl px-6 space-y-3">
+  {
+    hasAlerts ? (
+      alerts.map((alert) => (
+        <div
+          class="
+            flex flex-col gap-1
+            sm:flex-row items-center sm:gap-3
+            rounded-xl bg-blue-100 px-4 py-3
+            text-sm text-blue-800
+          "
+        >
+          <span
+            class="
+              font-semibold
+              sm:whitespace-nowrap
+            "
+          >
+            {alert.title}
+          </span>
+
+          <span class="text-blue-700">{alert.description}</span>
+        </div>
+      ))
+    ) : (
+      <div
+        class=" flex flex-col gap-1
+            sm:flex-row sm:gap-3
+            items-center rounded-xl bg-gray-100 px-4 py-3 text-sm text-gray-600"
+      >
+        <span class="font-semibold">Información</span>
+        <span>No hay avisos importantes en este momento.</span>
+      </div>
+    )
+  }
 </section>

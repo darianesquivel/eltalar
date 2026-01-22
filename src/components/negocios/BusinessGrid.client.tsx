@@ -1,7 +1,6 @@
 import { useEffect, useState } from "react";
-import { supabase } from "../../lib/supabase";
 import BusinessCard from "./BusinessCard";
-import { getBusinessStatus } from "../../lib/businessHours";
+import { getBusinesses } from "../../lib/repositories/business.repository";
 
 export default function BusinessGrid() {
   const [allBusinesses, setAllBusinesses] = useState<any[]>([]);
@@ -9,49 +8,30 @@ export default function BusinessGrid() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    supabase
-      .from("businesses")
-      .select(
-        `
-        *,
-        categories ( id, name, slug ),
-        business_hours ( day_of_week, open_time, close_time, is_closed )
-      `
-      )
-      .eq("is_active", true)
-      .order("priority", { ascending: false })
-      .then(({ data, error }) => {
-        if (error || !data) return;
-
-        const withStatus = data.map((b) => {
-          const status = getBusinessStatus(b.business_hours ?? []);
-          return { ...b, ...status };
-        });
-
-        setAllBusinesses(withStatus);
-        setLoading(false);
-      });
+    getBusinesses().then((data) => {
+      setAllBusinesses(data);
+      setLoading(false);
+    });
   }, []);
 
   const applyFilters = () => {
     const params = new URLSearchParams(window.location.search);
-    const categoria = params.get("categoria");
-    const buscar = params.get("buscar")?.toLowerCase();
+    const category = params.get("categoria");
+    const search = params.get("buscar")?.toLowerCase();
 
     let result = [...allBusinesses];
 
-    if (categoria) {
-      result = result.filter((b) => b.categories?.slug === categoria);
+    if (category) {
+      result = result.filter((b) => b.categories?.slug === category);
     }
 
-    if (buscar) {
-      result = result.filter((b) => {
-        return (
-          b.name.toLowerCase().includes(buscar) ||
-          b.description?.toLowerCase().includes(buscar) ||
-          b.categories?.name.toLowerCase().includes(buscar)
-        );
-      });
+    if (search) {
+      result = result.filter(
+        (b) =>
+          b.name.toLowerCase().includes(search) ||
+          b.description?.toLowerCase().includes(search) ||
+          b.categories?.name.toLowerCase().includes(search)
+      );
     }
 
     setFiltered(result);
@@ -61,7 +41,6 @@ export default function BusinessGrid() {
     if (allBusinesses.length === 0) return;
 
     applyFilters();
-
     window.addEventListener("urlchange", applyFilters);
     return () => window.removeEventListener("urlchange", applyFilters);
   }, [allBusinesses]);
@@ -79,7 +58,7 @@ export default function BusinessGrid() {
   }
 
   return (
-    <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+    <div id="comercios" className="grid gap-6 sm:grid-cols-3 lg:grid-cols-4">
       {filtered.map((business) => (
         <BusinessCard key={business.id} business={business} />
       ))}

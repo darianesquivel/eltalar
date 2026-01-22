@@ -1,34 +1,10 @@
 ---
-import { supabase } from "../../lib/supabase";
 import BusinessCard from "../negocios/BusinessCard";
-import { getBusinessStatus } from "../../lib/businessHours";
+import { getBusinesses } from "../../lib/repositories/business.repository";
 
-const { data: featuredBusinesses, error } = await supabase
-  .from("businesses")
-  .select(
-    `
-    *,
-    business_hours (
-      day_of_week,
-      open_time,
-      close_time,
-      is_closed
-    )
-  `
-  )
-  .eq("is_active", true)
-  .eq("is_featured", true)
-  .order("priority", { ascending: false })
-  .limit(6);
-
-const businessesWithStatus = featuredBusinesses?.map((business) => {
-  const status = getBusinessStatus(business.business_hours ?? []);
-
-  return {
-    ...business,
-    is_open: status.is_open,
-    status_label: status.label,
-  };
+const featuredBusinesses = await getBusinesses({
+  featured: true,
+  limit: 6,
 });
 ---
 
@@ -38,8 +14,8 @@ const businessesWithStatus = featuredBusinesses?.map((business) => {
 
     <div class="grid gap-6 sm:grid-cols-2 md:grid-cols-4">
       {
-        businessesWithStatus?.map((business) => (
-          <BusinessCard business={business} />
+        featuredBusinesses?.map((business) => (
+          <BusinessCard business={business} client:visible />
         ))
       }
     </div>
