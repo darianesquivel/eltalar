@@ -29,10 +29,28 @@ export async function getBusinesses(options: GetBusinessesOptions = {}) {
     .select(
       `
       *,
-      categories ( id, name, slug ),
-      business_hours ( day_of_week, open_time, close_time, is_closed ),
-      business_photos ( id, url, is_cover, position )
-    `
+      business_categories (
+        categories (
+          id,
+          name,
+          slug,
+          icon
+        )
+      ),
+      business_hours (
+        day_of_week,
+        open_time,
+        close_time,
+        is_closed,
+        is_open_24
+      ),
+      business_photos (
+        id,
+        url,
+        is_cover,
+        position
+      )
+    `,
     )
     .eq("is_active", true)
     .order("priority", { ascending: false });
@@ -47,6 +65,8 @@ export async function getBusinesses(options: GetBusinessesOptions = {}) {
 
   const { data, error } = await query;
 
+  console.log("data", data);
+
   if (error || !data) {
     console.error("Error getBusinesses:", error);
     return [];
@@ -59,13 +79,14 @@ export async function getBusinesses(options: GetBusinessesOptions = {}) {
       ? b.business_photos
       : [];
 
-    const coverPhoto: BusinessPhoto | null =
+    const coverPhoto =
       photos.find((p) => p.is_cover) ||
       photos.slice().sort((a, b) => (a.position ?? 0) - (b.position ?? 0))[0] ||
       null;
 
     return {
       ...b,
+      categories: b.business_categories?.map((bc: any) => bc.categories) ?? [],
       ...status,
       coverPhoto,
     };
@@ -78,10 +99,27 @@ export async function getBusinessBySlug(slug: string) {
     .select(
       `
       *,
-      categories ( id, name, slug ),
-      business_hours ( day_of_week, open_time, close_time, is_closed ),
-      business_photos ( id, url, is_cover, position )
-    `
+      business_categories (
+        categories (
+          id,
+          name,
+          slug
+        )
+      ),
+      business_hours (
+        day_of_week,
+        open_time,
+        close_time,
+        is_closed,
+        is_open_24
+      ),
+      business_photos (
+        id,
+        url,
+        is_cover,
+        position
+      )
+    `,
     )
     .eq("slug", slug)
     .single();
@@ -97,15 +135,15 @@ export async function getBusinessBySlug(slug: string) {
     ? data.business_photos
     : [];
 
-  const coverPhoto: BusinessPhoto | null =
+  const coverPhoto =
     photos.find((p) => p.is_cover) ||
     photos.slice().sort((a, b) => (a.position ?? 0) - (b.position ?? 0))[0] ||
     null;
 
   return {
     ...data,
+    categories: data.business_categories?.map((bc: any) => bc.categories) ?? [],
     ...status,
     coverPhoto,
   };
 }
-

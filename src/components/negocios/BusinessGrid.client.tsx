@@ -22,20 +22,24 @@ export default function BusinessGrid() {
     let result = [...allBusinesses];
 
     if (category) {
-      result = result.filter((b) => b.categories?.slug === category);
+      result = result.filter((b) =>
+        b.categories?.some((c: any) => c.slug === category)
+      );
     }
 
     if (search) {
-      result = result.filter(
-        (b) =>
-          b.name.toLowerCase().includes(search) ||
-          b.description?.toLowerCase().includes(search) ||
-          b.categories?.name.toLowerCase().includes(search)
+      result = result.filter((b) =>
+        b.name.toLowerCase().includes(search) ||
+        b.description?.toLowerCase().includes(search) ||
+        b.categories?.some((c: any) =>
+          c.name.toLowerCase().includes(search)
+        )
       );
     }
 
     setFiltered(result);
   };
+
 
   useEffect(() => {
     if (allBusinesses.length === 0) return;
