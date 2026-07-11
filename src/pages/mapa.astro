@@ -1,6 +1,10 @@
 ---
 import Layout from "../layouts/Layout.astro";
 import { supabase } from "../lib/supabase";
+// El CSS de Leaflet va en el frontmatter: así queda como <link> de la página
+// y el ClientRouter lo espera ANTES del swap. Dentro del script podía llegar
+// después de que Leaflet midiera el layout → mapa roto hasta recargar.
+import "leaflet/dist/leaflet.css";
 
 // Negocios activos con coordenadas, con su categoría principal
 const { data } = await supabase
@@ -46,7 +50,6 @@ const markers = (data ?? []).map((b) => ({
 
 <script>
   import L from "leaflet";
-  import "leaflet/dist/leaflet.css";
 
   type MarkerData = {
     name: string;
@@ -101,8 +104,25 @@ const markers = (data ?? []).map((b) => ({
     if (bounds.length > 0) {
       map.fitBounds(bounds, { padding: [40, 40], maxZoom: 15 });
     }
+
+    // Blindaje contra la carrera con las view transitions: si Leaflet midió
+    // el contenedor durante la animación del swap, el tamaño queda mal y se
+    // ven tiles grises/cortadas. Recalcular un par de veces lo corrige.
+    const refit = () => {
+      map.invalidateSize();
+      if (bounds.length > 0) {
+        map.fitBounds(bounds, { padding: [40, 40], maxZoom: 15 });
+      }
+    };
+    setTimeout(refit, 250);
+    setTimeout(refit, 800);
   };
 
-  setupMap();
-  document.addEventListener("astro:page-load", setupMap);
+  const initWhenReady = () => {
+    // Esperar un frame: garantiza que el DOM nuevo ya está pintado
+    requestAnimationFrame(() => setTimeout(setupMap, 0));
+  };
+
+  initWhenReady();
+  document.addEventListener("astro:page-load", initWhenReady);
 </script>
