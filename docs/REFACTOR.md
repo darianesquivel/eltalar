@@ -302,9 +302,10 @@ implementar (1)+(2) juntos → sumar (3) y (4) cuando haya masa de usuarios.
 - [x] Los owners **no pueden auto-aprobarse ni auto-destacarse**: grants por columna + RPCs `SECURITY DEFINER` (`admin_set_business_status`, `admin_set_featured`) que exigen `is_admin()`.
 - [x] Admin por email en tabla `admin_users` (seed: darianesquivelf@gmail.com).
 
-> ⚙️ Config pendiente del dueño en Supabase (Authentication → URL Configuration):
-> Site URL `https://eltalar.vercel.app` + Redirect URLs `https://eltalar.vercel.app/app/auth`
-> y `http://localhost:4321/app/auth`. Sin esto el magic link no redirige bien.
+> ⚙️ Config en Supabase (Authentication → URL Configuration) — dominio definitivo:
+> Site URL `https://eltalar.com.ar` + Redirect URLs `https://eltalar.com.ar/app/auth`
+> y `http://localhost:4321/app/auth`. Sin esto el login (Google/magic link) no
+> redirige bien.
 
 ### Fase 3 — Monetización 🟡 INFRAESTRUCTURA LISTA (falta cuenta de Mercado Pago)
 
