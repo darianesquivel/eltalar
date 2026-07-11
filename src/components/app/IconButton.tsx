@@ -35,10 +35,12 @@ export default function IconButton({
       : `border-gray-200 bg-white ${VARIANTS[variant]}`
   }`;
 
+  // Debajo del botón: arriba lo recortan los contenedores con scroll
+  // (las primeras filas de las listas del admin quedaban con tooltip cortado).
   const tooltip = (
     <span
       role="tooltip"
-      className="pointer-events-none absolute -top-8 left-1/2 z-20 -translate-x-1/2 whitespace-nowrap rounded-md bg-gray-900 px-2 py-1 text-[11px] font-medium text-white opacity-0 transition-opacity duration-150 group-hover:opacity-100"
+      className="pointer-events-none absolute right-0 top-full z-20 mt-1.5 whitespace-nowrap rounded-md bg-gray-900 px-2 py-1 text-[11px] font-medium text-white opacity-0 transition-opacity duration-150 group-hover:opacity-100"
     >
       {label}
     </span>

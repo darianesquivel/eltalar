@@ -1,0 +1,302 @@
+---
+import {
+  Star,
+  Store,
+  MapPin,
+  BadgeCheck,
+  TrendingUp,
+  Clock,
+  CreditCard,
+  HeartHandshake,
+  ArrowRight,
+  Check,
+} from "@lucide/astro";
+import Layout from "../layouts/Layout.astro";
+import { supabase } from "../lib/supabase";
+
+const price = Number(import.meta.env.MP_FEATURED_PRICE ?? 6500);
+
+// Social proof real: cuántos negocios ya están en el portal
+const { count: totalNegocios } = await supabase
+  .from("businesses")
+  .select("id", { count: "exact", head: true })
+  .eq("is_active", true);
+
+const PASOS = [
+  {
+    icon: Store,
+    titulo: "Cargá tu negocio gratis",
+    texto:
+      "Entrás con tu cuenta de Google, completás la ficha con fotos, horarios y WhatsApp. Lo hacés vos, en 5 minutos, sin esperar a nadie.",
+  },
+  {
+    icon: BadgeCheck,
+    titulo: "Lo revisamos y publicamos",
+    texto:
+      "Verificamos que sea un comercio real del barrio y tu ficha queda visible en la guía, el buscador y el mapa de El Talar.",
+  },
+  {
+    icon: Star,
+    titulo: "Destacalo cuando quieras",
+    texto:
+      "Con un click activás el plan Destacado desde tu panel. Pagás con Mercado Pago y los beneficios se activan al instante.",
+  },
+];
+
+const GRATIS = [
+  "Ficha completa con fotos, horarios y descripción",
+  "Botón directo de WhatsApp y teléfono",
+  "Aparecés en la guía, el buscador y el mapa",
+  "Link propio para compartir (eltalar.com.ar/negocios/tu-negocio)",
+  "La editás vos mismo cuando quieras, desde el celular",
+];
+
+const DESTACADO = [
+  "Primero en el listado de negocios",
+  "En la portada del sitio, que ven todos los vecinos",
+  "Insignia ⭐ en tu card y en tu ficha",
+  "Marcador dorado en el mapa del barrio",
+  "Pago automático con Mercado Pago — cancelás cuando quieras",
+];
+---
+
+<Layout
+  title="Anunciá tu negocio en El Talar"
+  description={`Sumá tu comercio gratis al portal de El Talar y destacalo por $${price.toLocaleString("es-AR")}/mes. Ficha con WhatsApp, fotos, horarios y mapa. Sin permanencia.`}
+>
+  <!-- HERO -->
+  <section
+    class="relative overflow-hidden rounded-3xl bg-linear-to-br from-primary/10 via-white to-amber-50 px-6 py-16 text-center"
+  >
+    <div
+      class="pointer-events-none absolute -left-20 top-0 h-64 w-64 rounded-full bg-primary/20 blur-3xl animate-blob"
+    >
+    </div>
+    <div
+      class="pointer-events-none absolute -right-16 bottom-0 h-72 w-72 rounded-full bg-amber-200/50 blur-3xl animate-blob"
+      style="animation-delay: -7s"
+    >
+    </div>
+
+    <div class="relative mx-auto flex max-w-3xl flex-col items-center gap-5">
+      <span
+        class="animate-fade-up inline-flex items-center gap-2 rounded-full bg-primary/10 px-4 py-1.5 text-xs font-semibold uppercase tracking-widest text-primary"
+      >
+        <TrendingUp size={14} />
+        Para comercios y emprendedores
+      </span>
+
+      <h1
+        class="animate-fade-up text-4xl font-extrabold leading-tight text-gray-900 md:text-5xl"
+        style="animation-delay: 0.1s"
+      >
+        Que todo El Talar{" "}
+        <span
+          class="bg-linear-to-r from-primary to-emerald-500 bg-clip-text text-transparent"
+        >
+          encuentre tu negocio</span
+        >
+      </h1>
+
+      <p
+        class="animate-fade-up max-w-2xl text-lg text-gray-600"
+        style="animation-delay: 0.2s"
+      >
+        {totalNegocios ?? "Decenas de"} comercios del barrio ya están en el portal.
+        Tu ficha es <strong>gratis para siempre</strong> — y si querés más visibilidad,
+        destacala por ${price.toLocaleString("es-AR")}/mes.
+      </p>
+
+      <div
+        class="animate-fade-up flex flex-col gap-3 sm:flex-row"
+        style="animation-delay: 0.3s"
+      >
+        <a
+          href="/app"
+          class="inline-flex items-center justify-center gap-2 rounded-full bg-primary px-7 py-3.5 text-sm font-semibold text-white shadow-lg shadow-primary/40 transition-all hover:scale-105"
+        >
+          <Store size={18} />
+          Cargar mi negocio gratis
+        </a>
+        <a
+          href="#planes"
+          class="inline-flex items-center justify-center gap-2 rounded-full border border-gray-300 bg-white px-7 py-3.5 text-sm font-semibold text-gray-700 transition hover:bg-gray-50"
+        >
+          Ver el plan Destacado
+        </a>
+      </div>
+    </div>
+  </section>
+
+  <!-- CÓMO FUNCIONA -->
+  <section class="mx-auto max-w-5xl px-4">
+    <div class="flex flex-col items-center gap-10">
+      <h2 class="text-2xl font-bold text-gray-900 md:text-3xl">
+        Cómo funciona
+      </h2>
+
+      <div class="grid gap-6 md:grid-cols-3">
+        {
+          PASOS.map((paso, i) => (
+            <div
+              data-tilt
+              class="flex flex-col gap-3 rounded-2xl bg-white p-6 shadow-sm hover:shadow-xl"
+            >
+              <div class="flex items-center gap-3">
+                <span class="flex h-9 w-9 items-center justify-center rounded-full bg-primary/10 text-sm font-bold text-primary">
+                  {i + 1}
+                </span>
+                <paso.icon size={22} class="text-primary" />
+              </div>
+              <h3 class="font-semibold text-gray-900">{paso.titulo}</h3>
+              <p class="text-sm text-gray-600">{paso.texto}</p>
+            </div>
+          ))
+        }
+      </div>
+    </div>
+  </section>
+
+  <!-- PLANES -->
+  <section id="planes" class="mx-auto w-full max-w-5xl scroll-mt-24 px-4">
+    <div class="flex flex-col items-center gap-10">
+      <div class="text-center">
+        <h2 class="text-2xl font-bold text-gray-900 md:text-3xl">
+          Simple: gratis, o destacado
+        </h2>
+        <p class="mt-2 text-gray-600">
+          Sin contratos, sin permanencia, sin letra chica.
+        </p>
+      </div>
+
+      <div class="grid w-full gap-6 md:grid-cols-2">
+        <!-- GRATIS -->
+        <div class="flex flex-col gap-5 rounded-3xl bg-white p-8 shadow-sm">
+          <div>
+            <h3 class="text-lg font-bold text-gray-900">
+              Tu ficha en El Talar
+            </h3>
+            <p class="mt-1 text-3xl font-extrabold text-gray-900">
+              Gratis
+              <span class="text-sm font-normal text-gray-400">para siempre</span
+              >
+            </p>
+          </div>
+          <ul class="flex-1 space-y-2.5">
+            {
+              GRATIS.map((item) => (
+                <li class="flex items-start gap-2 text-sm text-gray-600">
+                  <Check size={16} class="mt-0.5 shrink-0 text-primary" />
+                  {item}
+                </li>
+              ))
+            }
+          </ul>
+          <a
+            href="/app"
+            class="rounded-full border border-primary px-6 py-3 text-center text-sm font-semibold text-primary transition hover:bg-primary/5"
+          >
+            Cargar mi negocio
+          </a>
+        </div>
+
+        <!-- DESTACADO -->
+        <div
+          class="relative flex flex-col gap-5 overflow-hidden rounded-3xl border-2 border-amber-400 bg-linear-to-br from-amber-50 to-white p-8 shadow-lg"
+        >
+          <span
+            class="absolute right-6 top-6 rounded-full bg-amber-400 px-3 py-1 text-[11px] font-bold uppercase tracking-wide text-amber-950"
+          >
+            Recomendado
+          </span>
+          <div>
+            <h3
+              class="inline-flex items-center gap-2 text-lg font-bold text-gray-900"
+            >
+              <Star size={18} class="text-amber-500" fill="currentColor" />
+              Plan Destacado
+            </h3>
+            <p class="mt-1 text-3xl font-extrabold text-gray-900">
+              ${price.toLocaleString("es-AR")}
+              <span class="text-sm font-normal text-gray-400">/mes</span>
+            </p>
+          </div>
+          <p class="text-sm font-medium text-gray-700">
+            Todo lo del plan gratuito, más:
+          </p>
+          <ul class="flex-1 space-y-2.5">
+            {
+              DESTACADO.map((item) => (
+                <li class="flex items-start gap-2 text-sm text-gray-700">
+                  <Check size={16} class="mt-0.5 shrink-0 text-amber-500" />
+                  {item}
+                </li>
+              ))
+            }
+          </ul>
+          <a
+            href="/app"
+            class="group inline-flex items-center justify-center gap-2 rounded-full bg-amber-500 px-6 py-3 text-sm font-semibold text-white shadow-lg shadow-amber-500/30 transition-all hover:scale-[1.02] hover:bg-amber-600"
+          >
+            Destacar mi negocio
+            <ArrowRight
+              size={16}
+              class="transition-transform group-hover:translate-x-0.5"
+            />
+          </a>
+        </div>
+      </div>
+
+      <div
+        class="grid w-full gap-4 rounded-2xl bg-white p-6 text-center shadow-sm sm:grid-cols-3"
+      >
+        <div class="flex flex-col items-center gap-1.5">
+          <CreditCard size={20} class="text-primary" />
+          <p class="text-sm font-semibold">Pago con Mercado Pago</p>
+          <p class="text-xs text-gray-500">
+            Suscripción automática y segura. Sin transferencias ni
+            recordatorios.
+          </p>
+        </div>
+        <div class="flex flex-col items-center gap-1.5">
+          <Clock size={20} class="text-primary" />
+          <p class="text-sm font-semibold">Activación instantánea</p>
+          <p class="text-xs text-gray-500">
+            Pagás y tu negocio queda destacado en el momento, solo.
+          </p>
+        </div>
+        <div class="flex flex-col items-center gap-1.5">
+          <MapPin size={20} class="text-primary" />
+          <p class="text-sm font-semibold">100% barrial</p>
+          <p class="text-xs text-gray-500">
+            Te ven vecinos de El Talar que ya buscan lo que ofrecés.
+          </p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ÁNGULO COMUNITARIO -->
+  <section class="mx-auto max-w-3xl px-4">
+    <div
+      class="flex flex-col items-center gap-4 rounded-3xl bg-primary-soft/50 p-8 text-center"
+    >
+      <HeartHandshake size={28} class="text-primary" />
+      <h2 class="text-xl font-bold text-gray-900">
+        Al destacarte, sostenés el portal del barrio
+      </h2>
+      <p class="max-w-xl text-sm text-gray-600">
+        El Talar es un proyecto independiente hecho por y para los vecinos: la
+        guía de comercios, las farmacias de turno y los teléfonos útiles son
+        gratuitos para toda la comunidad. Los planes Destacado son lo que lo
+        mantiene andando.
+      </p>
+      <a
+        href="/app"
+        class="mt-1 rounded-full bg-primary px-7 py-3 text-sm font-semibold text-white shadow-lg transition-transform hover:scale-105"
+      >
+        Empezar ahora — es gratis
+      </a>
+    </div>
+  </section>
+</Layout>

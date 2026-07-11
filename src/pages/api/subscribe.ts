@@ -60,7 +60,7 @@ export const POST: APIRoute = async (context) => {
     );
   }
 
-  const price = Number(import.meta.env.MP_FEATURED_PRICE ?? 5000);
+  const price = Number(import.meta.env.MP_FEATURED_PRICE ?? 6500);
   // MP exige un back_url https público: en dev (localhost) usamos el dominio
   // real del sitio; el redirect post-pago cae en producción, no afecta el test.
   const origin = context.url.origin.includes("localhost")

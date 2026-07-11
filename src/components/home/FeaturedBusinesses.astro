@@ -1,4 +1,5 @@
 ---
+import { Star, ArrowRight } from "@lucide/astro";
 import BusinessCard from "../negocios/BusinessCard";
 import type { Business } from "../../lib/repositories/business.repository";
 
@@ -9,25 +10,72 @@ interface Props {
 const { businesses: featuredBusinesses } = Astro.props;
 ---
 
-<section class="mx-auto max-w-6xl px-6 py-12">
-  <div class="flex flex-col gap-8 items-center">
-    <h2 class="text-2xl font-bold text-gray-800">Comercios Destacados</h2>
-
-    <div class="grid gap-6 sm:grid-cols-2 md:grid-cols-4">
-      {
-        featuredBusinesses?.map((business) => (
-          <BusinessCard business={business} client:visible />
-        ))
-      }
+<section class="mx-auto w-full max-w-6xl px-2 sm:px-6">
+  <div
+    class="relative overflow-hidden rounded-3xl border border-amber-200/60 bg-linear-to-br from-amber-50 via-white to-amber-50/40 px-6 py-12 shadow-sm"
+  >
+    <!-- brillos decorativos -->
+    <div
+      class="pointer-events-none absolute -right-20 -top-20 h-64 w-64 rounded-full bg-amber-200/40 blur-3xl animate-blob"
+    >
+    </div>
+    <div
+      class="pointer-events-none absolute -bottom-24 -left-16 h-72 w-72 rounded-full bg-yellow-100/60 blur-3xl animate-blob"
+      style="animation-delay: -6s"
+    >
     </div>
 
-    <div class="transition-transform hover:scale-102">
-      <a
-        href="/negocios"
-        class="rounded-xl bg-primary px-6 py-3 font-semibold text-white transition-transform hover:scale-110 hover:bg-green-700"
+    <div class="relative flex flex-col items-center gap-8">
+      <div class="flex flex-col items-center gap-2 text-center">
+        <span
+          class="inline-flex items-center gap-2 rounded-full border border-amber-300/60 bg-amber-100 px-4 py-1 text-xs font-semibold uppercase tracking-widest text-amber-700"
+        >
+          <Star size={13} fill="currentColor" />
+          Destacados
+        </span>
+        <h2 class="text-2xl font-bold text-gray-900 md:text-3xl">
+          Los comercios que apuestan por el barrio
+        </h2>
+        <p class="max-w-xl text-sm text-gray-600">
+          Negocios de El Talar con lugar preferencial en el portal. Tu apoyo los
+          mantiene creciendo — y ellos mantienen esta página gratuita.
+        </p>
+      </div>
+
+      <div
+        class="grid w-full gap-6 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4"
       >
-        Ver todos
-      </a>
+        {
+          featuredBusinesses?.map((business) => (
+            <div
+              data-tilt
+              class="rounded-xl ring-2 ring-amber-300/70 ring-offset-2 ring-offset-transparent"
+            >
+              <BusinessCard business={business} client:visible />
+            </div>
+          ))
+        }
+      </div>
+
+      <div class="flex flex-col items-center gap-3 sm:flex-row">
+        <a
+          href="/negocios"
+          class="rounded-full border border-gray-300 bg-white px-6 py-2.5 text-sm font-semibold text-gray-700 transition hover:bg-gray-50"
+        >
+          Ver todos los negocios
+        </a>
+        <a
+          href="/anunciate"
+          class="group inline-flex items-center gap-2 rounded-full bg-amber-500 px-6 py-2.5 text-sm font-semibold text-white shadow-lg shadow-amber-500/30 transition-all hover:scale-105 hover:bg-amber-600"
+        >
+          <Star size={16} fill="currentColor" />
+          Quiero destacar mi negocio
+          <ArrowRight
+            size={16}
+            class="transition-transform group-hover:translate-x-0.5"
+          />
+        </a>
+      </div>
     </div>
   </div>
 </section>

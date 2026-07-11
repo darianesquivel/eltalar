@@ -1,5 +1,7 @@
 import { useState } from "react";
+import { Siren, List, Eye, EyeOff, Trash2, Check, X } from "lucide-react";
 import { supabaseBrowser } from "../../lib/supabase/browser";
+import IconButton from "./IconButton";
 import type { DirectoryEntry } from "../../lib/repositories/directory.repository";
 
 type Props = {
@@ -28,6 +30,7 @@ export default function DirectoryManager({ entries }: Props) {
   const [form, setForm] = useState(EMPTY);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [confirmDelete, setConfirmDelete] = useState<string | null>(null);
 
   const refresh = async () => {
     const { data } = await supabaseBrowser
@@ -166,26 +169,66 @@ export default function DirectoryManager({ entries }: Props) {
                 {entry.subtitle ? ` · ${entry.subtitle}` : ""}
               </p>
             </div>
-            <div className="flex gap-2">
-              <button
-                onClick={() => togglePriority(entry)}
-                className="rounded-full bg-amber-50 px-3 py-1 text-xs font-semibold text-amber-600 hover:bg-amber-100"
-                title="Mover entre emergencias y directorio"
-              >
-                {entry.is_priority ? "→ directorio" : "→ emergencias"}
-              </button>
-              <button
-                onClick={() => toggleActive(entry)}
-                className="rounded-full bg-gray-100 px-3 py-1 text-xs font-semibold text-gray-600 hover:bg-gray-200"
-              >
-                {entry.is_active ? "Ocultar" : "Mostrar"}
-              </button>
-              <button
-                onClick={() => remove(entry.id)}
-                className="rounded-full bg-red-50 px-3 py-1 text-xs font-semibold text-red-600 hover:bg-red-100"
-              >
-                Borrar
-              </button>
+            <div className="flex shrink-0 items-center gap-1.5">
+              {confirmDelete === entry.id ? (
+                <>
+                  <span className="text-xs font-semibold text-red-600">
+                    ¿Borrar?
+                  </span>
+                  <IconButton
+                    label="Sí, borrar"
+                    variant="danger"
+                    onClick={() => {
+                      remove(entry.id);
+                      setConfirmDelete(null);
+                    }}
+                  >
+                    <Check size={16} />
+                  </IconButton>
+                  <IconButton
+                    label="Cancelar"
+                    onClick={() => setConfirmDelete(null)}
+                  >
+                    <X size={16} />
+                  </IconButton>
+                </>
+              ) : (
+                <>
+                  <IconButton
+                    label={
+                      entry.is_priority
+                        ? "Mover al directorio general"
+                        : "Mover a emergencias prioritarias"
+                    }
+                    variant="warning"
+                    active={entry.is_priority}
+                    onClick={() => togglePriority(entry)}
+                  >
+                    {entry.is_priority ? (
+                      <List size={16} />
+                    ) : (
+                      <Siren size={16} />
+                    )}
+                  </IconButton>
+                  <IconButton
+                    label={
+                      entry.is_active
+                        ? "Ocultar del sitio"
+                        : "Mostrar en el sitio"
+                    }
+                    onClick={() => toggleActive(entry)}
+                  >
+                    {entry.is_active ? <Eye size={16} /> : <EyeOff size={16} />}
+                  </IconButton>
+                  <IconButton
+                    label="Borrar"
+                    variant="danger"
+                    onClick={() => setConfirmDelete(entry.id)}
+                  >
+                    <Trash2 size={16} />
+                  </IconButton>
+                </>
+              )}
             </div>
           </li>
         ))}

@@ -1,5 +1,7 @@
 import { useState } from "react";
+import { Pencil, Trash2, Check, X } from "lucide-react";
 import { supabaseBrowser } from "../../lib/supabase/browser";
+import IconButton from "./IconButton";
 
 type CategoryRow = {
   id: string;
@@ -26,6 +28,8 @@ export default function CategoriesManager({ categories }: Props) {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [confirmDelete, setConfirmDelete] = useState<string | null>(null);
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editName, setEditName] = useState("");
 
   const create = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -55,6 +59,38 @@ export default function CategoriesManager({ categories }: Props) {
       setName("");
     }
     setSaving(false);
+  };
+
+  // Renombrar: cambia el nombre visible; el slug (la URL del filtro) se
+  // mantiene para no romper links existentes.
+  const saveRename = async (cat: CategoryRow) => {
+    const newName = editName.trim();
+    if (!newName || newName === cat.name) {
+      setEditingId(null);
+      return;
+    }
+
+    const { error: upError } = await supabaseBrowser
+      .from("categories")
+      .update({ name: newName })
+      .eq("id", cat.id);
+
+    if (upError) {
+      console.error(upError);
+      setError(
+        upError.code === "23505"
+          ? "Ya existe una categoría con ese nombre"
+          : "Error renombrando la categoría",
+      );
+    } else {
+      setItems((prev) =>
+        prev
+          .map((c) => (c.id === cat.id ? { ...c, name: newName } : c))
+          .sort((a, b) => a.name.localeCompare(b.name)),
+      );
+      setError(null);
+    }
+    setEditingId(null);
   };
 
   const remove = async (cat: CategoryRow) => {
@@ -103,35 +139,87 @@ export default function CategoriesManager({ categories }: Props) {
             key={cat.id}
             className="flex items-center justify-between gap-3 rounded-xl bg-white px-4 py-3 shadow-sm"
           >
-            <div>
-              <p className="text-sm font-semibold">{cat.name}</p>
-              <p className="text-xs text-gray-400">
-                {cat.count} negocio{cat.count === 1 ? "" : "s"}
-              </p>
-            </div>
-
-            {confirmDelete === cat.id ? (
-              <div className="flex gap-1">
-                <button
-                  onClick={() => remove(cat)}
-                  className="rounded-full bg-red-600 px-3 py-1 text-xs font-semibold text-white"
-                >
-                  {cat.count > 0 ? `¿Seguro? La usan ${cat.count}` : "¿Seguro?"}
-                </button>
-                <button
-                  onClick={() => setConfirmDelete(null)}
-                  className="rounded-full border border-gray-200 px-2 py-1 text-xs text-gray-500"
-                >
-                  ✕
-                </button>
-              </div>
+            {editingId === cat.id ? (
+              <>
+                <input
+                  value={editName}
+                  onChange={(e) => setEditName(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") saveRename(cat);
+                    if (e.key === "Escape") setEditingId(null);
+                  }}
+                  autoFocus
+                  className="field min-w-0 flex-1 py-1.5"
+                />
+                <div className="flex shrink-0 items-center gap-1.5">
+                  <IconButton
+                    label="Guardar nombre"
+                    variant="success"
+                    onClick={() => saveRename(cat)}
+                  >
+                    <Check size={16} />
+                  </IconButton>
+                  <IconButton
+                    label="Cancelar"
+                    onClick={() => setEditingId(null)}
+                  >
+                    <X size={16} />
+                  </IconButton>
+                </div>
+              </>
             ) : (
-              <button
-                onClick={() => setConfirmDelete(cat.id)}
-                className="rounded-full bg-red-50 px-3 py-1 text-xs font-semibold text-red-600 hover:bg-red-100"
-              >
-                Borrar
-              </button>
+              <>
+                <div className="min-w-0">
+                  <p className="truncate text-sm font-semibold">{cat.name}</p>
+                  <p className="text-xs text-gray-400">
+                    {cat.count} negocio{cat.count === 1 ? "" : "s"}
+                  </p>
+                </div>
+
+                <div className="flex shrink-0 items-center gap-1.5">
+                  {confirmDelete === cat.id ? (
+                    <>
+                      <span className="text-xs font-semibold text-red-600">
+                        {cat.count > 0
+                          ? `¿Seguro? La usan ${cat.count}`
+                          : "¿Borrar?"}
+                      </span>
+                      <IconButton
+                        label="Sí, borrar categoría"
+                        variant="danger"
+                        onClick={() => remove(cat)}
+                      >
+                        <Check size={16} />
+                      </IconButton>
+                      <IconButton
+                        label="Cancelar"
+                        onClick={() => setConfirmDelete(null)}
+                      >
+                        <X size={16} />
+                      </IconButton>
+                    </>
+                  ) : (
+                    <>
+                      <IconButton
+                        label="Renombrar"
+                        onClick={() => {
+                          setEditingId(cat.id);
+                          setEditName(cat.name);
+                        }}
+                      >
+                        <Pencil size={16} />
+                      </IconButton>
+                      <IconButton
+                        label="Borrar"
+                        variant="danger"
+                        onClick={() => setConfirmDelete(cat.id)}
+                      >
+                        <Trash2 size={16} />
+                      </IconButton>
+                    </>
+                  )}
+                </div>
+              </>
             )}
           </li>
         ))}

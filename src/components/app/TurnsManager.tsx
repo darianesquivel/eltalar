@@ -1,5 +1,7 @@
 import { useState } from "react";
+import { Trash2, Check, X } from "lucide-react";
 import { supabaseBrowser } from "../../lib/supabase/browser";
+import IconButton from "./IconButton";
 
 type Turn = {
   id: string;
@@ -42,6 +44,7 @@ export default function TurnsManager({ turns, pharmacies }: Props) {
   const [endsAt, setEndsAt] = useState("");
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [confirmDelete, setConfirmDelete] = useState<string | null>(null);
 
   const refresh = async () => {
     const { data } = await supabaseBrowser
@@ -163,12 +166,39 @@ export default function TurnsManager({ turns, pharmacies }: Props) {
                   {fmt(t.starts_at)} → {fmt(t.ends_at)}
                 </p>
               </div>
-              <button
-                onClick={() => remove(t.id)}
-                className="rounded-full bg-red-50 px-3 py-1 text-xs font-semibold text-red-600 hover:bg-red-100"
-              >
-                Borrar
-              </button>
+              <div className="flex shrink-0 items-center gap-1.5">
+                {confirmDelete === t.id ? (
+                  <>
+                    <span className="text-xs font-semibold text-red-600">
+                      ¿Borrar?
+                    </span>
+                    <IconButton
+                      label="Sí, borrar turno"
+                      variant="danger"
+                      onClick={() => {
+                        remove(t.id);
+                        setConfirmDelete(null);
+                      }}
+                    >
+                      <Check size={16} />
+                    </IconButton>
+                    <IconButton
+                      label="Cancelar"
+                      onClick={() => setConfirmDelete(null)}
+                    >
+                      <X size={16} />
+                    </IconButton>
+                  </>
+                ) : (
+                  <IconButton
+                    label="Borrar turno"
+                    variant="danger"
+                    onClick={() => setConfirmDelete(t.id)}
+                  >
+                    <Trash2 size={16} />
+                  </IconButton>
+                )}
+              </div>
             </li>
           );
         })}
