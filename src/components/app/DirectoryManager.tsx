@@ -145,8 +145,8 @@ export default function DirectoryManager({ entries }: Props) {
         {error && <p className="text-sm text-red-600 sm:col-span-2">{error}</p>}
       </form>
 
-      {/* Lista */}
-      <ul className="space-y-2">
+      {/* Lista (scroll propio) */}
+      <ul className="max-h-[50vh] space-y-2 overflow-y-auto pr-1">
         {items.map((entry) => (
           <li
             key={entry.id}

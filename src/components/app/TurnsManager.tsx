@@ -141,8 +141,8 @@ export default function TurnsManager({ turns, pharmacies }: Props) {
         {error && <p className="text-sm text-red-600 sm:col-span-2">{error}</p>}
       </form>
 
-      {/* Lista: turnos recientes y futuros */}
-      <ul className="space-y-2">
+      {/* Lista: turnos recientes y futuros (scroll propio) */}
+      <ul className="max-h-[50vh] space-y-2 overflow-y-auto pr-1">
         {items.map((t) => {
           const active = t.starts_at <= now && t.ends_at > now;
           const past = t.ends_at <= now;

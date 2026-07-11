@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Check, Ban, Star, Pencil, Eye, Trash2, X } from "lucide-react";
+import { Check, Ban, Star, Pencil, Eye, Trash2, X, Search } from "lucide-react";
 import { supabaseBrowser } from "../../lib/supabase/browser";
 import IconButton from "./IconButton";
 
@@ -18,10 +18,17 @@ type Props = {
   businesses: AdminBusiness[];
 };
 
+const normalize = (s: string) =>
+  s
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "");
+
 export default function AdminBusinesses({ businesses }: Props) {
   const [items, setItems] = useState(businesses);
   const [busy, setBusy] = useState<string | null>(null);
   const [confirmDelete, setConfirmDelete] = useState<string | null>(null);
+  const [query, setQuery] = useState("");
 
   const setStatus = async (id: string, status: string) => {
     setBusy(id);
@@ -98,8 +105,18 @@ export default function AdminBusinesses({ businesses }: Props) {
     }
   };
 
-  const pending = items.filter((b) => b.status === "pending");
-  const rest = items.filter((b) => b.status !== "pending");
+  // Filtro por nombre/dirección (clave cuando la lista crece)
+  const q = normalize(query.trim());
+  const visible = q
+    ? items.filter(
+        (b) =>
+          normalize(b.name).includes(q) ||
+          (b.address && normalize(b.address).includes(q)),
+      )
+    : items;
+
+  const pending = visible.filter((b) => b.status === "pending");
+  const rest = visible.filter((b) => b.status !== "pending");
 
   const row = (b: AdminBusiness) => (
     <li
@@ -212,28 +229,60 @@ export default function AdminBusinesses({ businesses }: Props) {
   );
 
   return (
-    <div className="space-y-8">
-      <div className="space-y-3">
-        <h2 className="text-lg font-semibold">
+    <div className="flex h-full min-h-0 flex-col gap-4">
+      {/* Buscador (fijo arriba) */}
+      <div className="relative shrink-0">
+        <Search
+          size={16}
+          className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
+        />
+        <input
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+          placeholder="Buscar por nombre o dirección…"
+          className="w-full rounded-xl border border-gray-200 bg-white py-2.5 pl-9 pr-4 text-sm focus:border-primary focus:outline-none"
+        />
+      </div>
+
+      {/* Pendientes: bloque compacto con scroll propio si crece */}
+      <div className="shrink-0 space-y-2">
+        <h2 className="text-sm font-semibold text-gray-500">
           Pendientes de aprobación{" "}
           {pending.length > 0 && (
-            <span className="ml-1 rounded-full bg-yellow-100 px-3 py-0.5 text-sm text-yellow-700">
+            <span className="ml-1 rounded-full bg-yellow-100 px-2.5 py-0.5 text-xs text-yellow-700">
               {pending.length}
             </span>
           )}
         </h2>
         {pending.length > 0 ? (
-          <ul className="space-y-2">{pending.map(row)}</ul>
+          <ul className="max-h-[30vh] space-y-2 overflow-y-auto pr-1">
+            {pending.map(row)}
+          </ul>
         ) : (
-          <p className="rounded-2xl bg-gray-50 p-5 text-sm text-gray-500">
-            No hay negocios esperando revisión. 👌
+          <p className="rounded-2xl bg-gray-50 px-5 py-3 text-sm text-gray-500">
+            {q
+              ? "Sin pendientes que coincidan."
+              : "No hay negocios esperando revisión. 👌"}
           </p>
         )}
       </div>
 
-      <div className="space-y-3">
-        <h2 className="text-lg font-semibold">Todos los negocios</h2>
-        <ul className="space-y-2">{rest.map(row)}</ul>
+      {/* Todos: ocupa el resto de la pantalla y scrollea adentro */}
+      <div className="flex min-h-0 flex-1 flex-col gap-2">
+        <h2 className="shrink-0 text-sm font-semibold text-gray-500">
+          Todos los negocios{" "}
+          <span className="ml-1 rounded-full bg-gray-200 px-2.5 py-0.5 text-xs text-gray-600">
+            {rest.length}
+          </span>
+        </h2>
+        <ul className="min-h-0 flex-1 space-y-2 overflow-y-auto pr-1">
+          {rest.map(row)}
+          {rest.length === 0 && (
+            <p className="rounded-2xl bg-gray-50 px-5 py-3 text-sm text-gray-500">
+              Ningún negocio coincide con «{query}».
+            </p>
+          )}
+        </ul>
       </div>
     </div>
   );
