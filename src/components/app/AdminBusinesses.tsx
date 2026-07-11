@@ -1,5 +1,15 @@
 import { useState } from "react";
-import { Check, Ban, Star, Pencil, Eye, Trash2, X, Search } from "lucide-react";
+import {
+  Check,
+  Ban,
+  Star,
+  Pencil,
+  Eye,
+  Trash2,
+  X,
+  Search,
+  UserX,
+} from "lucide-react";
 import { supabaseBrowser } from "../../lib/supabase/browser";
 import IconButton from "./IconButton";
 
@@ -28,7 +38,29 @@ export default function AdminBusinesses({ businesses }: Props) {
   const [items, setItems] = useState(businesses);
   const [busy, setBusy] = useState<string | null>(null);
   const [confirmDelete, setConfirmDelete] = useState<string | null>(null);
+  const [confirmRemoveOwner, setConfirmRemoveOwner] = useState<string | null>(
+    null,
+  );
   const [query, setQuery] = useState("");
+
+  // Quita el dueño y limpia los reclamos: el negocio vuelve a ser reclamable
+  // (incluso por el mismo usuario). Es la vuelta atrás de una adjudicación.
+  const removeOwner = async (id: string) => {
+    setBusy(id);
+    const { error } = await supabaseBrowser.rpc("admin_remove_owner", {
+      p_business_id: id,
+    });
+    if (!error) {
+      setItems((prev) =>
+        prev.map((b) => (b.id === id ? { ...b, owner_id: null } : b)),
+      );
+    } else {
+      console.error(error);
+      alert("Error quitando el dueño");
+    }
+    setBusy(null);
+    setConfirmRemoveOwner(null);
+  };
 
   const setStatus = async (id: string, status: string) => {
     setBusy(id);
@@ -152,7 +184,27 @@ export default function AdminBusinesses({ businesses }: Props) {
 
       {/* Acciones: solo íconos con tooltip, nunca se achican */}
       <div className="flex shrink-0 items-center gap-1.5">
-        {confirmDelete === b.id ? (
+        {confirmRemoveOwner === b.id ? (
+          <>
+            <span className="text-xs font-semibold text-amber-700">
+              ¿Quitar dueño? Queda reclamable
+            </span>
+            <IconButton
+              label="Sí, quitar dueño"
+              variant="warning"
+              disabled={busy === b.id}
+              onClick={() => removeOwner(b.id)}
+            >
+              <Check size={16} />
+            </IconButton>
+            <IconButton
+              label="Cancelar"
+              onClick={() => setConfirmRemoveOwner(null)}
+            >
+              <X size={16} />
+            </IconButton>
+          </>
+        ) : confirmDelete === b.id ? (
           <>
             <span className="text-xs font-semibold text-red-600">¿Borrar?</span>
             <IconButton
@@ -214,6 +266,16 @@ export default function AdminBusinesses({ businesses }: Props) {
             <IconButton label="Editar" href={`/app/negocios/${b.id}`}>
               <Pencil size={16} />
             </IconButton>
+            {b.owner_id && (
+              <IconButton
+                label="Quitar dueño (queda reclamable)"
+                variant="warning"
+                disabled={busy === b.id}
+                onClick={() => setConfirmRemoveOwner(b.id)}
+              >
+                <UserX size={16} />
+              </IconButton>
+            )}
             <IconButton
               label="Borrar"
               variant="danger"

@@ -479,6 +479,10 @@ export type Database = {
       [_ in never]: never;
     };
     Functions: {
+      admin_remove_owner: {
+        Args: { p_business_id: string };
+        Returns: undefined;
+      };
       admin_resolve_claim: {
         Args: { p_approve: boolean; p_claim_id: string };
         Returns: undefined;
