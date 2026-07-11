@@ -1,11 +1,13 @@
 ---
 import { Image } from "astro:assets";
+import { MapPin, Cross } from "@lucide/astro";
 import heroBg from "../../images/hero-bg.jpg";
 ---
 
 <section
-  class="relative overflow-hidden flex justify-center items-center py-20 rounded-3xl"
+  class="relative overflow-hidden flex justify-center items-center py-24 rounded-3xl"
 >
+  <!-- Fondo con zoom lento (ken burns) -->
   <Image
     src={heroBg}
     alt="El Talar"
@@ -13,47 +15,81 @@ import heroBg from "../../images/hero-bg.jpg";
     sizes="100vw"
     loading="eager"
     fetchpriority="high"
-    class="absolute inset-0 h-full w-full object-cover"
+    class="absolute inset-0 h-full w-full object-cover animate-ken-burns"
   />
 
   <div
-    class="absolute inset-0 bg-linear-to-b from-black/70 via-black/50 to-black/70"
+    class="absolute inset-0 bg-linear-to-b from-black/70 via-black/45 to-black/75"
+  >
+  </div>
+
+  <!-- Manchas de color flotando detrás del contenido -->
+  <div
+    class="pointer-events-none absolute -left-24 top-8 h-72 w-72 rounded-full bg-primary/40 blur-3xl animate-blob"
+  >
+  </div>
+  <div
+    class="pointer-events-none absolute -right-16 -bottom-10 h-80 w-80 rounded-full bg-emerald-400/25 blur-3xl animate-blob"
+    style="animation-delay: -7s"
   >
   </div>
 
   <div
-    class="relative z-10 flex h-full flex-col items-center justify-center px-6 text-center text-white gap-4"
+    class="relative z-10 flex flex-col items-center justify-center px-6 text-center text-white gap-5"
   >
     <span
-      class="inline-flex items-center gap-2 rounded-full bg-primary/90 px-4 py-1 text-xs font-semibold uppercase tracking-wide"
+      class="animate-fade-up inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/10 px-4 py-1.5 text-xs font-semibold uppercase tracking-widest backdrop-blur"
     >
+      <span class="relative flex h-2 w-2">
+        <span
+          class="absolute inline-flex h-full w-full animate-ping rounded-full bg-green-400 opacity-75"
+        ></span>
+        <span class="relative inline-flex h-2 w-2 rounded-full bg-green-400"
+        ></span>
+      </span>
       Tu comunidad online
     </span>
 
     <h1
-      class="mt-6 max-w-3xl text-4xl font-extrabold leading-tight md:text-5xl lg:text-6xl"
+      class="animate-fade-up mt-4 max-w-3xl text-4xl font-extrabold leading-tight md:text-5xl lg:text-6xl"
+      style="animation-delay: 0.12s"
     >
-      Conectando a los vecinos de
-      <span class="text-primary"> El Talar</span>
+      Conectando a los vecinos de{" "}
+      <span
+        class="bg-linear-to-r from-green-300 via-emerald-300 to-primary bg-clip-text text-transparent"
+      >
+        El Talar
+      </span>
     </h1>
 
-    <p class="mt-5 max-w-2xl text-lg text-white/90">
+    <p
+      class="animate-fade-up mt-2 max-w-2xl text-lg text-white/85"
+      style="animation-delay: 0.24s"
+    >
       Comercios, servicios, farmacias de turno y teléfonos útiles. Todo lo que
       necesitás del barrio, en un solo lugar.
     </p>
 
-    <div class="flex flex-col gap-4 sm:flex-row">
+    <div
+      class="animate-fade-up mt-2 flex flex-col gap-4 sm:flex-row"
+      style="animation-delay: 0.36s"
+    >
       <a
-        href="/negocios"
-        class="rounded-full bg-primary px-7 py-3 text-sm font-semibold text-white shadow-lg hover:scale-105 transition-transform"
+        href="/mapa"
+        class="group inline-flex items-center justify-center gap-2 rounded-full bg-primary px-7 py-3.5 text-sm font-semibold text-white shadow-lg shadow-primary/40 transition-all duration-300 hover:scale-105 hover:shadow-xl hover:shadow-primary/50"
       >
+        <MapPin
+          size={18}
+          class="transition-transform duration-300 group-hover:-translate-y-0.5 group-hover:scale-110"
+        />
         Explorar el barrio
       </a>
 
       <a
         href="/farmacias"
-        class="rounded-full border border-white/30 px-7 py-3 text-sm font-semibold text-white hover:bg-white/10 transition"
+        class="inline-flex items-center justify-center gap-2 rounded-full border border-white/25 bg-white/10 px-7 py-3.5 text-sm font-semibold text-white backdrop-blur transition-all duration-300 hover:scale-105 hover:bg-white/20"
       >
+        <Cross size={18} />
         Farmacias de turno
       </a>
     </div>

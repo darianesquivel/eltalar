@@ -70,19 +70,14 @@ import Logo from "../../assets/logo.svg";
       id="contact-form"
       class="flex flex-1 flex-col gap-5 rounded-2xl bg-gray-50 p-6 transition-opacity duration-300"
     >
-      <input
-        name="name"
-        required
-        placeholder="Tu nombre"
-        class="rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
-      />
+      <input name="name" required placeholder="Tu nombre" class="field" />
 
       <input
         name="email"
         type="email"
         required
         placeholder="tu@email.com"
-        class="rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
+        class="field"
       />
 
       <textarea
@@ -90,8 +85,7 @@ import Logo from "../../assets/logo.svg";
         required
         rows="4"
         placeholder="Mensaje"
-        class="resize-none rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
-      ></textarea>
+        class="field resize-none"></textarea>
 
       <input
         type="text"
@@ -112,7 +106,7 @@ import Logo from "../../assets/logo.svg";
   </div>
 </section>
 
-<script is:inline>
+<script is:inline data-astro-rerun>
   const form = document.getElementById("contact-form");
   const button = document.getElementById("submit-btn");
   const overlay = document.getElementById("success-overlay");

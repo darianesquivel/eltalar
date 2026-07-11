@@ -82,7 +82,7 @@ export default function CategoriesManager({ categories }: Props) {
           value={name}
           onChange={(e) => setName(e.target.value)}
           placeholder="Nueva categoría (ej: Heladería)"
-          className="flex-1 rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm focus:border-primary focus:outline-none"
+          className="field flex-1"
         />
         <button
           type="submit"

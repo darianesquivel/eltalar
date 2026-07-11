@@ -19,8 +19,7 @@ type Props = {
   pharmacies: Pharmacy[];
 };
 
-const inputClass =
-  "rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm focus:border-primary focus:outline-none";
+const inputClass = "field";
 
 const fmt = (iso: string) =>
   new Date(iso).toLocaleString("es-AR", {
@@ -103,7 +102,7 @@ export default function TurnsManager({ turns, pharmacies }: Props) {
         <select
           value={pharmacyId}
           onChange={(e) => setPharmacyId(e.target.value)}
-          className={`${inputClass} sm:col-span-2`}
+          className={`${inputClass} select-field sm:col-span-2`}
         >
           {pharmacies.map((p) => (
             <option key={p.id} value={p.id}>

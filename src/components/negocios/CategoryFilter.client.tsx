@@ -71,14 +71,14 @@ export default function CategoryFilter({ categories }: CategoryFilterProps) {
         value={searchQuery}
         onChange={(e) => setSearchQuery(e.target.value)}
         placeholder="Buscar comercio..."
-        className="flex-1 rounded-full border px-4 py-2 focus:outline-none focus:ring-2 focus:ring-primary"
+        className="field flex-1"
       />
 
       {/* Select de categorías */}
       <select
         value={activeCategory ?? ""}
         onChange={(e) => setCategory(e.target.value || null)}
-        className="sm:w-64 rounded-full border px-4 py-2 bg-white focus:outline-none focus:ring-2 focus:ring-primary"
+        className="field select-field sm:w-64"
       >
         <option value="">Todas las categorías</option>
 

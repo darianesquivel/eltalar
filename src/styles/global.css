@@ -89,3 +89,98 @@ html {
   --color-health: #22c55e; /* Salud */
   --color-services: #3b82f6; /* Servicios */
 }
+
+/* ============ Animaciones ============ */
+
+@keyframes fade-up {
+  from {
+    opacity: 0;
+    transform: translateY(28px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes ken-burns {
+  from {
+    transform: scale(1.02);
+  }
+  to {
+    transform: scale(1.14);
+  }
+}
+
+@keyframes blob-float {
+  0%,
+  100% {
+    transform: translate(0, 0) scale(1);
+  }
+  50% {
+    transform: translate(26px, -20px) scale(1.1);
+  }
+}
+
+.animate-fade-up {
+  opacity: 0;
+  animation: fade-up 0.8s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+
+.animate-ken-burns {
+  animation: ken-burns 20s ease-in-out infinite alternate;
+}
+
+.animate-blob {
+  animation: blob-float 14s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-fade-up {
+    animation: none;
+    opacity: 1;
+  }
+  .animate-ken-burns,
+  .animate-blob {
+    animation: none;
+  }
+}
+
+/* ============ Tilt 3D (ver TiltEffect.astro) ============ */
+
+[data-tilt] {
+  transform-style: preserve-3d;
+  will-change: transform;
+  transition:
+    transform 0.18s ease-out,
+    box-shadow 0.3s ease;
+}
+
+/* ============ Campos de formulario modernos ============ */
+
+@layer components {
+  .field {
+    @apply w-full rounded-xl border border-gray-200 bg-white px-4 py-2.5 text-sm text-gray-900 shadow-sm transition-all duration-200 placeholder:text-gray-400;
+  }
+
+  .field:hover {
+    @apply border-gray-300;
+  }
+
+  .field:focus {
+    @apply border-primary outline-none ring-4 ring-primary/15;
+  }
+
+  .field:disabled {
+    @apply cursor-not-allowed opacity-50;
+  }
+
+  /* select con flecha propia (la nativa parece de 1998) */
+  .select-field {
+    appearance: none;
+    background-image: url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%236b7280' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 0.7rem center;
+    padding-right: 2.4rem;
+  }
+}

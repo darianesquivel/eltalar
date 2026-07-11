@@ -55,7 +55,7 @@ if (Astro.locals.user) {
             name="email"
             required
             placeholder="tu@email.com"
-            class="w-full rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
+            class="field"
           />
           <button
             id="login-btn"
@@ -85,63 +85,80 @@ if (Astro.locals.user) {
 <script>
   import { supabaseBrowser } from "../../lib/supabase/browser";
 
-  const googleBtn = document.getElementById("google-btn") as HTMLButtonElement;
-  const form = document.getElementById("login-form") as HTMLFormElement;
-  const button = document.getElementById("login-btn") as HTMLButtonElement;
-  const feedback = document.getElementById("login-feedback")!;
-  const errorBox = document.getElementById("login-error")!;
+  // IMPORTANTE: con el ClientRouter, los module scripts corren UNA sola vez
+  // por sesión. Si se llega a esta página navegando (sin recarga), el código
+  // de nivel superior no vuelve a ejecutarse y los botones quedan muertos.
+  // Por eso todo el setup vive en una función que corre en cada page-load.
+  const setupLogin = () => {
+    const googleBtn = document.getElementById(
+      "google-btn",
+    ) as HTMLButtonElement | null;
+    const form = document.getElementById("login-form") as HTMLFormElement;
+    const button = document.getElementById("login-btn") as HTMLButtonElement;
+    const feedback = document.getElementById("login-feedback");
+    const errorBox = document.getElementById("login-error");
 
-  const showError = (msg: string) => {
-    errorBox.textContent = msg;
-    errorBox.classList.remove("hidden");
-  };
-
-  // --- Google OAuth (camino principal) ---
-  googleBtn?.addEventListener("click", async () => {
-    googleBtn.disabled = true;
-    errorBox.classList.add("hidden");
-
-    const { error } = await supabaseBrowser.auth.signInWithOAuth({
-      provider: "google",
-      options: {
-        redirectTo: `${window.location.origin}/app/auth`,
-      },
-    });
-
-    if (error) {
-      console.error(error);
-      showError("No pudimos conectar con Google. Probá de nuevo.");
-      googleBtn.disabled = false;
-    }
-    // si no hay error, el navegador ya está yendo a Google
-  });
-
-  // --- Magic link (alternativa) ---
-  form?.addEventListener("submit", async (e) => {
-    e.preventDefault();
-    button.disabled = true;
-    button.textContent = "Enviando…";
-    errorBox.classList.add("hidden");
-
-    const email = new FormData(form).get("email") as string;
-
-    const { error } = await supabaseBrowser.auth.signInWithOtp({
-      email,
-      options: {
-        emailRedirectTo: `${window.location.origin}/app/auth`,
-      },
-    });
-
-    if (error) {
-      showError(
-        "No pudimos enviar el link. Esperá un minuto y volvé a intentar.",
-      );
-      button.disabled = false;
-      button.textContent = "Enviarme el link";
+    // No estamos en la página de login (o ya se inicializó este DOM)
+    if (!googleBtn || !errorBox || !feedback || googleBtn.dataset.ready) {
       return;
     }
+    googleBtn.dataset.ready = "1";
 
-    form.classList.add("hidden");
-    feedback.classList.remove("hidden");
-  });
+    const showError = (msg: string) => {
+      errorBox.textContent = msg;
+      errorBox.classList.remove("hidden");
+    };
+
+    // --- Google OAuth (camino principal) ---
+    googleBtn.addEventListener("click", async () => {
+      googleBtn.disabled = true;
+      errorBox.classList.add("hidden");
+
+      const { error } = await supabaseBrowser.auth.signInWithOAuth({
+        provider: "google",
+        options: {
+          redirectTo: `${window.location.origin}/app/auth`,
+        },
+      });
+
+      if (error) {
+        console.error(error);
+        showError("No pudimos conectar con Google. Probá de nuevo.");
+        googleBtn.disabled = false;
+      }
+      // si no hay error, el navegador ya está yendo a Google
+    });
+
+    // --- Magic link (alternativa) ---
+    form?.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      button.disabled = true;
+      button.textContent = "Enviando…";
+      errorBox.classList.add("hidden");
+
+      const email = new FormData(form).get("email") as string;
+
+      const { error } = await supabaseBrowser.auth.signInWithOtp({
+        email,
+        options: {
+          emailRedirectTo: `${window.location.origin}/app/auth`,
+        },
+      });
+
+      if (error) {
+        showError(
+          "No pudimos enviar el link. Esperá un minuto y volvé a intentar.",
+        );
+        button.disabled = false;
+        button.textContent = "Enviarme el link";
+        return;
+      }
+
+      form.classList.add("hidden");
+      feedback.classList.remove("hidden");
+    });
+  };
+
+  setupLogin();
+  document.addEventListener("astro:page-load", setupLogin);
 </script>

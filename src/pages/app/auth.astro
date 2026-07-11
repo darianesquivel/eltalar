@@ -13,35 +13,47 @@ import Layout from "../../layouts/Layout.astro";
 <script>
   import { supabaseBrowser } from "../../lib/supabase/browser";
 
-  const status = document.getElementById("auth-status")!;
+  // Setup por page-load: con el ClientRouter los module scripts corren una
+  // sola vez por sesión; si se navega hasta acá sin recarga, el código de
+  // nivel superior no se re-ejecuta.
+  const setupAuth = () => {
+    const status = document.getElementById("auth-status");
+    if (!status || status.dataset.ready) return;
+    status.dataset.ready = "1";
 
-  const goToPanel = () => window.location.replace("/app");
+    const goToPanel = () => window.location.replace("/app");
 
-  // createBrowserClient procesa automáticamente el ?code= / #access_token de
-  // la URL al inicializarse; esperamos a que la sesión exista.
-  const { data } = supabaseBrowser.auth.onAuthStateChange((event, session) => {
-    if (session) {
-      data.subscription.unsubscribe();
-      goToPanel();
-    }
-  });
-
-  // Por si la sesión ya estaba lista antes de suscribirnos
-  supabaseBrowser.auth.getSession().then(({ data: { session } }) => {
-    if (session) {
-      goToPanel();
-    } else {
-      setTimeout(async () => {
-        const {
-          data: { session: retry },
-        } = await supabaseBrowser.auth.getSession();
-        if (retry) {
+    // createBrowserClient procesa automáticamente el ?code= / #access_token
+    // de la URL al inicializarse; esperamos a que la sesión exista.
+    const { data } = supabaseBrowser.auth.onAuthStateChange(
+      (_event, session) => {
+        if (session) {
+          data.subscription.unsubscribe();
           goToPanel();
-        } else {
-          status.textContent =
-            "El link expiró o ya fue usado. Pedí uno nuevo desde la página de ingreso.";
         }
-      }, 3000);
-    }
-  });
+      },
+    );
+
+    // Por si la sesión ya estaba lista antes de suscribirnos
+    supabaseBrowser.auth.getSession().then(({ data: { session } }) => {
+      if (session) {
+        goToPanel();
+      } else {
+        setTimeout(async () => {
+          const {
+            data: { session: retry },
+          } = await supabaseBrowser.auth.getSession();
+          if (retry) {
+            goToPanel();
+          } else {
+            status.textContent =
+              "El link expiró o ya fue usado. Pedí uno nuevo desde la página de ingreso.";
+          }
+        }, 3000);
+      }
+    });
+  };
+
+  setupAuth();
+  document.addEventListener("astro:page-load", setupAuth);
 </script>

@@ -240,7 +240,7 @@ export default function AdminBusinesses({ businesses }: Props) {
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           placeholder="Buscar por nombre o dirección…"
-          className="w-full rounded-xl border border-gray-200 bg-white py-2.5 pl-9 pr-4 text-sm focus:border-primary focus:outline-none"
+          className="field pl-9"
         />
       </div>
 

@@ -105,7 +105,7 @@ export default function HoursEditor({ businessId, initialHours }: Props) {
               <select
                 value={d.mode}
                 onChange={(e) => update(i, { mode: e.target.value as any })}
-                className="rounded-lg border border-gray-200 bg-white px-3 py-1.5 text-sm"
+                className="field select-field w-auto py-1.5"
               >
                 <option value="closed">Cerrado</option>
                 <option value="open">Abierto</option>
@@ -118,14 +118,14 @@ export default function HoursEditor({ businessId, initialHours }: Props) {
                     type="time"
                     value={d.open}
                     onChange={(e) => update(i, { open: e.target.value })}
-                    className="rounded-lg border border-gray-200 bg-white px-2 py-1.5"
+                    className="field w-auto px-2 py-1.5"
                   />
                   a
                   <input
                     type="time"
                     value={d.close}
                     onChange={(e) => update(i, { close: e.target.value })}
-                    className="rounded-lg border border-gray-200 bg-white px-2 py-1.5"
+                    className="field w-auto px-2 py-1.5"
                   />
                 </span>
               )}

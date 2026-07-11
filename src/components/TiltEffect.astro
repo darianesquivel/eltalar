@@ -1,0 +1,26 @@
+<!-- Efecto 3D: los elementos con [data-tilt] siguen al mouse con una
+     rotación de perspectiva. Se re-inicializa en cada navegación. -->
+<script>
+  const MAX_DEG = 8;
+
+  const setupTilt = () => {
+    document.querySelectorAll<HTMLElement>("[data-tilt]").forEach((el) => {
+      if (el.dataset.tiltBound) return;
+      el.dataset.tiltBound = "1";
+
+      el.addEventListener("mousemove", (e) => {
+        const r = el.getBoundingClientRect();
+        const x = (e.clientX - r.left) / r.width - 0.5;
+        const y = (e.clientY - r.top) / r.height - 0.5;
+        el.style.transform = `perspective(700px) rotateY(${x * MAX_DEG}deg) rotateX(${-y * MAX_DEG}deg) translateY(-4px) scale(1.02)`;
+      });
+
+      el.addEventListener("mouseleave", () => {
+        el.style.transform = "";
+      });
+    });
+  };
+
+  setupTilt();
+  document.addEventListener("astro:page-load", setupTilt);
+</script>

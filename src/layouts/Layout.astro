@@ -2,6 +2,7 @@
 import Header from "../components/header/Header.astro";
 import Footer from "../components/footer/Footer.astro";
 import NavLoader from "../components/NavLoader.astro";
+import TiltEffect from "../components/TiltEffect.astro";
 import { ClientRouter } from "astro:transitions";
 
 import "../styles/global.css";
@@ -52,6 +53,7 @@ const canonical = new URL(Astro.url.pathname, Astro.site ?? Astro.url);
 
   <body class="bg-gray-100">
     <NavLoader />
+    <TiltEffect />
     <Header />
     <main class="flex flex-col gap-20 sm:mx-20 sm:my-10 mx-4 my-5">
       <slot />

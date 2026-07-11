@@ -66,14 +66,14 @@ export default function AlertsManager({ alerts }: Props) {
           value={title}
           onChange={(e) => setTitle(e.target.value)}
           placeholder="Título del aviso (ej: Corte de luz programado)"
-          className="w-full rounded-xl border border-gray-200 bg-white px-4 py-2.5 text-sm focus:border-primary focus:outline-none"
+          className="field"
         />
         <div className="flex gap-3">
           <input
             value={description}
             onChange={(e) => setDescription(e.target.value)}
             placeholder="Detalle (opcional)"
-            className="flex-1 rounded-xl border border-gray-200 bg-white px-4 py-2.5 text-sm focus:border-primary focus:outline-none"
+            className="field flex-1"
           />
           <button
             type="submit"

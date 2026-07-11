@@ -79,7 +79,7 @@ export default function ClaimForm({ businessId, businessName }: Props) {
           value={message}
           onChange={(e) => setMessage(e.target.value)}
           placeholder="Ej: Soy el dueño, atiendo en el local de lunes a viernes. Mi teléfono es…"
-          className="w-full resize-none rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
+          className="field resize-none"
         />
         <p className="mt-1 text-xs text-gray-400">
           Cuanta más info nos des (teléfono del local, redes, etc.), más rápido

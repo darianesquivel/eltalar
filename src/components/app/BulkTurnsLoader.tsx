@@ -247,8 +247,7 @@ export default function BulkTurnsLoader({ pharmacies }: Props) {
     setLoading(false);
   };
 
-  const inputClass =
-    "rounded-lg border border-gray-200 bg-white px-2 py-1.5 text-sm";
+  const inputClass = "field w-auto";
 
   return (
     <details className="rounded-2xl border border-primary/30 bg-primary-soft/30">
@@ -269,7 +268,7 @@ export default function BulkTurnsLoader({ pharmacies }: Props) {
           <select
             value={month}
             onChange={(e) => setMonth(Number(e.target.value))}
-            className={inputClass}
+            className={`${inputClass} select-field`}
           >
             {MONTHS.map((name, i) => (
               <option key={name} value={i + 1}>
@@ -297,7 +296,7 @@ export default function BulkTurnsLoader({ pharmacies }: Props) {
           placeholder={
             "01 Mié: Gral. Pacheco SCS - Lauría - Schinca SCS\n02 Jue: Gasparín - Rios - Bernachea\n…"
           }
-          className="w-full rounded-xl border border-gray-200 bg-white p-3 font-mono text-sm focus:border-primary focus:outline-none"
+          className="field font-mono"
         />
 
         <div className="flex flex-wrap items-center gap-4 text-sm text-gray-600">

@@ -42,7 +42,7 @@ const { url, title } = Astro.props;
   </p>
 </div>
 
-<script define:vars={{ url, title }}>
+<script is:inline data-astro-rerun define:vars={{ url, title }}>
   const shareBtn = document.getElementById("share-btn");
   const copyBtn = document.getElementById("copy-btn");
   const feedback = document.getElementById("copy-feedback");

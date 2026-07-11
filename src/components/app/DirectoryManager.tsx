@@ -13,8 +13,7 @@ const CATEGORIES = [
   { value: "servicio", label: "Servicios" },
 ];
 
-const inputClass =
-  "rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm focus:border-primary focus:outline-none";
+const inputClass = "field";
 
 const EMPTY = {
   title: "",
@@ -117,7 +116,7 @@ export default function DirectoryManager({ entries }: Props) {
         <select
           value={form.category}
           onChange={(e) => setForm({ ...form, category: e.target.value })}
-          className={inputClass}
+          className={`${inputClass} select-field`}
         >
           {CATEGORIES.map((c) => (
             <option key={c.value} value={c.value}>
