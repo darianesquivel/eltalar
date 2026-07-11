@@ -1,15 +1,15 @@
 import { useEffect, useState } from "react";
 import BusinessCard from "./BusinessCard";
-import type { Business } from "../../lib/repositories/business.repository";
+import type { BusinessSummary } from "../../lib/repositories/business.repository";
 
 type BusinessGridProps = {
-  businesses: Business[];
+  businesses: BusinessSummary[];
 };
 
 // Los negocios llegan por props desde el servidor (SEO). Este componente solo
 // aplica los filtros de la URL (?categoria= / ?buscar=) del lado del cliente.
 export default function BusinessGrid({ businesses }: BusinessGridProps) {
-  const [filtered, setFiltered] = useState<Business[]>(businesses);
+  const [filtered, setFiltered] = useState<BusinessSummary[]>(businesses);
 
   const applyFilters = () => {
     const params = new URLSearchParams(window.location.search);

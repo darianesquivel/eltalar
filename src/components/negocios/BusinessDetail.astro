@@ -1,5 +1,7 @@
 ---
 import { Image } from "astro:assets";
+import { Info, PhoneCall, Clock, ArrowLeft } from "@lucide/astro";
+import InstagramIcon from "../icons/InstagramIcon";
 import MapPreview from "../MapPreview.astro";
 import ShareBusiness from "./ShareBusiness.astro";
 import { getWeekSchedule } from "../../lib/hours";
@@ -12,7 +14,6 @@ interface Props {
 const { business } = Astro.props;
 const hours = getWeekSchedule(business.business_hours);
 
-const backIcon = "/images/back-button-icon.svg";
 const whatsappLogo = "/images/whatsapp-icon.svg";
 const no_image = "/images/no-image.jpg";
 
@@ -28,7 +29,7 @@ const shareUrl = new URL(
     href="/negocios"
     class="inline-flex items-center gap-2 text-sm text-primary hover:underline"
   >
-    <img src={backIcon} alt="Volver a negocios" />
+    <ArrowLeft size={18} /> Volver a negocios
   </a>
 
   <div class="relative overflow-hidden rounded-3xl shadow">
@@ -81,22 +82,7 @@ const shareUrl = new URL(
     <div class="md:col-span-2 space-y-6">
       <div class="rounded-2xl bg-white p-6 shadow-sm">
         <h2 class="mb-3 text-lg font-semibold flex items-center gap-2">
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            width="24"
-            height="24"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            stroke-width="2"
-            stroke-linecap="round"
-            stroke-linejoin="round"
-            class="text-primary"
-          >
-            <circle cx="12" cy="12" r="10"></circle>
-            <path d="M12 16v-4"></path>
-            <path d="M12 8h.01"></path>
-          </svg>
+          <Info size={24} class="text-primary" />
           Sobre el comercio
         </h2>
         <p class="text-gray-600 whitespace-pre-line">
@@ -126,22 +112,7 @@ const shareUrl = new URL(
               rel="noopener noreferrer"
               class="flex-1 h-15 inline-flex items-center justify-center transition-transform duration-300 hover:scale-105 bg-secondary-soft/10 hover:bg-secondary-soft/30 p-1 rounded-lg"
             >
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                width="20"
-                height="20"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="2"
-                stroke-linecap="round"
-                stroke-linejoin="round"
-                class="text-gray-700"
-              >
-                <rect width="20" height="20" x="2" y="2" rx="5" ry="5" />
-                <path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z" />
-                <line x1="17.5" x2="17.51" y1="6.5" y2="6.5" />
-              </svg>
+              <InstagramIcon size={20} className="text-gray-700" />
             </a>
           )
         }
@@ -153,22 +124,7 @@ const shareUrl = new URL(
               class="flex-1 h-15 inline-flex items-center justify-center transition-transform duration-200 hover:scale-105 bg-secondary-soft/10 hover:bg-secondary-soft/30 p-1 rounded-lg"
               aria-label="Llamar por teléfono"
             >
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                width="20"
-                height="20"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="2"
-                stroke-linecap="round"
-                stroke-linejoin="round"
-                class="text-gray-700"
-              >
-                <path d="M13 2a9 9 0 0 1 9 9" />
-                <path d="M13 6a5 5 0 0 1 5 5" />
-                <path d="M13.832 16.568a1 1 0 0 0 1.213-.303l.355-.465A2 2 0 0 1 17 15h3a2 2 0 0 1 2 2v3a2 2 0 0 1-2 2A18 18 0 0 1 2 4a2 2 0 0 1 2-2h3a2 2 0 0 1 2 2v3a2 2 0 0 1-.8 1.6l-.468.351a1 1 0 0 0-.292 1.233 14 14 0 0 0 6.392 6.384" />
-              </svg>
+              <PhoneCall size={20} class="text-gray-700" />
             </a>
           )
         }
@@ -180,21 +136,7 @@ const shareUrl = new URL(
     <div class="space-y-6">
       <div class="rounded-2xl bg-white p-6 shadow-sm">
         <h2 class="mb-4 text-lg font-semibold flex items-center gap-2">
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            width="24"
-            height="24"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            stroke-width="2"
-            stroke-linecap="round"
-            stroke-linejoin="round"
-            class="text-primary"
-          >
-            <path d="M12 6v6l4 2"></path>
-            <circle cx="12" cy="12" r="10"></circle>
-          </svg>
+          <Clock size={24} class="text-primary" />
           Horarios
         </h2>
 

@@ -1,5 +1,17 @@
 ---
 import { ClientRouter } from "astro:transitions";
+import {
+  LayoutDashboard,
+  Store,
+  UserCheck,
+  Megaphone,
+  Phone,
+  Pill,
+  Tags,
+  Mail,
+  Globe,
+  LogOut,
+} from "@lucide/astro";
 import NavLoader from "../components/NavLoader.astro";
 
 import "../styles/global.css";
@@ -12,14 +24,19 @@ const { title } = Astro.props;
 const path = Astro.url.pathname;
 
 const NAV = [
-  { href: "/app/admin", label: "Dashboard", icon: "📊", exact: true },
-  { href: "/app/admin/negocios", label: "Negocios", icon: "🏪" },
-  { href: "/app/admin/reclamos", label: "Reclamos", icon: "🙋" },
-  { href: "/app/admin/avisos", label: "Avisos", icon: "📢" },
-  { href: "/app/admin/telefonos", label: "Teléfonos", icon: "📞" },
-  { href: "/app/admin/farmacias", label: "Turnos farmacia", icon: "💊" },
-  { href: "/app/admin/categorias", label: "Categorías", icon: "🏷️" },
-  { href: "/app/admin/mensajes", label: "Mensajes", icon: "✉️" },
+  {
+    href: "/app/admin",
+    label: "Dashboard",
+    icon: LayoutDashboard,
+    exact: true,
+  },
+  { href: "/app/admin/negocios", label: "Negocios", icon: Store },
+  { href: "/app/admin/reclamos", label: "Reclamos", icon: UserCheck },
+  { href: "/app/admin/avisos", label: "Avisos", icon: Megaphone },
+  { href: "/app/admin/telefonos", label: "Teléfonos", icon: Phone },
+  { href: "/app/admin/farmacias", label: "Turnos farmacia", icon: Pill },
+  { href: "/app/admin/categorias", label: "Categorías", icon: Tags },
+  { href: "/app/admin/mensajes", label: "Mensajes", icon: Mail },
 ];
 
 const isActive = (item: (typeof NAV)[number]) =>
@@ -63,7 +80,7 @@ const isActive = (item: (typeof NAV)[number]) =>
                     : "text-gray-600 hover:bg-gray-100"
                 }`}
               >
-                <span>{item.icon}</span>
+                <item.icon size={18} />
                 {item.label}
               </a>
             ))
@@ -75,14 +92,14 @@ const isActive = (item: (typeof NAV)[number]) =>
             href="/"
             class="flex items-center gap-3 rounded-xl px-4 py-2 text-sm text-gray-500 hover:bg-gray-100"
           >
-            🌐 Ver el sitio
+            <Globe size={18} /> Ver el sitio
           </a>
           <form method="POST" action="/api/auth/signout">
             <button
               type="submit"
               class="flex w-full items-center gap-3 rounded-xl px-4 py-2 text-left text-sm text-gray-500 hover:bg-gray-100"
             >
-              👋 Salir
+              <LogOut size={18} /> Salir
             </button>
           </form>
         </div>
@@ -104,7 +121,7 @@ const isActive = (item: (typeof NAV)[number]) =>
                     : "bg-gray-100 text-gray-600"
                 }`}
               >
-                {item.icon} {item.label}
+                {item.label}
               </a>
             ))
           }

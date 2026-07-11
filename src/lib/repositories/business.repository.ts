@@ -26,6 +26,10 @@ export type Business = BusinessRow & {
   photos: BusinessPhoto[];
 };
 
+/** Versión liviana para listados: sin el array completo de fotos
+ * (las cards solo usan coverPhoto; evita duplicar peso en el HTML). */
+export type BusinessSummary = Omit<Business, "photos">;
+
 interface GetBusinessesOptions {
   featured?: boolean;
   limit?: number;

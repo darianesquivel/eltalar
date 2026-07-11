@@ -1,17 +1,14 @@
 ---
-import { supabase } from "../../lib/supabase";
+// Los avisos llegan por props: la home los busca en paralelo con los
+// destacados (antes cada componente esperaba su propia consulta en serie).
+type Alert = { id: string; title: string; description: string | null };
 
-const { data: alerts, error } = await supabase
-  .from("site_alerts")
-  .select("id, title, description")
-  .eq("is_active", true)
-  .order("created_at", { ascending: false });
-
-if (error) {
-  console.error("Error cargando avisos importantes:", error);
+interface Props {
+  alerts: Alert[];
 }
 
-const hasAlerts = Array.isArray(alerts) && alerts.length > 0;
+const { alerts } = Astro.props;
+const hasAlerts = alerts.length > 0;
 ---
 
 <section class="mx-auto max-w-6xl px-6 space-y-3">

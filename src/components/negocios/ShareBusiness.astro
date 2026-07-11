@@ -1,4 +1,6 @@
 ---
+import { Share, Copy, Check } from "@lucide/astro";
+
 const { url, title } = Astro.props;
 ---
 
@@ -16,21 +18,7 @@ const { url, title } = Astro.props;
       aria-label="Compartir negocio"
       title="Compartir"
     >
-      <svg
-        xmlns="http://www.w3.org/2000/svg"
-        width="20"
-        height="20"
-        viewBox="0 0 24 24"
-        fill="none"
-        stroke="currentColor"
-        stroke-width="2"
-        stroke-linecap="round"
-        stroke-linejoin="round"
-      >
-        <path d="M12 2v13"></path>
-        <path d="m16 6-4-4-4 4"></path>
-        <path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"></path>
-      </svg>
+      <Share size={20} />
       Compartir!
     </button>
 
@@ -40,21 +28,7 @@ const { url, title } = Astro.props;
       aria-label="Copiar link"
       title="Copiar link"
     >
-      <svg
-        xmlns="http://www.w3.org/2000/svg"
-        width="20"
-        height="20"
-        viewBox="0 0 24 24"
-        fill="none"
-        stroke="currentColor"
-        stroke-width="2"
-        stroke-linecap="round"
-        stroke-linejoin="round"
-      >
-        <rect width="14" height="14" x="8" y="8" rx="2" ry="2"></rect>
-        <path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"
-        ></path>
-      </svg>
+      <Copy size={20} />
       Copiar Link!
     </button>
   </div>
@@ -64,20 +38,7 @@ const { url, title } = Astro.props;
     class="text-xs flex gap-2 items-center justify-center text-green-700 opacity-0 transition-opacity"
   >
     Link copiado
-
-    <svg
-      xmlns="http://www.w3.org/2000/svg"
-      width="12"
-      height="12"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      stroke-width="2"
-      stroke-linecap="round"
-      stroke-linejoin="round"
-      class="lucide lucide-check-icon lucide-check"
-      ><path d="M20 6 9 17l-5-5"></path></svg
-    >
+    <Check size={12} />
   </p>
 </div>
 

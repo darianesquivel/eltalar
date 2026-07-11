@@ -5,12 +5,25 @@ import Alerts from "../components/home/Alerts.astro";
 import QuickAccess from "../components/home/QuickAccess.astro";
 import FeaturedBusinesses from "../components/home/FeaturedBusinesses.astro";
 import Contact from "../components/home/Contact.astro";
+import { getBusinesses } from "../lib/repositories/business.repository";
+import { supabase } from "../lib/supabase";
+
+// Un solo round-trip: avisos y destacados en paralelo (antes eran en serie,
+// cada componente esperando al anterior).
+const [{ data: alerts }, featured] = await Promise.all([
+  supabase
+    .from("site_alerts")
+    .select("id, title, description")
+    .eq("is_active", true)
+    .order("created_at", { ascending: false }),
+  getBusinesses({ featured: true, limit: 6 }),
+]);
 ---
 
 <Layout>
   <Hero />
-  <Alerts />
+  <Alerts alerts={alerts ?? []} />
   <QuickAccess />
-  <FeaturedBusinesses />
+  <FeaturedBusinesses businesses={featured} />
   <Contact />
 </Layout>

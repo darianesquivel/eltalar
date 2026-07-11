@@ -18,6 +18,13 @@ export default defineConfig({
   // el CDN de imágenes de Vercel, con cache. Gratis en el plan hobby.
   adapter: vercel({ imageService: true }),
 
+  // Prefetch al pasar el mouse por un link: la página siguiente ya está
+  // descargada cuando el usuario hace click → navegación casi instantánea.
+  prefetch: {
+    prefetchAll: true,
+    defaultStrategy: "hover",
+  },
+
   image: {
     // Permite optimizar las fotos remotas alojadas en Supabase Storage.
     remotePatterns: [{ protocol: "https", hostname: "**.supabase.co" }],

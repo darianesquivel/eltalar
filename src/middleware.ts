@@ -30,9 +30,14 @@ export const onRequest = defineMiddleware(async (context, next) => {
 
   const supabase = createSupabaseServer(context);
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  // En paralelo: validar sesión y consultar rol admin (ahorra un round-trip
+  // a Supabase en cada página del panel; is_admin sin sesión devuelve false)
+  const [
+    {
+      data: { user },
+    },
+    { data: isAdmin },
+  ] = await Promise.all([supabase.auth.getUser(), supabase.rpc("is_admin")]);
 
   context.locals.user = user;
 
@@ -41,7 +46,6 @@ export const onRequest = defineMiddleware(async (context, next) => {
   }
 
   if (user) {
-    const { data: isAdmin } = await supabase.rpc("is_admin");
     context.locals.isAdmin = isAdmin === true;
 
     if (pathname.startsWith("/app/admin") && !context.locals.isAdmin) {

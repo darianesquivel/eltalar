@@ -1,9 +1,12 @@
 import { navigate } from "astro:transitions/client";
+import { BadgeCheck, PhoneCall } from "lucide-react";
+import InstagramIcon from "../icons/InstagramIcon";
 import { getTodayStatus } from "../../lib/hours";
-import type { Business } from "../../lib/repositories/business.repository";
+import { optimizedImage } from "../../lib/images";
+import type { BusinessSummary } from "../../lib/repositories/business.repository";
 
 type BusinessCardProps = {
-  business: Business;
+  business: BusinessSummary;
 };
 
 const no_image = "/images/no-image.jpg";
@@ -38,7 +41,11 @@ export default function BusinessCard({ business }: BusinessCardProps) {
         </div>
 
         <img
-          src={business.coverPhoto?.url || no_image}
+          src={
+            business.coverPhoto?.url
+              ? optimizedImage(business.coverPhoto.url, 480)
+              : no_image
+          }
           alt={business.name}
           width={400}
           height={192}
@@ -57,21 +64,7 @@ export default function BusinessCard({ business }: BusinessCardProps) {
             <h3 className="font-semibold text-gray-900">{business.name}</h3>
 
             {business.is_featured && (
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                width="18"
-                height="18"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                className="text-services"
-              >
-                <path d="M3.85 8.62a4 4 0 0 1 4.78-4.77 4 4 0 0 1 6.74 0 4 4 0 0 1 4.78 4.78 4 4 0 0 1 0 6.74 4 4 0 0 1-4.77 4.78 4 4 0 0 1-6.75 0 4 4 0 0 1-4.78-4.77 4 4 0 0 1 0-6.76Z" />
-                <path d="m9 12 2 2 4-4" />
-              </svg>
+              <BadgeCheck size={18} className="text-services" />
             )}
           </div>
 
@@ -122,22 +115,7 @@ export default function BusinessCard({ business }: BusinessCardProps) {
               rel="noopener noreferrer"
               className="p-2 rounded-lg bg-secondary-soft/10 hover:bg-secondary-soft/30 transition"
             >
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                width="20"
-                height="20"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="2"
-                stroke-linecap="round"
-                stroke-linejoin="round"
-                className="text-gray-700"
-              >
-                <rect width="20" height="20" x="2" y="2" rx="5" ry="5" />
-                <path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z" />
-                <line x1="17.5" x2="17.51" y1="6.5" y2="6.5" />
-              </svg>
+              <InstagramIcon size={20} className="text-gray-700" />
             </a>
           )}
 
@@ -146,22 +124,7 @@ export default function BusinessCard({ business }: BusinessCardProps) {
               href={`tel:${business.phone}`}
               className="p-2 rounded-lg bg-secondary-soft/10 hover:bg-secondary-soft/30 transition"
             >
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                width="20"
-                height="20"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="2"
-                stroke-linecap="round"
-                stroke-linejoin="round"
-                className="text-gray-700"
-              >
-                <path d="M13 2a9 9 0 0 1 9 9" />
-                <path d="M13 6a5 5 0 0 1 5 5" />
-                <path d="M13.832 16.568a1 1 0 0 0 1.213-.303l.355-.465A2 2 0 0 1 17 15h3a2 2 0 0 1 2 2v3a2 2 0 0 1-2 2A18 18 0 0 1 2 4a2 2 0 0 1 2-2h3a2 2 0 0 1 2 2v3a2 2 0 0 1-.8 1.6l-.468.351a1 1 0 0 0-.292 1.233 14 14 0 0 0 6.392 6.384" />
-              </svg>
+              <PhoneCall size={20} className="text-gray-700" />
             </a>
           )}
         </div>

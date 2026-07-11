@@ -1,11 +1,12 @@
 ---
 import BusinessCard from "../negocios/BusinessCard";
-import { getBusinesses } from "../../lib/repositories/business.repository";
+import type { Business } from "../../lib/repositories/business.repository";
 
-const featuredBusinesses = await getBusinesses({
-  featured: true,
-  limit: 6,
-});
+interface Props {
+  businesses: Business[];
+}
+
+const { businesses: featuredBusinesses } = Astro.props;
 ---
 
 <section class="mx-auto max-w-6xl px-6 py-12">
