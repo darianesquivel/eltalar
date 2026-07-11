@@ -13,26 +13,59 @@ if (Astro.locals.user) {
       <div class="space-y-2 text-center">
         <h1 class="text-2xl font-bold">Panel de comercios</h1>
         <p class="text-sm text-gray-600">
-          Ingresá tu email y te mandamos un link para entrar. Sin contraseñas.
+          Entrá con tu cuenta de Google. Un click y listo.
         </p>
       </div>
 
-      <form id="login-form" class="space-y-4">
-        <input
-          type="email"
-          name="email"
-          required
-          placeholder="tu@email.com"
-          class="w-full rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
-        />
-        <button
-          id="login-btn"
-          type="submit"
-          class="w-full rounded-xl bg-primary px-6 py-3 text-sm font-semibold text-white transition hover:bg-green-700 disabled:opacity-60"
+      <button
+        id="google-btn"
+        class="flex w-full items-center justify-center gap-3 rounded-xl border border-gray-300 bg-white px-6 py-3 text-sm font-semibold text-gray-700 transition hover:bg-gray-50 disabled:opacity-60"
+      >
+        <svg width="20" height="20" viewBox="0 0 48 48">
+          <path
+            fill="#FFC107"
+            d="M43.611 20.083H42V20H24v8h11.303c-1.649 4.657-6.08 8-11.303 8-6.627 0-12-5.373-12-12s5.373-12 12-12c3.059 0 5.842 1.154 7.961 3.039l5.657-5.657C34.046 6.053 29.268 4 24 4 12.955 4 4 12.955 4 24s8.955 20 20 20 20-8.955 20-20c0-1.341-.138-2.65-.389-3.917z"
+          ></path>
+          <path
+            fill="#FF3D00"
+            d="m6.306 14.691 6.571 4.819C14.655 15.108 18.961 12 24 12c3.059 0 5.842 1.154 7.961 3.039l5.657-5.657C34.046 6.053 29.268 4 24 4 16.318 4 9.656 8.337 6.306 14.691z"
+          ></path>
+          <path
+            fill="#4CAF50"
+            d="M24 44c5.166 0 9.86-1.977 13.409-5.192l-6.19-5.238A11.91 11.91 0 0 1 24 36c-5.202 0-9.619-3.317-11.283-7.946l-6.522 5.025C9.505 39.556 16.227 44 24 44z"
+          ></path>
+          <path
+            fill="#1976D2"
+            d="M43.611 20.083H42V20H24v8h11.303a12.04 12.04 0 0 1-4.087 5.571l.003-.002 6.19 5.238C36.971 39.205 44 34 44 24c0-1.341-.138-2.65-.389-3.917z"
+          ></path>
+        </svg>
+        Continuar con Google
+      </button>
+
+      <details class="text-center">
+        <summary
+          class="cursor-pointer text-xs text-gray-400 hover:text-gray-600"
         >
-          Enviarme el link
-        </button>
-      </form>
+          ¿Preferís entrar con un link por email?
+        </summary>
+
+        <form id="login-form" class="mt-4 space-y-3">
+          <input
+            type="email"
+            name="email"
+            required
+            placeholder="tu@email.com"
+            class="w-full rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
+          />
+          <button
+            id="login-btn"
+            type="submit"
+            class="w-full rounded-xl bg-primary px-6 py-3 text-sm font-semibold text-white transition hover:bg-green-700 disabled:opacity-60"
+          >
+            Enviarme el link
+          </button>
+        </form>
+      </details>
 
       <p
         id="login-feedback"
@@ -52,11 +85,38 @@ if (Astro.locals.user) {
 <script>
   import { supabaseBrowser } from "../../lib/supabase/browser";
 
+  const googleBtn = document.getElementById("google-btn") as HTMLButtonElement;
   const form = document.getElementById("login-form") as HTMLFormElement;
   const button = document.getElementById("login-btn") as HTMLButtonElement;
   const feedback = document.getElementById("login-feedback")!;
   const errorBox = document.getElementById("login-error")!;
 
+  const showError = (msg: string) => {
+    errorBox.textContent = msg;
+    errorBox.classList.remove("hidden");
+  };
+
+  // --- Google OAuth (camino principal) ---
+  googleBtn?.addEventListener("click", async () => {
+    googleBtn.disabled = true;
+    errorBox.classList.add("hidden");
+
+    const { error } = await supabaseBrowser.auth.signInWithOAuth({
+      provider: "google",
+      options: {
+        redirectTo: `${window.location.origin}/app/auth`,
+      },
+    });
+
+    if (error) {
+      console.error(error);
+      showError("No pudimos conectar con Google. Probá de nuevo.");
+      googleBtn.disabled = false;
+    }
+    // si no hay error, el navegador ya está yendo a Google
+  });
+
+  // --- Magic link (alternativa) ---
   form?.addEventListener("submit", async (e) => {
     e.preventDefault();
     button.disabled = true;
@@ -73,9 +133,9 @@ if (Astro.locals.user) {
     });
 
     if (error) {
-      errorBox.textContent =
-        "No pudimos enviar el link. Esperá un minuto y volvé a intentar.";
-      errorBox.classList.remove("hidden");
+      showError(
+        "No pudimos enviar el link. Esperá un minuto y volvé a intentar.",
+      );
       button.disabled = false;
       button.textContent = "Enviarme el link";
       return;
