@@ -73,6 +73,7 @@ export default function FeaturedCard({
       <ul className="space-y-1 text-sm text-gray-600">
         <li>✓ Primero en el listado de negocios</li>
         <li>✓ En la portada de eltalar, que ven todos los vecinos</li>
+        <li>✓ Galería de hasta 4 fotos en tu ficha (el gratuito incluye 1)</li>
         <li>✓ Insignia ⭐ en tu card y tu ficha</li>
         <li>✓ Marcador dorado en el mapa del barrio</li>
       </ul>

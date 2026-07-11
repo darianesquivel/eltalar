@@ -5,14 +5,23 @@ import type { BusinessPhoto } from "../../lib/repositories/business.repository";
 type Props = {
   businessId: string;
   initialPhotos: BusinessPhoto[];
+  /** El plan Destacado permite hasta 4 fotos; el gratuito, 1. */
+  isFeatured?: boolean;
 };
 
 const MAX_SIZE_MB = 2;
 
-export default function PhotoManager({ businessId, initialPhotos }: Props) {
+export default function PhotoManager({
+  businessId,
+  initialPhotos,
+  isFeatured = false,
+}: Props) {
   const [photos, setPhotos] = useState<BusinessPhoto[]>(initialPhotos);
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  const maxPhotos = isFeatured ? 4 : 1;
+  const atLimit = photos.length >= maxPhotos;
 
   const refresh = async () => {
     const { data } = await supabaseBrowser
@@ -132,28 +141,40 @@ export default function PhotoManager({ businessId, initialPhotos }: Props) {
           </div>
         ))}
 
-        <label
-          className={`flex h-28 cursor-pointer flex-col items-center justify-center gap-1 rounded-xl border-2 border-dashed border-gray-300 text-sm text-gray-500 transition hover:border-primary hover:text-primary ${uploading ? "pointer-events-none opacity-50" : ""}`}
-        >
-          <span className="text-2xl">+</span>
-          {uploading ? "Subiendo…" : "Agregar foto"}
-          <input
-            type="file"
-            accept="image/jpeg,image/png,image/webp"
-            className="hidden"
-            onChange={upload}
-            disabled={uploading}
-          />
-        </label>
+        {!atLimit && (
+          <label
+            className={`flex h-28 cursor-pointer flex-col items-center justify-center gap-1 rounded-xl border-2 border-dashed border-gray-300 text-sm text-gray-500 transition hover:border-primary hover:text-primary ${uploading ? "pointer-events-none opacity-50" : ""}`}
+          >
+            <span className="text-2xl">+</span>
+            {uploading ? "Subiendo…" : "Agregar foto"}
+            <input
+              type="file"
+              accept="image/jpeg,image/png,image/webp"
+              className="hidden"
+              onChange={upload}
+              disabled={uploading}
+            />
+          </label>
+        )}
       </div>
 
       {error && (
         <p className="rounded-xl bg-red-50 p-3 text-sm text-red-600">{error}</p>
       )}
 
+      {/* Venta cruzada: el plan gratuito llegó a su única foto */}
+      {atLimit && !isFeatured && (
+        <p className="rounded-xl border border-amber-200 bg-amber-50 p-3 text-sm text-amber-800">
+          ⭐ Tu plan incluye 1 foto. Con el <strong>plan Destacado</strong>{" "}
+          podés subir hasta 4 y mostrar tu local, tus productos y tu equipo —
+          activalo más abajo.
+        </p>
+      )}
+
       <p className="text-xs text-gray-400">
-        JPG, PNG o WebP de hasta {MAX_SIZE_MB}MB. La portada es la foto que se
-        ve en el listado.
+        {photos.length}/{maxPhotos} foto{maxPhotos === 1 ? "" : "s"} · JPG, PNG
+        o WebP de hasta {MAX_SIZE_MB}MB. La portada es la que se ve en el
+        listado.
       </p>
     </div>
   );

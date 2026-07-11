@@ -14,6 +14,12 @@ interface Props {
 const { business } = Astro.props;
 const hours = getWeekSchedule(business.business_hours);
 
+// Galería: fotos extra además de la portada (las tienen los Destacados,
+// que pueden subir hasta 4). Se muestran debajo de la imagen principal.
+const galleryPhotos = (business.photos ?? []).filter(
+  (p) => p.id !== business.coverPhoto?.id,
+);
+
 const whatsappLogo = "/images/whatsapp-icon.svg";
 const no_image = "/images/no-image.jpg";
 
@@ -136,6 +142,30 @@ const shareUrl = new URL(
           )
         }
       </div>
+
+      {
+        galleryPhotos.length > 0 && (
+          <div class="grid grid-cols-3 gap-3">
+            {galleryPhotos.map((photo) => (
+              <a
+                href={photo.url}
+                target="_blank"
+                rel="noopener noreferrer"
+                class="block overflow-hidden rounded-xl shadow-sm transition-transform hover:scale-[1.02]"
+              >
+                <Image
+                  src={photo.url}
+                  alt={`Foto de ${business.name}`}
+                  width={480}
+                  height={320}
+                  loading="lazy"
+                  class="h-32 w-full object-cover md:h-40"
+                />
+              </a>
+            ))}
+          </div>
+        )
+      }
 
       <MapPreview address={business.address} />
     </div>

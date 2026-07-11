@@ -96,6 +96,7 @@ const statusInfo = STATUS_INFO[business.status] ?? STATUS_INFO.pending;
       <PhotoManager
         businessId={business.id}
         initialPhotos={business.business_photos ?? []}
+        isFeatured={business.is_featured === true}
         client:load
       />
     </div>
