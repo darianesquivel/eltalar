@@ -1,0 +1,183 @@
+---
+import { Flame, ArrowRight, Store } from "@lucide/astro";
+import Layout from "../layouts/Layout.astro";
+import { supabase } from "../lib/supabase";
+import { todayInArgentina } from "../lib/hours";
+import { optimizedImage } from "../lib/images";
+
+const today = todayInArgentina();
+
+// Ofertas vigentes de negocios publicados, con los datos para la card
+const { data } = await supabase
+  .from("business_offers")
+  .select(
+    `
+    id, title, description, expires_at,
+    businesses!inner (
+      id, name, slug, is_active, is_featured,
+      business_photos ( url, is_cover, position )
+    )
+  `,
+  )
+  .gte("expires_at", today)
+  .eq("businesses.is_active", true)
+  .order("expires_at");
+
+type OfferRow = NonNullable<typeof data>[number];
+
+const cover = (o: OfferRow) => {
+  const photos = o.businesses?.business_photos ?? [];
+  const c =
+    photos.find((p) => p.is_cover) ||
+    photos.slice().sort((a, b) => (a.position ?? 0) - (b.position ?? 0))[0];
+  return c?.url ?? null;
+};
+
+// Los negocios destacados van primero; después por vencimiento más próximo
+const offers = (data ?? []).sort((a, b) => {
+  const fa = a.businesses?.is_featured ? 0 : 1;
+  const fb = b.businesses?.is_featured ? 0 : 1;
+  if (fa !== fb) return fa - fb;
+  return a.expires_at.localeCompare(b.expires_at);
+});
+
+const fmtDate = (iso: string) =>
+  new Date(`${iso}T12:00:00`).toLocaleDateString("es-AR", {
+    day: "numeric",
+    month: "long",
+  });
+---
+
+<Layout
+  title="Ofertas en El Talar 🔥"
+  description="Promos y ofertas vigentes de los comercios de El Talar: descuentos, 2x1 y más, actualizadas por los propios negocios del barrio."
+>
+  <!-- HERO -->
+  <section
+    class="relative overflow-hidden flex justify-center items-center py-16 rounded-3xl"
+  >
+    <div
+      class="absolute inset-0 bg-linear-to-tr from-orange-100 via-white to-amber-50"
+    >
+    </div>
+    <div
+      class="relative mx-auto max-w-4xl px-6 text-center flex flex-col gap-5"
+    >
+      <span
+        class="animate-fade-up mx-auto inline-flex items-center gap-2 rounded-full bg-orange-100 px-4 py-1 text-xs font-semibold text-orange-700"
+      >
+        <Flame size={14} />
+        Se actualizan solas: solo ves promos vigentes
+      </span>
+
+      <h1
+        class="animate-fade-up text-4xl md:text-5xl font-extrabold tracking-tight text-gray-900"
+        style="animation-delay: 0.12s"
+      >
+        Ofertas en{" "}
+        <span class="text-orange-500">El Talar</span>
+      </h1>
+
+      <p
+        class="animate-fade-up mx-auto max-w-2xl text-lg text-gray-600"
+        style="animation-delay: 0.24s"
+      >
+        Las promos que los comercios del barrio publican para sus vecinos. Tocá
+        una y andá directo al negocio.
+      </p>
+    </div>
+  </section>
+
+  <!-- GRILLA DE OFERTAS -->
+  <section class="mx-auto w-full max-w-6xl px-2 sm:px-6">
+    {
+      offers.length > 0 ? (
+        <div class="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+          {offers.map((offer) => (
+            <a
+              href={`/negocios/${offer.businesses.slug}`}
+              data-tilt
+              class="group flex flex-col overflow-hidden rounded-2xl bg-white shadow-lg"
+            >
+              <div class="relative">
+                {cover(offer) ? (
+                  <img
+                    src={optimizedImage(cover(offer)!, 640)}
+                    alt={offer.businesses.name}
+                    width={400}
+                    height={160}
+                    loading="lazy"
+                    decoding="async"
+                    class="h-36 w-full object-cover"
+                  />
+                ) : (
+                  <div class="flex h-36 w-full items-center justify-center bg-orange-50">
+                    <Store size={32} class="text-orange-300" />
+                  </div>
+                )}
+                <span class="absolute right-2 top-2 inline-flex items-center gap-1 rounded-full bg-orange-500 px-2.5 py-0.5 text-xs font-bold text-white shadow">
+                  🔥 Hasta el {fmtDate(offer.expires_at)}
+                </span>
+                {offer.businesses.is_featured && (
+                  <span class="absolute left-2 top-2 rounded-full bg-amber-400/95 px-2.5 py-0.5 text-xs font-semibold text-amber-950">
+                    ⭐ Destacado
+                  </span>
+                )}
+              </div>
+
+              <div class="flex flex-1 flex-col gap-1.5 p-4">
+                <p class="font-bold text-gray-900">{offer.title}</p>
+                {offer.description && (
+                  <p class="text-sm text-gray-600 line-clamp-2">
+                    {offer.description}
+                  </p>
+                )}
+                <p class="mt-auto inline-flex items-center gap-1 pt-2 text-sm font-semibold text-primary">
+                  {offer.businesses.name}
+                  <ArrowRight
+                    size={14}
+                    class="transition-transform group-hover:translate-x-0.5"
+                  />
+                </p>
+              </div>
+            </a>
+          ))}
+        </div>
+      ) : (
+        <div class="flex flex-col items-center gap-4 rounded-3xl bg-white p-14 text-center shadow-sm">
+          <Flame size={36} class="text-orange-300" />
+          <h2 class="text-xl font-bold text-gray-900">
+            No hay ofertas vigentes en este momento
+          </h2>
+          <p class="max-w-md text-sm text-gray-500">
+            Los comercios del barrio publican sus promos acá. Volvé pronto — o
+            si tenés un negocio, ¡publicá la tuya!
+          </p>
+          <a
+            href="/anunciate"
+            class="rounded-full bg-primary px-6 py-2.5 text-sm font-semibold text-white transition-transform hover:scale-105"
+          >
+            Publicar mi negocio
+          </a>
+        </div>
+      )
+    }
+  </section>
+
+  <!-- CTA para comercios -->
+  {
+    offers.length > 0 && (
+      <section class="mx-auto max-w-3xl px-4 text-center">
+        <p class="text-sm text-gray-500">
+          ¿Tenés un comercio en El Talar?{" "}
+          <a
+            href="/anunciate"
+            class="font-semibold text-primary hover:underline"
+          >
+            Publicá tus ofertas gratis →
+          </a>
+        </p>
+      </section>
+    )
+  }
+</Layout>

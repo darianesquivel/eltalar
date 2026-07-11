@@ -1,6 +1,6 @@
 ---
 import { Image } from "astro:assets";
-import { Info, PhoneCall, Clock, ArrowLeft } from "@lucide/astro";
+import { Info, PhoneCall, Clock, ArrowLeft, Flame } from "@lucide/astro";
 import InstagramIcon from "../icons/InstagramIcon";
 import MapPreview from "../MapPreview.astro";
 import ShareBusiness from "./ShareBusiness.astro";
@@ -102,6 +102,35 @@ const shareUrl = new URL(
           {business.description}
         </p>
       </div>
+
+      {
+        business.offers.length > 0 && (
+          <div class="space-y-3">
+            {business.offers.map((offer) => (
+              <div class="flex items-start gap-3 rounded-2xl border border-orange-200 bg-linear-to-r from-orange-50 to-amber-50 p-5">
+                <Flame size={22} class="mt-0.5 shrink-0 text-orange-500" />
+                <div>
+                  <p class="font-semibold text-gray-900">{offer.title}</p>
+                  {offer.description && (
+                    <p class="mt-0.5 text-sm text-gray-600">
+                      {offer.description}
+                    </p>
+                  )}
+                  <p class="mt-1 text-xs font-medium text-orange-600">
+                    Válida hasta el{" "}
+                    {new Date(
+                      `${offer.expires_at}T12:00:00`,
+                    ).toLocaleDateString("es-AR", {
+                      day: "numeric",
+                      month: "long",
+                    })}
+                  </p>
+                </div>
+              </div>
+            ))}
+          </div>
+        )
+      }
 
       <div class="flex gap-2 items-center">
         {

@@ -15,6 +15,7 @@ export const GET: APIRoute = async ({ site }) => {
     "/telefonos",
     "/mapa",
     "/anunciate",
+    "/ofertas",
   ];
 
   const { data: businesses } = await supabase

@@ -32,6 +32,11 @@ export default function BusinessCard({ business }: BusinessCardProps) {
     >
       {/* IMAGE */}
       <div className="relative " onClick={handleClick}>
+        {business.offers?.length > 0 && (
+          <span className="absolute right-2 top-2 z-10 inline-flex items-center gap-1 rounded-full bg-orange-500 px-2.5 py-0.5 text-xs font-bold text-white shadow">
+            🔥 Oferta
+          </span>
+        )}
         <div className="absolute top-2 left-2 z-10 flex flex-wrap gap-1">
           {business.categories.map((category) => (
             <span

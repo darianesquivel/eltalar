@@ -133,6 +133,41 @@ export type Database = {
           },
         ];
       };
+      business_offers: {
+        Row: {
+          business_id: string;
+          created_at: string;
+          description: string | null;
+          expires_at: string;
+          id: string;
+          title: string;
+        };
+        Insert: {
+          business_id: string;
+          created_at?: string;
+          description?: string | null;
+          expires_at: string;
+          id?: string;
+          title: string;
+        };
+        Update: {
+          business_id?: string;
+          created_at?: string;
+          description?: string | null;
+          expires_at?: string;
+          id?: string;
+          title?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "business_offers_business_id_fkey";
+            columns: ["business_id"];
+            isOneToOne: false;
+            referencedRelation: "businesses";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
       business_photos: {
         Row: {
           business_id: string;
@@ -496,6 +531,7 @@ export type Database = {
         Returns: undefined;
       };
       is_admin: { Args: never; Returns: boolean };
+      today_ar: { Args: never; Returns: string };
     };
     Enums: {
       [_ in never]: never;

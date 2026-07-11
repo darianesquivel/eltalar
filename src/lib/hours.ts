@@ -45,6 +45,16 @@ const DAY_NAMES = [
 
 const dayName = (day: number) => DAY_NAMES[day];
 
+/** Fecha de hoy en Argentina como "YYYY-MM-DD" (para vencimientos). */
+export function todayInArgentina(): string {
+  return new Intl.DateTimeFormat("en-CA", {
+    timeZone: ARGENTINA_TZ,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).format(new Date());
+}
+
 /** Día de la semana (0-6) y hora "HH:MM" actuales en Argentina. */
 function nowInArgentina() {
   const parts = new Intl.DateTimeFormat("en-US", {

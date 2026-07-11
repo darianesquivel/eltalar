@@ -4,6 +4,7 @@ import BusinessForm from "../../../components/app/BusinessForm";
 import HoursEditor from "../../../components/app/HoursEditor";
 import PhotoManager from "../../../components/app/PhotoManager";
 import FeaturedCard from "../../../components/app/FeaturedCard";
+import OffersManager from "../../../components/app/OffersManager";
 import DeleteBusiness from "../../../components/app/DeleteBusiness";
 import { createSupabaseServer } from "../../../lib/supabase/server";
 
@@ -19,7 +20,8 @@ const { data: business } = await supabase
     status, is_active, is_featured,
     business_categories ( category_id ),
     business_hours ( day_of_week, open_time, close_time, is_closed, is_open_24 ),
-    business_photos ( id, url, is_cover, position )
+    business_photos ( id, url, is_cover, position ),
+    business_offers ( id, title, description, expires_at )
   `,
   )
   .eq("id", id!)
@@ -96,6 +98,16 @@ const statusInfo = STATUS_INFO[business.status] ?? STATUS_INFO.pending;
       <PhotoManager
         businessId={business.id}
         initialPhotos={business.business_photos ?? []}
+        isFeatured={business.is_featured === true}
+        client:load
+      />
+    </div>
+
+    <div class="rounded-2xl bg-white p-8 shadow-sm space-y-4">
+      <h2 class="text-lg font-semibold">🔥 Ofertas</h2>
+      <OffersManager
+        businessId={business.id}
+        initialOffers={business.business_offers ?? []}
         isFeatured={business.is_featured === true}
         client:load
       />

@@ -1,6 +1,6 @@
 import { supabase } from "../supabase";
 import type { Database } from "../database.types";
-import type { BusinessHour } from "../hours";
+import { todayInArgentina, type BusinessHour } from "../hours";
 
 /* =======================
    TYPES
@@ -18,12 +18,19 @@ export type BusinessPhoto = Pick<
   "id" | "url" | "is_cover" | "position"
 >;
 
+export type BusinessOffer = Pick<
+  Database["public"]["Tables"]["business_offers"]["Row"],
+  "id" | "title" | "description" | "expires_at"
+>;
+
 /** Negocio ya "aplanado" para consumo de la UI. */
 export type Business = BusinessRow & {
   business_hours: BusinessHour[];
   categories: Category[];
   coverPhoto: BusinessPhoto | null;
   photos: BusinessPhoto[];
+  /** Ofertas vigentes (la RLS ya filtra las vencidas para el público). */
+  offers: BusinessOffer[];
 };
 
 /** Versión liviana para listados: sin el array completo de fotos
@@ -57,6 +64,12 @@ const BUSINESS_SELECT = `
     url,
     is_cover,
     position
+  ),
+  business_offers (
+    id,
+    title,
+    description,
+    expires_at
   )
 `;
 
@@ -71,11 +84,21 @@ function toBusiness(raw: any): Business {
     photos.slice().sort((a, b) => (a.position ?? 0) - (b.position ?? 0))[0] ||
     null;
 
+  // La RLS ya oculta las ofertas vencidas al público, pero el dueño/admin
+  // las ve todas: acá filtramos vigentes para que la UI pública sea uniforme.
+  const today = todayInArgentina();
+  const offers: BusinessOffer[] = (raw.business_offers ?? [])
+    .filter((o: BusinessOffer) => o.expires_at >= today)
+    .sort((a: BusinessOffer, b: BusinessOffer) =>
+      a.expires_at.localeCompare(b.expires_at),
+    );
+
   return {
     ...raw,
     categories: raw.business_categories?.map((bc: any) => bc.categories) ?? [],
     coverPhoto,
     photos,
+    offers,
   };
 }
 
