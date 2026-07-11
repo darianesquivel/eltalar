@@ -1,9 +1,18 @@
+---
+import { Image } from "astro:assets";
+import heroBg from "../../images/hero-bg.jpg";
+---
+
 <section
   class="relative overflow-hidden flex justify-center items-center py-20 rounded-3xl"
 >
-  <img
-    src="/src/images/hero-bg.jpg"
+  <Image
+    src={heroBg}
     alt="El Talar"
+    widths={[640, 1024, 1600]}
+    sizes="100vw"
+    loading="eager"
+    fetchpriority="high"
     class="absolute inset-0 h-full w-full object-cover"
   />
 
