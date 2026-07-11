@@ -240,6 +240,26 @@ const shareUrl = new URL(
 
       <!-- COMPARTIR -->
       <ShareBusiness url={shareUrl} title={business.name} />
+
+      {
+        !business.owner_id && (
+          <div class="rounded-2xl border border-dashed border-primary/40 bg-primary-soft/40 p-5 text-center space-y-2">
+            <p class="text-sm font-semibold text-gray-800">
+              ¿Este negocio es tuyo?
+            </p>
+            <p class="text-xs text-gray-600">
+              Reclamalo y gestioná vos mismo las fotos, horarios y datos de
+              contacto.
+            </p>
+            <a
+              href={`/app/reclamar/${business.id}`}
+              class="inline-block rounded-full bg-primary px-5 py-2 text-sm font-semibold text-white transition hover:bg-green-700"
+            >
+              Reclamar mi negocio
+            </a>
+          </div>
+        )
+      }
     </div>
   </div>
 </section>

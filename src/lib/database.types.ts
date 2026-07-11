@@ -57,6 +57,44 @@ export type Database = {
           },
         ];
       };
+      business_claims: {
+        Row: {
+          business_id: string;
+          claimer_email: string | null;
+          created_at: string;
+          id: string;
+          message: string | null;
+          status: string;
+          user_id: string;
+        };
+        Insert: {
+          business_id: string;
+          claimer_email?: string | null;
+          created_at?: string;
+          id?: string;
+          message?: string | null;
+          status?: string;
+          user_id: string;
+        };
+        Update: {
+          business_id?: string;
+          claimer_email?: string | null;
+          created_at?: string;
+          id?: string;
+          message?: string | null;
+          status?: string;
+          user_id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "business_claims_business_id_fkey";
+            columns: ["business_id"];
+            isOneToOne: false;
+            referencedRelation: "businesses";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
       business_hours: {
         Row: {
           business_id: string;
@@ -441,6 +479,10 @@ export type Database = {
       [_ in never]: never;
     };
     Functions: {
+      admin_resolve_claim: {
+        Args: { p_approve: boolean; p_claim_id: string };
+        Returns: undefined;
+      };
       admin_set_business_status: {
         Args: { p_business_id: string; p_status: string };
         Returns: undefined;

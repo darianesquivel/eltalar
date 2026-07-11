@@ -26,7 +26,11 @@ const { data: categories } = await supabase
         </p>
       </div>
 
-      <BusinessForm categories={categories ?? []} client:load />
+      <BusinessForm
+        categories={categories ?? []}
+        isAdmin={Astro.locals.isAdmin}
+        client:load
+      />
     </div>
   </section>
 </Layout>

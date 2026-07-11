@@ -4,6 +4,7 @@ import BusinessForm from "../../../components/app/BusinessForm";
 import HoursEditor from "../../../components/app/HoursEditor";
 import PhotoManager from "../../../components/app/PhotoManager";
 import FeaturedCard from "../../../components/app/FeaturedCard";
+import DeleteBusiness from "../../../components/app/DeleteBusiness";
 import { createSupabaseServer } from "../../../lib/supabase/server";
 
 const { id } = Astro.params;
@@ -112,6 +113,13 @@ const statusInfo = STATUS_INFO[business.status] ?? STATUS_INFO.pending;
       businessId={business.id}
       isFeatured={business.is_featured === true}
       isApproved={business.status === "approved"}
+      client:load
+    />
+
+    <DeleteBusiness
+      businessId={business.id}
+      businessName={business.name}
+      photoUrls={(business.business_photos ?? []).map((p) => p.url)}
       client:load
     />
   </section>

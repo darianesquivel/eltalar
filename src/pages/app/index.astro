@@ -8,11 +8,18 @@ const isAdmin = Astro.locals.isAdmin;
 const supabase = createSupabaseServer(Astro);
 
 // RLS: el owner solo ve sus negocios (el admin ve todos, pero acá filtramos por dueño)
-const { data: businesses } = await supabase
-  .from("businesses")
-  .select("id, name, slug, status, is_active, is_featured")
-  .eq("owner_id", user.id)
-  .order("created_at", { ascending: false });
+const [{ data: businesses }, { data: myClaims }] = await Promise.all([
+  supabase
+    .from("businesses")
+    .select("id, name, slug, status, is_active, is_featured")
+    .eq("owner_id", user.id)
+    .order("created_at", { ascending: false }),
+  supabase
+    .from("business_claims")
+    .select("id, status, businesses ( name )")
+    .eq("user_id", user.id)
+    .eq("status", "pending"),
+]);
 
 const STATUS_BADGE: Record<string, { label: string; class: string }> = {
   pending: { label: "En revisión", class: "bg-yellow-100 text-yellow-700" },
@@ -116,6 +123,25 @@ const STATUS_BADGE: Record<string, { label: string; class: string }> = {
         )
       }
     </div>
+
+    {
+      myClaims && myClaims.length > 0 && (
+        <div class="space-y-2">
+          <h2 class="text-lg font-semibold">Reclamos en revisión</h2>
+          <ul class="space-y-2">
+            {myClaims.map((c) => (
+              <li class="flex items-center gap-3 rounded-2xl bg-white p-4 text-sm shadow-sm">
+                <span class="rounded-full bg-yellow-100 px-3 py-0.5 text-xs font-semibold text-yellow-700">
+                  En revisión
+                </span>
+                {c.businesses?.name ?? "(negocio)"} — cuando lo verifiquemos va
+                a aparecer en "Mis negocios".
+              </li>
+            ))}
+          </ul>
+        </div>
+      )
+    }
 
     <p class="text-xs text-gray-400">
       Los negocios nuevos y las modificaciones importantes pasan por una

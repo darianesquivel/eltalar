@@ -1,0 +1,50 @@
+---
+import Layout from "../../../layouts/Layout.astro";
+import ClaimForm from "../../../components/app/ClaimForm";
+import { createSupabaseServer } from "../../../lib/supabase/server";
+
+// Middleware ya exige sesión para /app/*
+const { id } = Astro.params;
+const supabase = createSupabaseServer(Astro);
+
+const { data: business } = await supabase
+  .from("businesses")
+  .select("id, name, address, owner_id")
+  .eq("id", id!)
+  .single();
+
+// No existe o ya tiene dueño → no hay nada que reclamar
+if (!business || business.owner_id) {
+  return Astro.redirect("/app");
+}
+---
+
+<Layout title={`Reclamar ${business.name} | El Talar`}>
+  <section class="mx-auto w-full max-w-xl space-y-6 py-10">
+    <a href={`/negocios`} class="text-sm text-primary hover:underline">
+      ← Volver a negocios
+    </a>
+
+    <div class="rounded-2xl bg-white p-8 shadow-sm space-y-5">
+      <div class="space-y-1">
+        <h1 class="text-2xl font-bold">Reclamar «{business.name}»</h1>
+        {
+          business.address && (
+            <p class="text-sm text-gray-500">📍 {business.address}</p>
+          )
+        }
+        <p class="text-sm text-gray-600">
+          Este negocio fue cargado por el equipo de El Talar. Si es tuyo,
+          reclamalo: cuando lo verifiquemos vas a poder editar la ficha, subir
+          fotos y gestionar los horarios vos mismo.
+        </p>
+      </div>
+
+      <ClaimForm
+        businessId={business.id}
+        businessName={business.name}
+        client:load
+      />
+    </div>
+  </section>
+</Layout>

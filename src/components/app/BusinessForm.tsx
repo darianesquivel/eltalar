@@ -19,6 +19,8 @@ type Props = {
   business?: BusinessFormData;
   /** IDs de categorías ya asignadas (en edición). */
   selectedCategoryIds?: string[];
+  /** Habilita la carga administrativa (negocio sin dueño, reclamable). */
+  isAdmin?: boolean;
 };
 
 const slugify = (text: string) =>
@@ -36,8 +38,10 @@ export default function BusinessForm({
   categories,
   business,
   selectedCategoryIds = [],
+  isAdmin = false,
 }: Props) {
   const isEdit = Boolean(business?.id);
+  const [adminNoOwner, setAdminNoOwner] = useState(isAdmin);
 
   const [form, setForm] = useState<BusinessFormData>({
     name: business?.name ?? "",
@@ -121,7 +125,12 @@ export default function BusinessForm({
         for (let attempt = 0; attempt < 3; attempt++) {
           const { data, error: insertError } = await supabaseBrowser
             .from("businesses")
-            .insert({ ...payload, slug, owner_id: user.id })
+            .insert({
+              ...payload,
+              slug,
+              // Carga administrativa: sin dueño, el comerciante lo reclama después
+              owner_id: isAdmin && adminNoOwner ? null : user.id,
+            })
             .select("id")
             .single();
 
@@ -150,6 +159,21 @@ export default function BusinessForm({
 
   return (
     <form onSubmit={handleSubmit} className="space-y-5">
+      {isAdmin && !isEdit && (
+        <label className="flex cursor-pointer items-center gap-3 rounded-xl border border-blue-200 bg-blue-50 p-4 text-sm">
+          <input
+            type="checkbox"
+            checked={adminNoOwner}
+            onChange={(e) => setAdminNoOwner(e.target.checked)}
+            className="h-4 w-4"
+          />
+          <span>
+            <strong>Carga administrativa</strong> — el negocio queda sin dueño y
+            el comerciante puede reclamarlo desde su ficha.
+          </span>
+        </label>
+      )}
+
       <div>
         <label className="mb-1 block text-sm font-semibold">
           Nombre del negocio *

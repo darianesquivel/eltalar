@@ -2,21 +2,32 @@
 import Layout from "../../../layouts/Layout.astro";
 import AdminBusinesses from "../../../components/app/AdminBusinesses";
 import AlertsManager from "../../../components/app/AlertsManager";
+import ClaimsManager from "../../../components/app/ClaimsManager";
 import { createSupabaseServer } from "../../../lib/supabase/server";
 
 // El middleware ya validó que sea admin
 const supabase = createSupabaseServer(Astro);
 
-const [{ data: businesses }, { data: alerts }] = await Promise.all([
-  supabase
-    .from("businesses")
-    .select("id, name, slug, address, status, is_active, is_featured, owner_id")
-    .order("created_at", { ascending: false }),
-  supabase
-    .from("site_alerts")
-    .select("id, title, description, is_active")
-    .order("created_at", { ascending: false }),
-]);
+const [{ data: businesses }, { data: alerts }, { data: claims }] =
+  await Promise.all([
+    supabase
+      .from("businesses")
+      .select(
+        "id, name, slug, address, status, is_active, is_featured, owner_id",
+      )
+      .order("created_at", { ascending: false }),
+    supabase
+      .from("site_alerts")
+      .select("id, title, description, is_active")
+      .order("created_at", { ascending: false }),
+    supabase
+      .from("business_claims")
+      .select(
+        "id, business_id, claimer_email, message, status, created_at, businesses ( name )",
+      )
+      .eq("status", "pending")
+      .order("created_at"),
+  ]);
 ---
 
 <Layout title="Admin | El Talar">
@@ -26,6 +37,20 @@ const [{ data: businesses }, { data: alerts }] = await Promise.all([
       <a href="/app" class="text-sm text-primary hover:underline">
         ← Mi panel
       </a>
+    </div>
+
+    <div class="space-y-3">
+      <h2 class="text-lg font-semibold">
+        Reclamos de negocios
+        {
+          (claims?.length ?? 0) > 0 && (
+            <span class="ml-1 rounded-full bg-blue-100 px-3 py-0.5 text-sm text-blue-700">
+              {claims!.length}
+            </span>
+          )
+        }
+      </h2>
+      <ClaimsManager claims={claims ?? []} client:load />
     </div>
 
     <AdminBusinesses businesses={businesses ?? []} client:load />

@@ -19,6 +19,46 @@ type Props = {
 export default function AdminBusinesses({ businesses }: Props) {
   const [items, setItems] = useState(businesses);
   const [busy, setBusy] = useState<string | null>(null);
+  const [confirmDelete, setConfirmDelete] = useState<string | null>(null);
+
+  const remove = async (id: string) => {
+    setBusy(id);
+    try {
+      // Limpia las fotos del storage antes de borrar la fila
+      const { data: photos } = await supabaseBrowser
+        .from("business_photos")
+        .select("url")
+        .eq("business_id", id);
+
+      const marker = "/business-photos/";
+      const paths = (photos ?? [])
+        .map((p) => {
+          const idx = p.url.indexOf(marker);
+          return idx === -1
+            ? null
+            : decodeURIComponent(p.url.slice(idx + marker.length));
+        })
+        .filter((p): p is string => Boolean(p));
+
+      if (paths.length > 0) {
+        await supabaseBrowser.storage.from("business-photos").remove(paths);
+      }
+
+      const { error } = await supabaseBrowser
+        .from("businesses")
+        .delete()
+        .eq("id", id);
+      if (error) throw error;
+
+      setItems((prev) => prev.filter((b) => b.id !== id));
+    } catch (err) {
+      console.error(err);
+      alert("Error borrando el negocio");
+    } finally {
+      setBusy(null);
+      setConfirmDelete(null);
+    }
+  };
 
   const setStatus = async (id: string, status: string) => {
     setBusy(id);
@@ -124,6 +164,31 @@ export default function AdminBusinesses({ businesses }: Props) {
         >
           Editar
         </a>
+        {confirmDelete === b.id ? (
+          <>
+            <button
+              onClick={() => remove(b.id)}
+              disabled={busy === b.id}
+              className="rounded-full bg-red-600 px-4 py-1.5 text-xs font-semibold text-white hover:bg-red-700"
+            >
+              ¿Seguro? Borrar
+            </button>
+            <button
+              onClick={() => setConfirmDelete(null)}
+              className="rounded-full border border-gray-200 px-3 py-1.5 text-xs text-gray-500"
+            >
+              ✕
+            </button>
+          </>
+        ) : (
+          <button
+            onClick={() => setConfirmDelete(b.id)}
+            disabled={busy === b.id}
+            className="rounded-full border border-red-200 px-4 py-1.5 text-xs font-semibold text-red-500 hover:bg-red-50"
+          >
+            Borrar
+          </button>
+        )}
       </div>
     </li>
   );
