@@ -12,31 +12,26 @@ const { businesses: featuredBusinesses } = Astro.props;
 
 <section class="mx-auto w-full max-w-6xl px-2 sm:px-6">
   <div
-    class="relative overflow-hidden rounded-3xl border border-amber-200/60 bg-linear-to-br from-amber-50 via-white to-amber-50/40 px-6 py-12 shadow-sm"
+    class="relative overflow-hidden rounded-3xl bg-white px-6 py-14 shadow-sm"
   >
-    <!-- brillos decorativos -->
+    <!-- resplandor cálido, sutil, solo arriba -->
     <div
-      class="pointer-events-none absolute -right-20 -top-20 h-64 w-64 rounded-full bg-amber-200/40 blur-3xl animate-blob"
-    >
-    </div>
-    <div
-      class="pointer-events-none absolute -bottom-24 -left-16 h-72 w-72 rounded-full bg-yellow-100/60 blur-3xl animate-blob"
-      style="animation-delay: -6s"
+      class="pointer-events-none absolute inset-x-0 -top-24 h-56 bg-linear-to-b from-amber-100/70 via-amber-50/40 to-transparent"
     >
     </div>
 
-    <div class="relative flex flex-col items-center gap-8">
-      <div class="flex flex-col items-center gap-2 text-center">
+    <div class="relative flex flex-col items-center gap-10">
+      <div class="flex flex-col items-center gap-3 text-center">
         <span
-          class="inline-flex items-center gap-2 rounded-full border border-amber-300/60 bg-amber-100 px-4 py-1 text-xs font-semibold uppercase tracking-widest text-amber-700"
+          class="inline-flex items-center gap-1.5 rounded-full border border-amber-200 bg-amber-50 px-3.5 py-1 text-[11px] font-semibold uppercase tracking-[0.15em] text-amber-600"
         >
-          <Star size={13} fill="currentColor" />
+          <Star size={12} fill="currentColor" />
           Destacados
         </span>
         <h2 class="text-2xl font-bold text-gray-900 md:text-3xl">
           Los comercios que apuestan por el barrio
         </h2>
-        <p class="max-w-xl text-sm text-gray-600">
+        <p class="max-w-xl text-sm text-gray-500">
           Negocios de El Talar con lugar preferencial en el portal. Tu apoyo los
           mantiene creciendo — y ellos mantienen esta página gratuita.
         </p>
@@ -47,12 +42,7 @@ const { businesses: featuredBusinesses } = Astro.props;
       >
         {
           featuredBusinesses?.map((business) => (
-            <div
-              data-tilt
-              class="rounded-xl ring-2 ring-amber-300/70 ring-offset-2 ring-offset-transparent"
-            >
-              <BusinessCard business={business} client:visible />
-            </div>
+            <BusinessCard business={business} client:visible />
           ))
         }
       </div>
@@ -60,18 +50,18 @@ const { businesses: featuredBusinesses } = Astro.props;
       <div class="flex flex-col items-center gap-3 sm:flex-row">
         <a
           href="/negocios"
-          class="rounded-full border border-gray-300 bg-white px-6 py-2.5 text-sm font-semibold text-gray-700 transition hover:bg-gray-50"
+          class="rounded-full border border-gray-200 bg-white px-6 py-2.5 text-sm font-semibold text-gray-600 transition hover:border-gray-300 hover:text-gray-900"
         >
           Ver todos los negocios
         </a>
         <a
           href="/anunciate"
-          class="group inline-flex items-center gap-2 rounded-full bg-amber-500 px-6 py-2.5 text-sm font-semibold text-white shadow-lg shadow-amber-500/30 transition-all hover:scale-105 hover:bg-amber-600"
+          class="group inline-flex items-center gap-2 rounded-full bg-gray-900 px-6 py-2.5 text-sm font-semibold text-white transition-all hover:scale-[1.03] hover:bg-gray-800"
         >
-          <Star size={16} fill="currentColor" />
+          <Star size={15} class="text-amber-400" fill="currentColor" />
           Quiero destacar mi negocio
           <ArrowRight
-            size={16}
+            size={15}
             class="transition-transform group-hover:translate-x-0.5"
           />
         </a>

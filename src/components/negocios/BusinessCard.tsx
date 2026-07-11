@@ -26,7 +26,10 @@ export default function BusinessCard({ business }: BusinessCardProps) {
   };
 
   return (
-    <div className="flex flex-col rounded-xl shadow-lg overflow-hidden">
+    <div
+      data-tilt
+      className="flex flex-col rounded-xl bg-white shadow-lg overflow-hidden"
+    >
       {/* IMAGE */}
       <div className="relative " onClick={handleClick}>
         <div className="absolute top-2 left-2 z-10 flex flex-wrap gap-1">
@@ -51,7 +54,7 @@ export default function BusinessCard({ business }: BusinessCardProps) {
           height={192}
           loading="lazy"
           decoding="async"
-          className="h-48 w-full object-cover cursor-pointer transition-transform duration-300 hover:scale-105"
+          className="h-48 w-full object-cover cursor-pointer"
         />
       </div>
 
