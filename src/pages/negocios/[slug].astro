@@ -16,6 +16,61 @@ if (!business) {
 const description =
   business.description?.slice(0, 160) ||
   `${business.name} en El Talar: horarios, teléfono, WhatsApp y ubicación.`;
+
+// Datos estructurados schema.org: le dicen a Google que esto es un negocio
+// local con dirección y horarios (mejora el SEO local y los rich results).
+const SCHEMA_DAYS = [
+  "Sunday",
+  "Monday",
+  "Tuesday",
+  "Wednesday",
+  "Thursday",
+  "Friday",
+  "Saturday",
+];
+
+const openingHours = (business.business_hours ?? [])
+  .filter(
+    (h) => !h.is_closed && (h.is_open_24 || (h.open_time && h.close_time)),
+  )
+  .map((h) => ({
+    "@type": "OpeningHoursSpecification",
+    dayOfWeek: SCHEMA_DAYS[h.day_of_week],
+    opens: h.is_open_24 ? "00:00" : h.open_time!.slice(0, 5),
+    closes: h.is_open_24 ? "23:59" : h.close_time!.slice(0, 5),
+  }));
+
+const jsonLd = {
+  "@context": "https://schema.org",
+  "@type": "LocalBusiness",
+  name: business.name,
+  description,
+  url: new URL(
+    `/negocios/${business.slug}`,
+    Astro.site ?? Astro.url,
+  ).toString(),
+  ...(business.coverPhoto?.url && { image: business.coverPhoto.url }),
+  ...(business.phone && { telephone: business.phone }),
+  ...(business.address && {
+    address: {
+      "@type": "PostalAddress",
+      streetAddress: business.address,
+      addressLocality: "El Talar",
+      addressRegion: "Buenos Aires",
+      addressCountry: "AR",
+    },
+  }),
+  ...(business.lat != null &&
+    business.lng != null && {
+      geo: {
+        "@type": "GeoCoordinates",
+        latitude: business.lat,
+        longitude: business.lng,
+      },
+    }),
+  ...(business.instagram && { sameAs: [business.instagram] }),
+  ...(openingHours.length > 0 && { openingHoursSpecification: openingHours }),
+};
 ---
 
 <Layout
@@ -23,5 +78,10 @@ const description =
   description={description}
   image={business.coverPhoto?.url}
 >
+  <script
+    type="application/ld+json"
+    is:inline
+    set:html={JSON.stringify(jsonLd)}
+  />
   <BusinessDetail business={business} />
 </Layout>

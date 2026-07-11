@@ -10,7 +10,7 @@ import { supabase } from "../../lib/supabase";
 // islas de React solo se encargan de filtrar/buscar sobre esos datos.
 const [businesses, { data: categories }] = await Promise.all([
   getBusinesses(),
-  supabase.from("categories").select("id, name, slug").order("name"),
+  supabase.from("categories").select("id, name, slug, icon").order("name"),
 ]);
 ---
 

@@ -3,9 +3,14 @@ import Layout from "../../layouts/Layout.astro";
 import Hero from "../../components/telefonos/Hero.astro";
 import Emergencies from "../../components/telefonos/Emergencies.astro";
 import Directory from "../../components/telefonos/Directory.astro";
+import { getDirectoryEntries } from "../../lib/repositories/directory.repository";
 
-// Contenido fijo (hardcodeado por ahora): la página sale estática en el build.
-export const prerender = true;
+// Los teléfonos viven en la tabla directory_entries: se editan en Supabase
+// y se ven al instante, sin deploy. Por eso la página es SSR.
+const entries = await getDirectoryEntries();
+
+const priority = entries.filter((e) => e.is_priority);
+const general = entries.filter((e) => !e.is_priority);
 ---
 
 <Layout
@@ -13,6 +18,6 @@ export const prerender = true;
   description="Teléfonos de emergencia y servicios de El Talar: bomberos, policía, salud, Edenor, AySA y más."
 >
   <Hero />
-  <Emergencies />
-  <Directory />
+  <Emergencies entries={priority} />
+  <Directory entries={general} />
 </Layout>

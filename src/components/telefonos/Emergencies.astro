@@ -1,108 +1,82 @@
 ---
-const bomberos = "47402222";
+import { Phone } from "@lucide/astro";
+import type { DirectoryEntry } from "../../lib/repositories/directory.repository";
+
+interface Props {
+  entries: DirectoryEntry[];
+}
+
+const { entries } = Astro.props;
+
+// Clases completas (no interpoladas) para que Tailwind las detecte.
+const STYLES: Record<
+  string,
+  { badge: string; card: string; button: string; label: string }
+> = {
+  seguridad: {
+    label: "Seguridad",
+    card: "border-blue-100 bg-blue-50",
+    badge: "bg-blue-200 text-blue-700",
+    button: "bg-blue-500",
+  },
+  emergencia: {
+    label: "Emergencias",
+    card: "border-red-100 bg-red-50",
+    badge: "bg-red-200 text-red-700",
+    button: "bg-red-500",
+  },
+  salud: {
+    label: "Salud",
+    card: "border-green-100 bg-green-50",
+    badge: "bg-green-200 text-green-700",
+    button: "bg-green-500",
+  },
+  servicio: {
+    label: "Servicios",
+    card: "border-gray-100 bg-gray-50",
+    badge: "bg-gray-200 text-gray-700",
+    button: "bg-gray-500",
+  },
+};
+
+const styleFor = (category: string) => STYLES[category] ?? STYLES.servicio;
+
+// Números cortos (911, 107) se muestran en el botón; largos dicen "Llamar ahora".
+const callLabel = (phone: string) =>
+  phone.length <= 4 ? `Llamar ${phone}` : "Llamar ahora";
 ---
 
 <section id="emergencias" class="flex flex-col gap-6 w-full px-2 sm:px-12">
   <h2 class="text-2xl font-bold">Emergencias Prioritarias</h2>
 
   <div class="grid gap-6 md:grid-cols-3">
-    <div
-      class="flex flex-col gap-3 justify-between rounded-2xl border border-blue-100 bg-blue-50 p-6"
-    >
-      <span
-        class="w-fit rounded-full bg-blue-200 px-3 py-1 text-xs font-semibold text-blue-700"
-      >
-        Seguridad
-      </span>
+    {
+      entries.map((entry) => {
+        const style = styleFor(entry.category);
+        return (
+          <div
+            class={`flex flex-col gap-3 justify-between rounded-2xl border p-6 ${style.card}`}
+          >
+            <span
+              class={`w-fit rounded-full px-3 py-1 text-xs font-semibold ${style.badge}`}
+            >
+              {style.label}
+            </span>
 
-      <h3 class="text-lg font-bold">Policía</h3>
-      <p class="text-sm text-gray-600">Atención inmediata 24hs</p>
+            <h3 class="text-lg font-bold">{entry.title}</h3>
+            {entry.subtitle && (
+              <p class="text-sm text-gray-600">{entry.subtitle}</p>
+            )}
 
-      <a
-        href="tel:911"
-        class="inline-flex w-full items-center justify-center gap-2 rounded-full bg-blue-500 py-1 font-semibold text-white"
-      >
-        <svg
-          xmlns="http://www.w3.org/2000/svg"
-          width="20"
-          height="20"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          stroke-width="2"
-          stroke-linecap="round"
-          stroke-linejoin="round"
-          class="lucide lucide-phone-icon lucide-phone"
-          ><path
-            d="M13.832 16.568a1 1 0 0 0 1.213-.303l.355-.465A2 2 0 0 1 17 15h3a2 2 0 0 1 2 2v3a2 2 0 0 1-2 2A18 18 0 0 1 2 4a2 2 0 0 1 2-2h3a2 2 0 0 1 2 2v3a2 2 0 0 1-.8 1.6l-.468.351a1 1 0 0 0-.292 1.233 14 14 0 0 0 6.392 6.384"
-          ></path></svg
-        > Llamar 911
-      </a>
-    </div>
-
-    <div
-      class="flex flex-col gap-3 justify-between rounded-2xl border border-red-100 bg-red-50 p-6"
-    >
-      <span
-        class="w-fit rounded-full bg-red-200 px-3 py-1 text-xs font-semibold text-red-700"
-      >
-        Emergencias
-      </span>
-      <h3 class="text-lg font-bold">Bomberos El Talar</h3>
-      <p class="text-sm text-gray-600">Atención inmediata 24hs</p>
-      <a
-        href=`tel:+5411${bomberos}`
-        class="inline-flex w-full items-center justify-center gap-2 rounded-full bg-red-500 py-1 font-semibold text-white"
-      >
-        <svg
-          xmlns="http://www.w3.org/2000/svg"
-          width="20"
-          height="20"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          stroke-width="2"
-          stroke-linecap="round"
-          stroke-linejoin="round"
-          class="lucide lucide-phone-icon lucide-phone"
-          ><path
-            d="M13.832 16.568a1 1 0 0 0 1.213-.303l.355-.465A2 2 0 0 1 17 15h3a2 2 0 0 1 2 2v3a2 2 0 0 1-2 2A18 18 0 0 1 2 4a2 2 0 0 1 2-2h3a2 2 0 0 1 2 2v3a2 2 0 0 1-.8 1.6l-.468.351a1 1 0 0 0-.292 1.233 14 14 0 0 0 6.392 6.384"
-          ></path></svg
-        >Llamar ahora
-      </a>
-    </div>
-
-    <div
-      class="flex flex-col gap-3 justify-between rounded-2xl border border-green-100 bg-green-50 p-6"
-    >
-      <span
-        class="w-fit rounded-full bg-green-200 px-3 py-1 text-xs font-semibold text-green-700"
-      >
-        Salud
-      </span>
-      <h3 class="text-lg font-bold">Emergencias Médicas</h3>
-      <p class="text-sm text-gray-600">Atención inmediata 24hs</p>
-
-      <a
-        href="tel:107"
-        class="inline-flex w-full items-center justify-center gap-2 rounded-full bg-green-500 py-1 font-semibold text-white"
-      >
-        <svg
-          xmlns="http://www.w3.org/2000/svg"
-          width="20"
-          height="20"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          stroke-width="2"
-          stroke-linecap="round"
-          stroke-linejoin="round"
-          class="lucide lucide-phone-icon lucide-phone"
-          ><path
-            d="M13.832 16.568a1 1 0 0 0 1.213-.303l.355-.465A2 2 0 0 1 17 15h3a2 2 0 0 1 2 2v3a2 2 0 0 1-2 2A18 18 0 0 1 2 4a2 2 0 0 1 2-2h3a2 2 0 0 1 2 2v3a2 2 0 0 1-.8 1.6l-.468.351a1 1 0 0 0-.292 1.233 14 14 0 0 0 6.392 6.384"
-          ></path></svg
-        > Llamar 107
-      </a>
-    </div>
+            <a
+              href={`tel:${entry.phone}`}
+              class={`inline-flex w-full items-center justify-center gap-2 rounded-full py-1 font-semibold text-white ${style.button}`}
+            >
+              <Phone size={20} /> {callLabel(entry.phone)}
+            </a>
+          </div>
+        );
+      })
+    }
   </div>
 </section>

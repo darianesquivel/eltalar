@@ -33,6 +33,7 @@
 ## 1. Estado actual (diagnóstico)
 
 ### 1.1 Lo que está bien 👍
+
 - Stack moderno y coherente: Astro 5, React 19, Tailwind 4, Supabase.
 - Separación incipiente por dominios: `negocios`, `farmacias`, `telefonos`, `home`.
 - Ya existe un repositorio de datos (`business.repository.ts`) — buen instinto.
@@ -44,13 +45,13 @@
 
 ### 1.2 Problemas críticos 🔴 (rompen o bloquean)
 
-| # | Problema | Dónde | Impacto |
-|---|----------|-------|---------|
-| C1 | **`output: "server"` sin adapter instalado** | `astro.config.mjs` | El build de producción **falla** (verificado: `astro build` → error `[NoAdapterInstalled]`). Astro necesita un adapter (Vercel/Node/Cloudflare) para SSR. Hoy solo funciona en `dev`. |
-| C5 | **Bug de zona horaria en "abierto/cerrado" y turnos** | `businessHours.ts`, `getTodayBusinessStatus.ts`, `NextTurns.astro` | Toda la lógica usa `new Date()` con la hora **del servidor**. En deploy real (Vercel/CF corren en UTC) el estado abierto/cerrado y el día de los turnos quedan corridos **3 horas** para Argentina. Hoy "funciona" solo porque `dev` corre en tu máquina. Fix: calcular con TZ explícita (`America/Argentina/Buenos_Aires`) o en el cliente. |
-| C2 | **La página de negocios baja los datos en el cliente** (`BusinessGrid.client.tsx` con `client:load` + `useEffect`) | `pages/negocios/index.astro` | El listado principal **no tiene HTML en el server → Google no lo indexa bien**. Es exactamente lo contrario a por qué elegiste Astro. |
-| C3 | **Sin autenticación ni panel de administración** | (no existe) | Toda tu visión (negocios que se cargan solos, suscripciones, destacados) depende de esto. Hoy solo se puede cargar data a mano en el dashboard de Supabase. |
-| C4 | **Sin RLS / seguridad de datos** (se usa la `anon key` para insertar en `contact_messages` y potencialmente escribir) | `api/contact.ts`, `contactForm.ts` | Sin Row Level Security, la anon key puede leer/escribir de más. Riesgo real cuando haya datos de negocios reales. |
+| #   | Problema                                                                                                              | Dónde                                                              | Impacto                                                                                                                                                                                                                                                                                                                                      |
+| --- | --------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| C1  | **`output: "server"` sin adapter instalado**                                                                          | `astro.config.mjs`                                                 | El build de producción **falla** (verificado: `astro build` → error `[NoAdapterInstalled]`). Astro necesita un adapter (Vercel/Node/Cloudflare) para SSR. Hoy solo funciona en `dev`.                                                                                                                                                        |
+| C5  | **Bug de zona horaria en "abierto/cerrado" y turnos**                                                                 | `businessHours.ts`, `getTodayBusinessStatus.ts`, `NextTurns.astro` | Toda la lógica usa `new Date()` con la hora **del servidor**. En deploy real (Vercel/CF corren en UTC) el estado abierto/cerrado y el día de los turnos quedan corridos **3 horas** para Argentina. Hoy "funciona" solo porque `dev` corre en tu máquina. Fix: calcular con TZ explícita (`America/Argentina/Buenos_Aires`) o en el cliente. |
+| C2  | **La página de negocios baja los datos en el cliente** (`BusinessGrid.client.tsx` con `client:load` + `useEffect`)    | `pages/negocios/index.astro`                                       | El listado principal **no tiene HTML en el server → Google no lo indexa bien**. Es exactamente lo contrario a por qué elegiste Astro.                                                                                                                                                                                                        |
+| C3  | **Sin autenticación ni panel de administración**                                                                      | (no existe)                                                        | Toda tu visión (negocios que se cargan solos, suscripciones, destacados) depende de esto. Hoy solo se puede cargar data a mano en el dashboard de Supabase.                                                                                                                                                                                  |
+| C4  | **Sin RLS / seguridad de datos** (se usa la `anon key` para insertar en `contact_messages` y potencialmente escribir) | `api/contact.ts`, `contactForm.ts`                                 | Sin Row Level Security, la anon key puede leer/escribir de más. Riesgo real cuando haya datos de negocios reales.                                                                                                                                                                                                                            |
 
 ### 1.3 Problemas importantes 🟠 (deuda que escala mal)
 
@@ -93,6 +94,7 @@
   fijo "Hoy · hasta las 8 hs" en farmacias de turno (ignora el `ends_at` real).
 
 ### 1.4 Problemas menores 🟡 (higiene)
+
 - README es el template por defecto de Astro.
 - Sin `.prettierrc` / linter / CI. Sin tests.
 - Import de imágenes desde `../../../public/...` (anti‑patrón; los assets de `public/`
@@ -108,16 +110,17 @@
 
 Astro permite elegir el modo de render **página por página**. Esta es la asignación propuesta:
 
-| Página | Modo | Por qué |
-|--------|------|---------|
-| `/` (home) | **Estática con revalidación (ISR)** | Contenido semi‑fijo; alertas/destacados se revalidan cada X min. |
-| `/negocios` (listado) | **SSR (o estático + ISR)** con HTML renderizado en el server | Indexable. Los filtros/búsqueda son una isla de React que hidrata **sobre** el HTML ya renderizado, no lo reemplaza. |
-| `/negocios/[slug]` (detalle) | **SSR con revalidación** o `getStaticPaths` + ISR | Cada negocio necesita su URL indexable con JSON‑LD. |
-| `/farmacias` | **SSR** (cambia el turno según fecha/hora) | Dinámico por naturaleza. |
-| `/telefonos` | **Estática** | Es casi contenido fijo. |
-| Panel `/app/*` (privado) | **SSR** detrás de auth | No indexable, siempre fresco. |
+| Página                       | Modo                                                         | Por qué                                                                                                              |
+| ---------------------------- | ------------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------- |
+| `/` (home)                   | **Estática con revalidación (ISR)**                          | Contenido semi‑fijo; alertas/destacados se revalidan cada X min.                                                     |
+| `/negocios` (listado)        | **SSR (o estático + ISR)** con HTML renderizado en el server | Indexable. Los filtros/búsqueda son una isla de React que hidrata **sobre** el HTML ya renderizado, no lo reemplaza. |
+| `/negocios/[slug]` (detalle) | **SSR con revalidación** o `getStaticPaths` + ISR            | Cada negocio necesita su URL indexable con JSON‑LD.                                                                  |
+| `/farmacias`                 | **SSR** (cambia el turno según fecha/hora)                   | Dinámico por naturaleza.                                                                                             |
+| `/telefonos`                 | **Estática**                                                 | Es casi contenido fijo.                                                                                              |
+| Panel `/app/*` (privado)     | **SSR** detrás de auth                                       | No indexable, siempre fresco.                                                                                        |
 
 Para lograr esto:
+
 1. Instalar un adapter (recomendado **`@astrojs/vercel`** si vas a deployar en Vercel, o
    `@astrojs/node` si vas a self‑host). Cambiar `output` a `"static"` **por defecto** y
    marcar como dinámicas solo las páginas que lo necesitan con `export const prerender = false`.
@@ -143,6 +146,7 @@ Para lograr esto:
 ### 2.3 Autenticación y roles (la pieza que falta)
 
 Usar **Supabase Auth**. Tres roles:
+
 - **`visitor`** (anónimo): navega, busca, contacta. Solo lectura pública.
 - **`owner`** (dueño de negocio): registra su negocio, edita su ficha, sube fotos,
   carga horarios, gestiona su suscripción. Solo puede tocar **sus** negocios.
@@ -155,6 +159,7 @@ Rutas privadas bajo `/app` (o `/panel`), protegidas por middleware de Astro
 ### 2.4 Seguridad (RLS)
 
 Activar **Row Level Security** en todas las tablas. Políticas base:
+
 - `businesses`: lectura pública solo si `is_active = true`; escritura solo por el
   `owner_id` dueño o `admin`. (Hay que agregar la columna `owner_id`.)
 - `business_photos` / `business_hours`: escritura solo por el owner del negocio padre.
@@ -164,6 +169,7 @@ Activar **Row Level Security** en todas las tablas. Políticas base:
 ### 2.5 Modelo de datos — cambios propuestos
 
 Agregar / ajustar:
+
 ```
 businesses
   + owner_id            uuid  → auth.users(id)   (dueño)
@@ -180,6 +186,7 @@ directory_entries (nueva)   ← reemplaza el hardcode de telefonos/emergencias
   id, category('emergencia'|'servicio'|'salud'), title, subtitle, phone,
   is_priority, order, is_active
 ```
+
 > Nota: `is_featured` actual pasa a derivarse de `plan = 'destacado' AND featured_until > now()`.
 
 ### 2.6 Monetización (Fase 3)
@@ -192,10 +199,10 @@ automáticamente. Empezar simple: un solo plan pago. No sobre‑diseñar tiers t
 **Menú de ideas de monetización** (ordenadas por relación esfuerzo/retorno para un
 portal barrial; las dos primeras son las que conviene lanzar):
 
-1. **Plan "Destacado" mensual** ⭐ *(la base, ya prevista)*
+1. **Plan "Destacado" mensual** ⭐ _(la base, ya prevista)_
    Badge visual + primero en el listado + carrusel del home. Simple de entender y
    de vender puerta a puerta.
-2. **Estadísticas para el dueño** ⭐ *(el gancho de retención)*
+2. **Estadísticas para el dueño** ⭐ _(el gancho de retención)_
    Trackear vistas de ficha y clicks a WhatsApp/teléfono (una tabla `business_events`
    simple; se implementa en horas). El plan gratis muestra "este mes: 214 personas
    vieron tu negocio"; el plan pago muestra el detalle. **Esto es lo que hace que un
@@ -207,11 +214,11 @@ portal barrial; las dos primeras son las que conviene lanzar):
    "Farmacias de turno — presentado por [negocio]". Un solo sponsor por sección, precio
    fijo mensual, cero desarrollo (un banner discreto). Ideal para los 2-3 negocios más
    grandes de la zona.
-5. **Servicio de carga inicial** *(one-time, sin código)*
+5. **Servicio de carga inicial** _(one-time, sin código)_
    Muchos comerciantes no van a cargar su ficha solos. Cobrar un fijo único por dejarles
    la ficha armada (fotos, horarios, descripción). Monetiza desde el día 1, incluso
    antes de tener pagos online: se cobra en mano/transferencia.
-6. **Clasificados de vecinos** *(más adelante)*
+6. **Clasificados de vecinos** _(más adelante)_
    Gratis publicar, pago destacar. Trae tráfico recurrente pero requiere moderación.
 
 **Qué NO hacer:** banners de redes publicitarias (AdSense) — pagan centavos con este
@@ -255,31 +262,37 @@ implementar (1)+(2) juntos → sumar (3) y (4) cuando haya masa de usuarios.
 
 ## 3. Plan por fases (con checklist)
 
-### Fase 0 — Estabilizar y quick wins (1-2 días) 🔧
-- [ ] Instalar adapter (`@astrojs/vercel` o `node`) y arreglar el build de producción.
-- [ ] Cambiar a `output: "static"` por defecto + `prerender = false` solo donde haga falta.
-- [ ] Unificar los dos clientes Supabase en uno.
-- [ ] Unificar la lógica de horarios en `lib/hours/` (borrar duplicados).
-- [ ] Renderizar `/negocios` en el server (sacar el fetch del cliente) → **arreglar SEO**.
-- [ ] `<head>` completo en `Layout.astro`: `description`, OG, canonical, `initial-scale=1`.
-- [ ] Agregar `robots.txt` + `sitemap` (`@astrojs/sitemap`).
-- [ ] Página `404.astro` propia.
-- [ ] Fix de zona horaria: toda la lógica de horarios/turnos con TZ `America/Argentina/Buenos_Aires` explícita (o cálculo en cliente).
-- [ ] Mover honeypot + validación de email al endpoint `/api/contact` (hoy solo se chequea en el navegador).
-- [ ] Borrar código muerto: `lib/contactForm.ts`, `components/telefonos/Filters.astro`.
-- [ ] Configurar `site` en `astro.config.mjs` y reemplazar el dominio hardcodeado de `BusinessDetail.astro` por `Astro.url`.
-- [ ] Reemplazar README template por uno real del proyecto.
+### Fase 0 — Estabilizar y quick wins ✅ COMPLETADA (2026-07-11)
 
-### Fase 1 — Calidad y datos (2-3 días) 🧱
-- [ ] Generar tipos de Supabase → eliminar `any` del data layer.
-- [ ] Repositorios por dominio, todos tipados.
-- [ ] Migrar teléfonos/emergencias hardcodeados a tabla `directory_entries`.
-- [ ] Optimización de imágenes (astro:assets o transformaciones de Supabase Storage).
-- [ ] Extraer íconos SVG repetidos a componentes (usar `@lucide/astro`).
-- [ ] JSON‑LD `LocalBusiness` en el detalle de negocio.
-- [ ] Prettier + ESLint + `astro check` en CI (GitHub Actions).
+- [x] Instalar adapter `@astrojs/vercel` y arreglar el build de producción (requirió Astro 5→7).
+- [x] Estrategia de render: SSR por defecto (contenido al instante sin deploy) + `prerender = true` en páginas fijas (404). _(Se optó por SSR-default en vez de static-default: el requisito "editar contenido sin deploy" pesa más.)_
+- [x] Unificar los dos clientes Supabase en uno.
+- [x] Unificar la lógica de horarios en `lib/hours.ts` (borrados los 3 duplicados).
+- [x] Renderizar `/negocios` en el server → **SEO arreglado** (verificado en producción).
+- [x] `<head>` completo en `Layout.astro`: `description`, OG, canonical, `initial-scale=1`.
+- [x] `robots.txt` + sitemap dinámico (`/sitemap.xml` endpoint propio: suma negocios sin deploy).
+- [x] Página `404.astro` propia (y rewrite con status 404 real en fichas inexistentes).
+- [x] Fix de zona horaria con TZ `America/Argentina/Buenos_Aires` explícita.
+- [x] Honeypot + validación movidos al endpoint `/api/contact`.
+- [x] Borrado código muerto: `lib/contactForm.ts`, `components/telefonos/Filters.astro`.
+- [x] `site` en `astro.config.mjs`; dominio hardcodeado reemplazado por `Astro.site`.
+- [x] README real del proyecto.
 
-### Fase 2 — Auth + panel + seguridad (1-2 semanas) 🔐  ← **el corazón del proyecto**
+> Nota post-fase: el proyecto Supabase original murió pausado >90 días; se migró
+> completo (datos + storage + RLS) a un proyecto nuevo el 2026-07-11.
+
+### Fase 1 — Calidad y datos ✅ COMPLETADA (2026-07-11)
+
+- [x] Tipos generados de Supabase (`lib/database.types.ts`) → `any` eliminado del data layer.
+- [x] Repositorios tipados (`business.repository`, `directory.repository`). _(El tipado ya cazó un bug: `business.tag` no existía en la DB.)_
+- [x] Teléfonos/emergencias migrados a tabla `directory_entries` (RLS lectura pública; editable sin deploy). _(De paso se arregló el `tel:+5411...` hardcodeado que rompía los 0800.)_
+- [x] Optimización de imágenes: Vercel Image Service + `<Image>` en el detalle + lazy/dimensions en cards.
+- [ ] Extraer íconos SVG repetidos a componentes — hecho en telefonos (`@lucide/astro`); falta el resto (baja prioridad).
+- [x] JSON‑LD `LocalBusiness` en el detalle de negocio (con horarios, dirección y geo si hay lat/lng).
+- [x] Prettier + `astro check` + build en CI (GitHub Actions). _(ESLint queda opcional para más adelante.)_
+
+### Fase 2 — Auth + panel + seguridad (1-2 semanas) 🔐 ← **el corazón del proyecto**
+
 - [ ] Supabase Auth (login/registro para owners; magic link o email+password).
 - [ ] Columnas `owner_id`, `status` en `businesses`.
 - [ ] Middleware de Astro para proteger `/app/*`.
@@ -288,12 +301,14 @@ implementar (1)+(2) juntos → sumar (3) y (4) cuando haya masa de usuarios.
 - [ ] Activar RLS en todas las tablas con las políticas de §2.4.
 
 ### Fase 3 — Monetización (1 semana) 💳
+
 - [ ] Tablas `subscriptions`, campos `plan`/`featured_until`.
 - [ ] Integración Mercado Pago (preapproval) + webhook.
 - [ ] Lógica de "destacado" derivada del plan activo.
 - [ ] UI de "Destacá tu negocio" en el panel del owner.
 
 ### Fase 4 — Mapa (3-5 días) 🗺️
+
 - [ ] `lat`/`lng` + geocoding al guardar.
 - [ ] Mapa con markers (MapLibre/Leaflet) + popups → link al detalle.
 - [ ] Filtro por categoría sobre el mapa.
@@ -320,6 +335,7 @@ implementar (1)+(2) juntos → sumar (3) y (4) cuando haya masa de usuarios.
 ---
 
 ## 5. Lo que NO hay que hacer
+
 - ❌ No migrar de Astro a Next/otro framework. No resuelve ningún problema real acá y
   perdés el SEO estático que ganaste.
 - ❌ No meter realtime (websockets/Supabase Realtime) todavía. No lo necesitás; SSR +

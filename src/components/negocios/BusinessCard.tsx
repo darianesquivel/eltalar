@@ -1,39 +1,30 @@
 import { getTodayStatus } from "../../lib/hours";
+import type { Business } from "../../lib/repositories/business.repository";
 
 type BusinessCardProps = {
-  business: any;
+  business: Business;
 };
 
-const no_image = "/images/no-image.jpg"
-const wspLogo = "/images/whatsapp-icon.svg"
+const no_image = "/images/no-image.jpg";
+const wspLogo = "/images/whatsapp-icon.svg";
 
 export default function BusinessCard({ business }: BusinessCardProps) {
   const status = getTodayStatus(business.business_hours);
 
   const whatsappUrl = `https://wa.me/${business.whatsapp}?text=${encodeURIComponent(
-    business.whatsapp_message ?? ""
+    business.whatsapp_message ?? "",
   )}`;
 
   const handleClick = () => {
     window.location.href = `/negocios/${business.slug}`;
   };
 
-  type Category = {
-    id: string;
-    name: string;
-    slug: string;
-    icon?: string | null;
-  };
-
   return (
     <div className="flex flex-col rounded-xl shadow-lg overflow-hidden">
       {/* IMAGE */}
-      <div
-        className="relative "
-        onClick={handleClick}
-      >
+      <div className="relative " onClick={handleClick}>
         <div className="absolute top-2 left-2 z-10 flex flex-wrap gap-1">
-          {business.categories.map((category: Category) => (
+          {business.categories.map((category) => (
             <span
               key={category.id}
               className="text-xs px-2 bg-primary text-white rounded-full border border-white/30"
@@ -44,8 +35,12 @@ export default function BusinessCard({ business }: BusinessCardProps) {
         </div>
 
         <img
-          src={business?.coverPhoto?.url || no_image}
+          src={business.coverPhoto?.url || no_image}
           alt={business.name}
+          width={400}
+          height={192}
+          loading="lazy"
+          decoding="async"
           className="h-48 w-full object-cover cursor-pointer transition-transform duration-300 hover:scale-105"
         />
       </div>
@@ -80,12 +75,13 @@ export default function BusinessCard({ business }: BusinessCardProps) {
           {/* STATUS */}
           {status && (
             <span
-              className={`text-xs uppercase ${status.status === "open"
-                ? "text-green-600"
-                : status.status === "closed"
-                  ? "text-red-500"
-                  : "text-gray-500"
-                }`}
+              className={`text-xs uppercase ${
+                status.status === "open"
+                  ? "text-green-600"
+                  : status.status === "closed"
+                    ? "text-red-500"
+                    : "text-gray-500"
+              }`}
             >
               ● {status.label}
             </span>
@@ -123,7 +119,8 @@ export default function BusinessCard({ business }: BusinessCardProps) {
               rel="noopener noreferrer"
               className="p-2 rounded-lg bg-secondary-soft/10 hover:bg-secondary-soft/30 transition"
             >
-              <svg xmlns="http://www.w3.org/2000/svg"
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
                 width="20"
                 height="20"
                 viewBox="0 0 24 24"
@@ -132,7 +129,8 @@ export default function BusinessCard({ business }: BusinessCardProps) {
                 stroke-width="2"
                 stroke-linecap="round"
                 stroke-linejoin="round"
-                className="text-gray-700">
+                className="text-gray-700"
+              >
                 <rect width="20" height="20" x="2" y="2" rx="5" ry="5" />
                 <path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z" />
                 <line x1="17.5" x2="17.51" y1="6.5" y2="6.5" />
@@ -145,7 +143,8 @@ export default function BusinessCard({ business }: BusinessCardProps) {
               href={`tel:${business.phone}`}
               className="p-2 rounded-lg bg-secondary-soft/10 hover:bg-secondary-soft/30 transition"
             >
-              <svg xmlns="http://www.w3.org/2000/svg"
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
                 width="20"
                 height="20"
                 viewBox="0 0 24 24"
@@ -154,7 +153,8 @@ export default function BusinessCard({ business }: BusinessCardProps) {
                 stroke-width="2"
                 stroke-linecap="round"
                 stroke-linejoin="round"
-                className="text-gray-700">
+                className="text-gray-700"
+              >
                 <path d="M13 2a9 9 0 0 1 9 9" />
                 <path d="M13 6a5 5 0 0 1 5 5" />
                 <path d="M13.832 16.568a1 1 0 0 0 1.213-.303l.355-.465A2 2 0 0 1 17 15h3a2 2 0 0 1 2 2v3a2 2 0 0 1-2 2A18 18 0 0 1 2 4a2 2 0 0 1 2-2h3a2 2 0 0 1 2 2v3a2 2 0 0 1-.8 1.6l-.468.351a1 1 0 0 0-.292 1.233 14 14 0 0 0 6.392 6.384" />
@@ -163,7 +163,6 @@ export default function BusinessCard({ business }: BusinessCardProps) {
           )}
         </div>
       </div>
-
     </div>
   );
 }

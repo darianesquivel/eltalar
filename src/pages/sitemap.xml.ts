@@ -4,7 +4,9 @@ import { supabase } from "../lib/supabase";
 // Sitemap dinámico: incluye las páginas fijas + una URL por negocio activo.
 // Al ser un endpoint SSR, un negocio nuevo aparece acá sin re-deploy.
 export const GET: APIRoute = async ({ site }) => {
-  const base = (site ?? new URL("https://eltalar.com.ar")).toString().replace(/\/$/, "");
+  const base = (site ?? new URL("https://eltalar.com.ar"))
+    .toString()
+    .replace(/\/$/, "");
 
   const staticPaths = ["/", "/negocios", "/farmacias", "/telefonos"];
 

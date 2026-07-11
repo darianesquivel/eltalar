@@ -1,20 +1,20 @@
 ---
-const { business } = Astro.props;
-import backIcon from "../../../public/images/back-button-icon.svg";
+import { Image } from "astro:assets";
 import MapPreview from "../MapPreview.astro";
-import { getWeekSchedule } from "../../lib/hours";
-const hours = getWeekSchedule(business.business_hours);
-import whatsappLogo from "../../../public/images/whatsapp-icon.svg";
 import ShareBusiness from "./ShareBusiness.astro";
+import { getWeekSchedule } from "../../lib/hours";
+import type { Business } from "../../lib/repositories/business.repository";
 
-import no_image from "../../../public/images/no-image.jpg";
+interface Props {
+  business: Business;
+}
 
-type Category = {
-  id: string;
-  name: string;
-  slug: string;
-  icon?: string | null;
-};
+const { business } = Astro.props;
+const hours = getWeekSchedule(business.business_hours);
+
+const backIcon = "/images/back-button-icon.svg";
+const whatsappLogo = "/images/whatsapp-icon.svg";
+const no_image = "/images/no-image.jpg";
 
 // URL absoluta para compartir, derivada del dominio configurado en astro.config.
 const shareUrl = new URL(
@@ -28,16 +28,32 @@ const shareUrl = new URL(
     href="/negocios"
     class="inline-flex items-center gap-2 text-sm text-primary hover:underline"
   >
-    <img src={backIcon.src} alt="" />
+    <img src={backIcon} alt="Volver a negocios" />
   </a>
 
   <div class="relative overflow-hidden rounded-3xl shadow">
-    <img
-      transition:name={`img-${business.slug}`}
-      src={business?.coverPhoto?.url || no_image.src}
-      alt={business.name}
-      class="h-[260px] w-full object-cover md:h-[540px]"
-    />
+    {
+      business.coverPhoto?.url ? (
+        <Image
+          transition:name={`img-${business.slug}`}
+          src={business.coverPhoto.url}
+          alt={business.name}
+          width={1280}
+          height={540}
+          widths={[480, 800, 1280]}
+          sizes="100vw"
+          loading="eager"
+          class="h-[260px] w-full object-cover md:h-[540px]"
+        />
+      ) : (
+        <img
+          transition:name={`img-${business.slug}`}
+          src={no_image}
+          alt={business.name}
+          class="h-[260px] w-full object-cover md:h-[540px]"
+        />
+      )
+    }
 
     <div
       class="absolute inset-0 bg-linear-to-t from-black/70 via-black/30 to-transparent"
@@ -47,19 +63,11 @@ const shareUrl = new URL(
     <div class="absolute bottom-6 left-6 text-white space-y-2">
       <div class="flex gap-2">
         {
-          business.categories.map((category: Category) => (
+          business.categories.map((category) => (
             <span class="text-xs px-2 bg-primary border border-white/30 text-white rounded-full">
               {category.name}
             </span>
           ))
-        }
-
-        {
-          business.tag && (
-            <span class="rounded-full bg-white/20 px-3 py-1 text-xs">
-              {business.tag}
-            </span>
-          )
         }
       </div>
 
@@ -105,7 +113,7 @@ const shareUrl = new URL(
               rel="noopener noreferrer"
               class="flex-1 h-15 text-xs flex items-center gap-1 justify-center transition-transform duration-200 hover:scale-105 bg-primary text-white px-5 py-1 rounded-lg"
             >
-              <img width={20} src={whatsappLogo.src} /> Whatsapp
+              <img width={20} src={whatsappLogo} alt="" /> Whatsapp
             </a>
           )
         }
@@ -215,7 +223,7 @@ const shareUrl = new URL(
                   {day.status === "open_24" && <span>Abierto 24hs</span>}
 
                   {day.status === "open" &&
-                    day.ranges.map((r: any) => (
+                    day.ranges?.map((r) => (
                       <span class="block">
                         {r.open} – {r.close}
                       </span>

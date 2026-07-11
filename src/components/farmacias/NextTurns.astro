@@ -15,7 +15,7 @@ const { data: nextTurns, error } = await supabase
       address,
       phone
     )
-    `
+    `,
   )
   .gt("starts_at", now)
   .order("starts_at", { ascending: true })
@@ -59,7 +59,7 @@ const hasTurns = nextTurns && nextTurns.length > 0;
               name={business.name}
               address={business.address}
               badge={`📅 ${formatDay(turn.starts_at)} ${formatDate(
-                turn.starts_at
+                turn.starts_at,
               )}`}
             />
           );

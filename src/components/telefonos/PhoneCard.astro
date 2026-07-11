@@ -1,4 +1,12 @@
 ---
+import { Phone } from "@lucide/astro";
+
+interface Props {
+  title: string;
+  subtitle?: string | null;
+  phone: string; // número completo y marcable (+54..., 0800..., 911)
+}
+
 const { title, subtitle, phone } = Astro.props;
 ---
 
@@ -6,25 +14,12 @@ const { title, subtitle, phone } = Astro.props;
   class="flex flex-col gap-3 justify-between items-center rounded-2xl border border-blue-100 p-6"
 >
   <h3 class="text-lg font-bold">{title}</h3>
-  <p class="text-sm text-gray-600">{subtitle}</p>
+  {subtitle && <p class="text-sm text-gray-600">{subtitle}</p>}
 
   <a
-    href=`tel:+5411${phone}`
+    href={`tel:${phone}`}
     class="inline-flex w-fit items-center justify-center gap-2 rounded-full bg-primary py-1 px-5 font-semibold text-white"
   >
-    <svg
-      xmlns="http://www.w3.org/2000/svg"
-      width="15"
-      height="15"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      stroke-width="2"
-      stroke-linecap="round"
-      stroke-linejoin="round"
-      ><path
-        d="M13.832 16.568a1 1 0 0 0 1.213-.303l.355-.465A2 2 0 0 1 17 15h3a2 2 0 0 1 2 2v3a2 2 0 0 1-2 2A18 18 0 0 1 2 4a2 2 0 0 1 2-2h3a2 2 0 0 1 2 2v3a2 2 0 0 1-.8 1.6l-.468.351a1 1 0 0 0-.292 1.233 14 14 0 0 0 6.392 6.384"
-      ></path></svg
-    > Llamar
+    <Phone size={15} /> Llamar
   </a>
 </div>

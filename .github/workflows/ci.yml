@@ -1,0 +1,41 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  check-and-build:
+    runs-on: ubuntu-latest
+
+    env:
+      # Dummies: el build no se conecta a Supabase (las páginas con datos son
+      # SSR y se resuelven en runtime), pero el cliente exige que existan.
+      PUBLIC_SUPABASE_URL: https://example.supabase.co
+      PUBLIC_SUPABASE_ANON_KEY: dummy-key-for-ci
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 11
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Type check (astro check)
+        run: pnpm check
+
+      - name: Format check (prettier)
+        run: pnpm format:check
+        continue-on-error: true # informativo por ahora; endurecer más adelante
+
+      - name: Build
+        run: pnpm build

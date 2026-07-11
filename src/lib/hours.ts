@@ -55,8 +55,7 @@ function nowInArgentina() {
     hourCycle: "h23",
   }).formatToParts(new Date());
 
-  const get = (type: string) =>
-    parts.find((p) => p.type === type)?.value ?? "";
+  const get = (type: string) => parts.find((p) => p.type === type)?.value ?? "";
 
   const dayMap: Record<string, number> = {
     Sun: 0,
@@ -98,7 +97,9 @@ function getNextOpenRange(hours: BusinessHour[], fromDay: number) {
 }
 
 /** Estado actual del negocio: badge "Abierto · Cierra 20:00" / "Cerrado · Abre ...". */
-export function getTodayStatus(hours: BusinessHour[] | null | undefined): TodayStatus {
+export function getTodayStatus(
+  hours: BusinessHour[] | null | undefined,
+): TodayStatus {
   if (!hours || hours.length === 0) return null;
 
   const { day: today, time: currentTime } = nowInArgentina();
@@ -147,7 +148,9 @@ export function getTodayStatus(hours: BusinessHour[] | null | undefined): TodayS
 }
 
 /** Grilla semanal de horarios para la ficha del negocio. */
-export function getWeekSchedule(hours: BusinessHour[] | null | undefined): DaySchedule[] {
+export function getWeekSchedule(
+  hours: BusinessHour[] | null | undefined,
+): DaySchedule[] {
   const { day: today } = nowInArgentina();
 
   return DAY_NAMES.map((name, index) => {

@@ -1,56 +1,92 @@
 import { supabase } from "../supabase";
+import type { Database } from "../database.types";
+import type { BusinessHour } from "../hours";
 
 /* =======================
    TYPES
 ======================= */
 
-export interface BusinessPhoto {
-  id: string;
-  url: string;
-  is_cover: boolean;
-  position: number | null;
-}
+type BusinessRow = Database["public"]["Tables"]["businesses"]["Row"];
+
+export type Category = Pick<
+  Database["public"]["Tables"]["categories"]["Row"],
+  "id" | "name" | "slug" | "icon"
+>;
+
+export type BusinessPhoto = Pick<
+  Database["public"]["Tables"]["business_photos"]["Row"],
+  "id" | "url" | "is_cover" | "position"
+>;
+
+/** Negocio ya "aplanado" para consumo de la UI. */
+export type Business = BusinessRow & {
+  business_hours: BusinessHour[];
+  categories: Category[];
+  coverPhoto: BusinessPhoto | null;
+  photos: BusinessPhoto[];
+};
 
 interface GetBusinessesOptions {
   featured?: boolean;
   limit?: number;
 }
 
+const BUSINESS_SELECT = `
+  *,
+  business_categories (
+    categories (
+      id,
+      name,
+      slug,
+      icon
+    )
+  ),
+  business_hours (
+    day_of_week,
+    open_time,
+    close_time,
+    is_closed,
+    is_open_24
+  ),
+  business_photos (
+    id,
+    url,
+    is_cover,
+    position
+  )
+`;
+
+/** Aplana la respuesta cruda de Supabase al shape que usa la UI. */
+function toBusiness(raw: any): Business {
+  const photos: BusinessPhoto[] = Array.isArray(raw.business_photos)
+    ? raw.business_photos
+    : [];
+
+  const coverPhoto =
+    photos.find((p) => p.is_cover) ||
+    photos.slice().sort((a, b) => (a.position ?? 0) - (b.position ?? 0))[0] ||
+    null;
+
+  return {
+    ...raw,
+    categories: raw.business_categories?.map((bc: any) => bc.categories) ?? [],
+    coverPhoto,
+    photos,
+  };
+}
+
 /* =======================
-  getAllBusinesses + getIsFeaturedBusinesses
+   QUERIES
 ======================= */
 
-export async function getBusinesses(options: GetBusinessesOptions = {}) {
+export async function getBusinesses(
+  options: GetBusinessesOptions = {},
+): Promise<Business[]> {
   const { featured, limit } = options;
 
   let query = supabase
     .from("businesses")
-    .select(
-      `
-      *,
-      business_categories (
-        categories (
-          id,
-          name,
-          slug,
-          icon
-        )
-      ),
-      business_hours (
-        day_of_week,
-        open_time,
-        close_time,
-        is_closed,
-        is_open_24
-      ),
-      business_photos (
-        id,
-        url,
-        is_cover,
-        position
-      )
-    `,
-    )
+    .select(BUSINESS_SELECT)
     .eq("is_active", true)
     .order("priority", { ascending: false });
 
@@ -71,52 +107,15 @@ export async function getBusinesses(options: GetBusinessesOptions = {}) {
 
   // El estado abierto/cerrado NO se calcula acá: depende de la hora del que mira,
   // así que lo calcula cada componente (getTodayStatus de lib/hours) al renderizar.
-  return data.map((b) => {
-    const photos: BusinessPhoto[] = Array.isArray(b.business_photos)
-      ? b.business_photos
-      : [];
-
-    const coverPhoto =
-      photos.find((p) => p.is_cover) ||
-      photos.slice().sort((a, b) => (a.position ?? 0) - (b.position ?? 0))[0] ||
-      null;
-
-    return {
-      ...b,
-      categories: b.business_categories?.map((bc: any) => bc.categories) ?? [],
-      coverPhoto,
-    };
-  });
+  return data.map(toBusiness);
 }
 
-export async function getBusinessBySlug(slug: string) {
+export async function getBusinessBySlug(
+  slug: string,
+): Promise<Business | null> {
   const { data, error } = await supabase
     .from("businesses")
-    .select(
-      `
-      *,
-      business_categories (
-        categories (
-          id,
-          name,
-          slug
-        )
-      ),
-      business_hours (
-        day_of_week,
-        open_time,
-        close_time,
-        is_closed,
-        is_open_24
-      ),
-      business_photos (
-        id,
-        url,
-        is_cover,
-        position
-      )
-    `,
-    )
+    .select(BUSINESS_SELECT)
     .eq("slug", slug)
     .single();
 
@@ -125,18 +124,5 @@ export async function getBusinessBySlug(slug: string) {
     return null;
   }
 
-  const photos: BusinessPhoto[] = Array.isArray(data.business_photos)
-    ? data.business_photos
-    : [];
-
-  const coverPhoto =
-    photos.find((p) => p.is_cover) ||
-    photos.slice().sort((a, b) => (a.position ?? 0) - (b.position ?? 0))[0] ||
-    null;
-
-  return {
-    ...data,
-    categories: data.business_categories?.map((bc: any) => bc.categories) ?? [],
-    coverPhoto,
-  };
+  return toBusiness(data);
 }

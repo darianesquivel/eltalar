@@ -41,7 +41,10 @@ const canonical = new URL(Astro.url.pathname, Astro.site ?? Astro.url);
     <meta property="og:url" content={canonical} />
     {image && <meta property="og:image" content={image} />}
 
-    <meta name="twitter:card" content={image ? "summary_large_image" : "summary"} />
+    <meta
+      name="twitter:card"
+      content={image ? "summary_large_image" : "summary"}
+    />
 
     <ClientRouter />
   </head>

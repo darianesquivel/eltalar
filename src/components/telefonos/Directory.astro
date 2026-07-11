@@ -1,33 +1,12 @@
 ---
 import PhoneCard from "../telefonos/PhoneCard.astro";
+import type { DirectoryEntry } from "../../lib/repositories/directory.repository";
 
-const phones = [
-  {
-    title: "Delegación El Talar",
-    subtitle: "Lunes a Viernes 8 – 16hs",
-    phone: "45129973",
-  },
-  {
-    title: "Edenor - Reclamos",
-    subtitle: "Guardia técnica",
-    phone: "08006661000",
-  },
-  {
-    title: "AySA",
-    subtitle: "Atención Técnica",
-    phone: "08003212482",
-  },
-  {
-    title: "CAFyS Almirante Brown",
-    subtitle: "Centro de salud comunitario en El Talarl",
-    phone: "45129986",
-  },
-  {
-    title: "CAFyS La Paloma",
-    subtitle: "Centro de salud comunitario en El Talar",
-    phone: "45129985",
-  },
-];
+interface Props {
+  entries: DirectoryEntry[];
+}
+
+const { entries } = Astro.props;
 ---
 
 <section class="flex flex-col gap-6 w-full px-2 sm:px-12">
@@ -35,11 +14,11 @@ const phones = [
 
   <div class="grid gap-6 md:grid-cols-3">
     {
-      phones.map((phone) => (
+      entries.map((entry) => (
         <PhoneCard
-          title={phone.title}
-          subtitle={phone.subtitle}
-          phone={phone.phone}
+          title={entry.title}
+          subtitle={entry.subtitle}
+          phone={entry.phone}
         />
       ))
     }

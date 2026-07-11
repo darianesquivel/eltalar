@@ -1,10 +1,5 @@
 import { useEffect, useState } from "react";
-
-type Category = {
-  id: string;
-  name: string;
-  slug: string;
-};
+import type { Category } from "../../lib/repositories/business.repository";
 
 type CategoryFilterProps = {
   categories: Category[];
