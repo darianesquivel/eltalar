@@ -1,0 +1,45 @@
+---
+import AdminLayout from "../../../layouts/AdminLayout.astro";
+import TurnsManager from "../../../components/app/TurnsManager";
+import { createSupabaseServer } from "../../../lib/supabase/server";
+
+const supabase = createSupabaseServer(Astro);
+const weekAgo = new Date(Date.now() - 7 * 86400000).toISOString();
+
+const [{ data: turns }, { data: pharmacies }] = await Promise.all([
+  supabase
+    .from("pharmacy_turns")
+    .select("id, pharmacy_id, starts_at, ends_at, businesses ( name )")
+    .gte("ends_at", weekAgo)
+    .order("starts_at"),
+  // Farmacias = negocios cuya categoría contiene "farmacia"
+  supabase
+    .from("businesses")
+    .select("id, name, business_categories!inner ( categories!inner ( name ) )")
+    .ilike("business_categories.categories.name", "%farmacia%")
+    .order("name"),
+]);
+
+const pharmacyOptions = (pharmacies ?? []).map((p) => ({
+  id: p.id,
+  name: p.name,
+}));
+---
+
+<AdminLayout title="Turnos de farmacia">
+  <div class="mx-auto max-w-3xl space-y-6">
+    <div>
+      <h1 class="text-2xl font-bold">Turnos de farmacia</h1>
+      <p class="text-sm text-gray-500">
+        Definen qué farmacia aparece "De turno" en el sitio. Cargá los turnos a
+        medida que salen publicados.
+      </p>
+    </div>
+
+    <TurnsManager
+      turns={turns ?? []}
+      pharmacies={pharmacyOptions}
+      client:load
+    />
+  </div>
+</AdminLayout>

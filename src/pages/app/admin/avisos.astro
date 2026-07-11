@@ -1,0 +1,26 @@
+---
+import AdminLayout from "../../../layouts/AdminLayout.astro";
+import AlertsManager from "../../../components/app/AlertsManager";
+import { createSupabaseServer } from "../../../lib/supabase/server";
+
+const supabase = createSupabaseServer(Astro);
+
+const { data: alerts } = await supabase
+  .from("site_alerts")
+  .select("id, title, description, is_active")
+  .order("created_at", { ascending: false });
+---
+
+<AdminLayout title="Avisos">
+  <div class="mx-auto max-w-3xl space-y-6">
+    <div>
+      <h1 class="text-2xl font-bold">Avisos del barrio</h1>
+      <p class="text-sm text-gray-500">
+        Se muestran arriba de todo en la portada (cortes de luz, obras, campañas
+        de vacunación, etc.).
+      </p>
+    </div>
+
+    <AlertsManager alerts={alerts ?? []} client:load />
+  </div>
+</AdminLayout>

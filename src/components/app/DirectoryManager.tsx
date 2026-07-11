@@ -1,0 +1,196 @@
+import { useState } from "react";
+import { supabaseBrowser } from "../../lib/supabase/browser";
+import type { DirectoryEntry } from "../../lib/repositories/directory.repository";
+
+type Props = {
+  entries: DirectoryEntry[];
+};
+
+const CATEGORIES = [
+  { value: "seguridad", label: "Seguridad" },
+  { value: "emergencia", label: "Emergencias" },
+  { value: "salud", label: "Salud" },
+  { value: "servicio", label: "Servicios" },
+];
+
+const inputClass =
+  "rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm focus:border-primary focus:outline-none";
+
+const EMPTY = {
+  title: "",
+  subtitle: "",
+  phone: "",
+  category: "servicio",
+  is_priority: false,
+};
+
+export default function DirectoryManager({ entries }: Props) {
+  const [items, setItems] = useState(entries);
+  const [form, setForm] = useState(EMPTY);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const refresh = async () => {
+    const { data } = await supabaseBrowser
+      .from("directory_entries")
+      .select("*")
+      .order("position");
+    if (data) setItems(data);
+  };
+
+  const create = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!form.title.trim() || !form.phone.trim()) {
+      setError("Título y teléfono son obligatorios");
+      return;
+    }
+    setSaving(true);
+    setError(null);
+
+    const { error: insError } = await supabaseBrowser
+      .from("directory_entries")
+      .insert({
+        title: form.title.trim(),
+        subtitle: form.subtitle.trim() || null,
+        phone: form.phone.trim(),
+        category: form.category,
+        is_priority: form.is_priority,
+        position: items.length + 1,
+      });
+
+    if (insError) {
+      console.error(insError);
+      setError("Error creando el teléfono");
+    } else {
+      setForm(EMPTY);
+      await refresh();
+    }
+    setSaving(false);
+  };
+
+  const toggleActive = async (entry: DirectoryEntry) => {
+    await supabaseBrowser
+      .from("directory_entries")
+      .update({ is_active: !entry.is_active })
+      .eq("id", entry.id);
+    await refresh();
+  };
+
+  const togglePriority = async (entry: DirectoryEntry) => {
+    await supabaseBrowser
+      .from("directory_entries")
+      .update({ is_priority: !entry.is_priority })
+      .eq("id", entry.id);
+    await refresh();
+  };
+
+  const remove = async (id: string) => {
+    await supabaseBrowser.from("directory_entries").delete().eq("id", id);
+    await refresh();
+  };
+
+  return (
+    <div className="space-y-6">
+      {/* Alta */}
+      <form
+        onSubmit={create}
+        className="grid gap-3 rounded-2xl bg-white p-5 shadow-sm sm:grid-cols-2"
+      >
+        <input
+          value={form.title}
+          onChange={(e) => setForm({ ...form, title: e.target.value })}
+          placeholder="Nombre (ej: Defensa Civil) *"
+          className={inputClass}
+        />
+        <input
+          value={form.phone}
+          onChange={(e) => setForm({ ...form, phone: e.target.value })}
+          placeholder="Teléfono completo (ej: +541147XXXXXX o 103) *"
+          className={inputClass}
+        />
+        <input
+          value={form.subtitle}
+          onChange={(e) => setForm({ ...form, subtitle: e.target.value })}
+          placeholder="Subtítulo (ej: Atención 24hs)"
+          className={inputClass}
+        />
+        <select
+          value={form.category}
+          onChange={(e) => setForm({ ...form, category: e.target.value })}
+          className={inputClass}
+        >
+          {CATEGORIES.map((c) => (
+            <option key={c.value} value={c.value}>
+              {c.label}
+            </option>
+          ))}
+        </select>
+        <label className="flex items-center gap-2 text-sm text-gray-600">
+          <input
+            type="checkbox"
+            checked={form.is_priority}
+            onChange={(e) =>
+              setForm({ ...form, is_priority: e.target.checked })
+            }
+          />
+          Card grande de emergencias
+        </label>
+        <button
+          type="submit"
+          disabled={saving}
+          className="rounded-xl bg-primary px-5 py-2 text-sm font-semibold text-white hover:bg-green-700 disabled:opacity-60"
+        >
+          {saving ? "Guardando…" : "+ Agregar teléfono"}
+        </button>
+        {error && <p className="text-sm text-red-600 sm:col-span-2">{error}</p>}
+      </form>
+
+      {/* Lista */}
+      <ul className="space-y-2">
+        {items.map((entry) => (
+          <li
+            key={entry.id}
+            className="flex flex-wrap items-center justify-between gap-3 rounded-xl bg-white px-4 py-3 shadow-sm"
+          >
+            <div>
+              <p
+                className={`text-sm font-semibold ${entry.is_active ? "" : "text-gray-400 line-through"}`}
+              >
+                {entry.is_priority && "⭐ "}
+                {entry.title}{" "}
+                <span className="font-normal text-gray-500">
+                  · {entry.phone}
+                </span>
+              </p>
+              <p className="text-xs text-gray-400">
+                {entry.category}
+                {entry.subtitle ? ` · ${entry.subtitle}` : ""}
+              </p>
+            </div>
+            <div className="flex gap-2">
+              <button
+                onClick={() => togglePriority(entry)}
+                className="rounded-full bg-amber-50 px-3 py-1 text-xs font-semibold text-amber-600 hover:bg-amber-100"
+                title="Mover entre emergencias y directorio"
+              >
+                {entry.is_priority ? "→ directorio" : "→ emergencias"}
+              </button>
+              <button
+                onClick={() => toggleActive(entry)}
+                className="rounded-full bg-gray-100 px-3 py-1 text-xs font-semibold text-gray-600 hover:bg-gray-200"
+              >
+                {entry.is_active ? "Ocultar" : "Mostrar"}
+              </button>
+              <button
+                onClick={() => remove(entry.id)}
+                className="rounded-full bg-red-50 px-3 py-1 text-xs font-semibold text-red-600 hover:bg-red-100"
+              >
+                Borrar
+              </button>
+            </div>
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}

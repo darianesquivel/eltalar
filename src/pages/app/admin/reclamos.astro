@@ -1,0 +1,30 @@
+---
+import AdminLayout from "../../../layouts/AdminLayout.astro";
+import ClaimsManager from "../../../components/app/ClaimsManager";
+import { createSupabaseServer } from "../../../lib/supabase/server";
+
+const supabase = createSupabaseServer(Astro);
+
+const { data: claims } = await supabase
+  .from("business_claims")
+  .select(
+    "id, business_id, claimer_email, message, status, created_at, businesses ( name )",
+  )
+  .eq("status", "pending")
+  .order("created_at");
+---
+
+<AdminLayout title="Reclamos">
+  <div class="mx-auto max-w-4xl space-y-6">
+    <div>
+      <h1 class="text-2xl font-bold">Reclamos de negocios</h1>
+      <p class="text-sm text-gray-500">
+        Comerciantes pidiendo la gestión de un negocio cargado por vos. Antes de
+        aprobar, verificá que sea el dueño real (llamá al local, chequeá las
+        redes).
+      </p>
+    </div>
+
+    <ClaimsManager claims={claims ?? []} client:load />
+  </div>
+</AdminLayout>

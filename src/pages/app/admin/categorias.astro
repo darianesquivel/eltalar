@@ -1,0 +1,33 @@
+---
+import AdminLayout from "../../../layouts/AdminLayout.astro";
+import CategoriesManager from "../../../components/app/CategoriesManager";
+import { createSupabaseServer } from "../../../lib/supabase/server";
+
+const supabase = createSupabaseServer(Astro);
+
+const { data } = await supabase
+  .from("categories")
+  .select("id, name, slug, business_categories ( business_id )")
+  .order("name");
+
+const categories = (data ?? []).map((c) => ({
+  id: c.id,
+  name: c.name,
+  slug: c.slug,
+  count: c.business_categories?.length ?? 0,
+}));
+---
+
+<AdminLayout title="Categorías">
+  <div class="mx-auto max-w-3xl space-y-6">
+    <div>
+      <h1 class="text-2xl font-bold">Categorías / rubros</h1>
+      <p class="text-sm text-gray-500">
+        Los rubros que eligen los comercios al cargar su negocio. Al borrar una
+        categoría en uso, los negocios simplemente dejan de tenerla asignada.
+      </p>
+    </div>
+
+    <CategoriesManager categories={categories} client:load />
+  </div>
+</AdminLayout>

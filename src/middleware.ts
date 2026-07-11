@@ -47,6 +47,14 @@ export const onRequest = defineMiddleware(async (context, next) => {
     if (pathname.startsWith("/app/admin") && !context.locals.isAdmin) {
       return context.redirect("/app");
     }
+
+    // El admin vive en su panel de control, no en el panel de comercios
+    if (
+      context.locals.isAdmin &&
+      (pathname === "/app" || pathname === "/app/")
+    ) {
+      return context.redirect("/app/admin");
+    }
   }
 
   return next();

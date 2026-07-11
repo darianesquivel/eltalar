@@ -1,0 +1,28 @@
+---
+import AdminLayout from "../../../layouts/AdminLayout.astro";
+import DirectoryManager from "../../../components/app/DirectoryManager";
+import { createSupabaseServer } from "../../../lib/supabase/server";
+
+const supabase = createSupabaseServer(Astro);
+
+const { data: entries } = await supabase
+  .from("directory_entries")
+  .select("*")
+  .order("position");
+---
+
+<AdminLayout title="Teléfonos">
+  <div class="mx-auto max-w-3xl space-y-6">
+    <div>
+      <h1 class="text-2xl font-bold">Teléfonos útiles</h1>
+      <p class="text-sm text-gray-500">
+        Lo que se ve en la página de Teléfonos. Los marcados como "emergencias"
+        salen en las cards grandes de arriba; el resto, en el directorio
+        general. Cargá el número completo y marcable (ej: +541147402222, 911,
+        08006661000).
+      </p>
+    </div>
+
+    <DirectoryManager entries={entries ?? []} client:load />
+  </div>
+</AdminLayout>

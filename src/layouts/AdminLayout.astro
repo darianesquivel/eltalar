@@ -1,0 +1,117 @@
+---
+import { ClientRouter } from "astro:transitions";
+import NavLoader from "../components/NavLoader.astro";
+
+import "../styles/global.css";
+
+interface Props {
+  title: string;
+}
+
+const { title } = Astro.props;
+const path = Astro.url.pathname;
+
+const NAV = [
+  { href: "/app/admin", label: "Dashboard", icon: "📊", exact: true },
+  { href: "/app/admin/negocios", label: "Negocios", icon: "🏪" },
+  { href: "/app/admin/reclamos", label: "Reclamos", icon: "🙋" },
+  { href: "/app/admin/avisos", label: "Avisos", icon: "📢" },
+  { href: "/app/admin/telefonos", label: "Teléfonos", icon: "📞" },
+  { href: "/app/admin/farmacias", label: "Turnos farmacia", icon: "💊" },
+  { href: "/app/admin/categorias", label: "Categorías", icon: "🏷️" },
+  { href: "/app/admin/mensajes", label: "Mensajes", icon: "✉️" },
+];
+
+const isActive = (item: (typeof NAV)[number]) =>
+  item.exact ? path === item.href : path.startsWith(item.href);
+---
+
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="robots" content="noindex" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <title>{title} · Admin El Talar</title>
+    <ClientRouter />
+  </head>
+
+  <body class="bg-gray-100">
+    <NavLoader />
+
+    <div class="flex min-h-screen">
+      <!-- Sidebar -->
+      <aside
+        class="hidden w-56 shrink-0 flex-col border-r border-gray-200 bg-white md:flex"
+      >
+        <div class="border-b border-gray-100 px-5 py-4">
+          <p class="font-bold">El Talar</p>
+          <p class="text-xs text-gray-400">Panel de control</p>
+        </div>
+
+        <nav class="flex flex-1 flex-col gap-1 p-3">
+          {
+            NAV.map((item) => (
+              <a
+                href={item.href}
+                class={`flex items-center gap-3 rounded-xl px-4 py-2.5 text-sm font-medium transition ${
+                  isActive(item)
+                    ? "bg-primary text-white"
+                    : "text-gray-600 hover:bg-gray-100"
+                }`}
+              >
+                <span>{item.icon}</span>
+                {item.label}
+              </a>
+            ))
+          }
+        </nav>
+
+        <div class="space-y-2 border-t border-gray-100 p-3">
+          <a
+            href="/"
+            class="flex items-center gap-3 rounded-xl px-4 py-2 text-sm text-gray-500 hover:bg-gray-100"
+          >
+            🌐 Ver el sitio
+          </a>
+          <form method="POST" action="/api/auth/signout">
+            <button
+              type="submit"
+              class="flex w-full items-center gap-3 rounded-xl px-4 py-2 text-left text-sm text-gray-500 hover:bg-gray-100"
+            >
+              👋 Salir
+            </button>
+          </form>
+        </div>
+      </aside>
+
+      <!-- Contenido -->
+      <div class="flex min-w-0 flex-1 flex-col">
+        <!-- Barra superior mobile -->
+        <div
+          class="flex items-center gap-2 overflow-x-auto border-b border-gray-200 bg-white px-4 py-3 md:hidden"
+        >
+          {
+            NAV.map((item) => (
+              <a
+                href={item.href}
+                class={`whitespace-nowrap rounded-full px-3 py-1.5 text-xs font-semibold ${
+                  isActive(item)
+                    ? "bg-primary text-white"
+                    : "bg-gray-100 text-gray-600"
+                }`}
+              >
+                {item.icon} {item.label}
+              </a>
+            ))
+          }
+        </div>
+
+        <main class="flex-1 p-5 md:p-8">
+          <slot />
+        </main>
+      </div>
+    </div>
+  </body>
+</html>

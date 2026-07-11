@@ -1,68 +1,151 @@
 ---
-import Layout from "../../../layouts/Layout.astro";
-import AdminBusinesses from "../../../components/app/AdminBusinesses";
-import AlertsManager from "../../../components/app/AlertsManager";
-import ClaimsManager from "../../../components/app/ClaimsManager";
+import AdminLayout from "../../../layouts/AdminLayout.astro";
 import { createSupabaseServer } from "../../../lib/supabase/server";
 
 // El middleware ya validó que sea admin
 const supabase = createSupabaseServer(Astro);
+const now = new Date().toISOString();
 
-const [{ data: businesses }, { data: alerts }, { data: claims }] =
+const count = (q: PromiseLike<{ count: number | null }>) =>
+  Promise.resolve(q).then((r) => r.count ?? 0);
+
+const [activos, pendientes, reclamos, mensajes, alertasActivas, turnosFuturos] =
   await Promise.all([
-    supabase
-      .from("businesses")
-      .select(
-        "id, name, slug, address, status, is_active, is_featured, owner_id",
-      )
-      .order("created_at", { ascending: false }),
-    supabase
-      .from("site_alerts")
-      .select("id, title, description, is_active")
-      .order("created_at", { ascending: false }),
-    supabase
-      .from("business_claims")
-      .select(
-        "id, business_id, claimer_email, message, status, created_at, businesses ( name )",
-      )
-      .eq("status", "pending")
-      .order("created_at"),
+    count(
+      supabase
+        .from("businesses")
+        .select("id", { count: "exact", head: true })
+        .eq("is_active", true),
+    ),
+    count(
+      supabase
+        .from("businesses")
+        .select("id", { count: "exact", head: true })
+        .eq("status", "pending"),
+    ),
+    count(
+      supabase
+        .from("business_claims")
+        .select("id", { count: "exact", head: true })
+        .eq("status", "pending"),
+    ),
+    count(
+      supabase
+        .from("contact_messages")
+        .select("id", { count: "exact", head: true }),
+    ),
+    count(
+      supabase
+        .from("site_alerts")
+        .select("id", { count: "exact", head: true })
+        .eq("is_active", true),
+    ),
+    count(
+      supabase
+        .from("pharmacy_turns")
+        .select("id", { count: "exact", head: true })
+        .gt("ends_at", now),
+    ),
   ]);
+
+const CARDS = [
+  {
+    label: "Negocios publicados",
+    value: activos,
+    href: "/app/admin/negocios",
+    accent: "text-green-600",
+  },
+  {
+    label: "Esperando aprobación",
+    value: pendientes,
+    href: "/app/admin/negocios",
+    accent: pendientes > 0 ? "text-yellow-600" : "text-gray-400",
+    attention: pendientes > 0,
+  },
+  {
+    label: "Reclamos pendientes",
+    value: reclamos,
+    href: "/app/admin/reclamos",
+    accent: reclamos > 0 ? "text-blue-600" : "text-gray-400",
+    attention: reclamos > 0,
+  },
+  {
+    label: "Mensajes de vecinos",
+    value: mensajes,
+    href: "/app/admin/mensajes",
+    accent: "text-gray-700",
+  },
+  {
+    label: "Avisos activos",
+    value: alertasActivas,
+    href: "/app/admin/avisos",
+    accent: "text-gray-700",
+  },
+  {
+    label: "Turnos de farmacia cargados",
+    value: turnosFuturos,
+    href: "/app/admin/farmacias",
+    accent: turnosFuturos === 0 ? "text-red-500" : "text-gray-700",
+    attention: turnosFuturos === 0,
+  },
+];
 ---
 
-<Layout title="Admin | El Talar">
-  <section class="mx-auto w-full max-w-4xl space-y-10 py-8">
-    <div class="flex items-center justify-between">
-      <h1 class="text-2xl font-bold">Panel de administración</h1>
-      <a href="/app" class="text-sm text-primary hover:underline">
-        ← Mi panel
-      </a>
+<AdminLayout title="Dashboard">
+  <div class="space-y-8">
+    <div>
+      <h1 class="text-2xl font-bold">Dashboard</h1>
+      <p class="text-sm text-gray-500">
+        El estado del sitio de un vistazo. Las tarjetas con punto necesitan tu
+        atención.
+      </p>
     </div>
 
-    <div class="space-y-3">
-      <h2 class="text-lg font-semibold">
-        Reclamos de negocios
-        {
-          (claims?.length ?? 0) > 0 && (
-            <span class="ml-1 rounded-full bg-blue-100 px-3 py-0.5 text-sm text-blue-700">
-              {claims!.length}
-            </span>
-          )
-        }
-      </h2>
-      <ClaimsManager claims={claims ?? []} client:load />
+    <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+      {
+        CARDS.map((card) => (
+          <a
+            href={card.href}
+            class="relative rounded-2xl bg-white p-6 shadow-sm transition hover:shadow-md"
+          >
+            {card.attention && (
+              <span class="absolute right-4 top-4 h-2.5 w-2.5 animate-pulse rounded-full bg-red-500" />
+            )}
+            <p class={`text-3xl font-bold ${card.accent}`}>{card.value}</p>
+            <p class="mt-1 text-sm text-gray-500">{card.label}</p>
+          </a>
+        ))
+      }
     </div>
 
-    <AdminBusinesses businesses={businesses ?? []} client:load />
-
-    <div class="rounded-2xl bg-white p-8 shadow-sm space-y-4">
-      <h2 class="text-lg font-semibold">Avisos del barrio (home)</h2>
-      <AlertsManager alerts={alerts ?? []} client:load />
+    <div class="rounded-2xl bg-white p-6 shadow-sm">
+      <h2 class="mb-3 text-lg font-semibold">Acciones rápidas</h2>
+      <div class="flex flex-wrap gap-3">
+        <a
+          href="/app/negocios/nuevo"
+          class="rounded-full bg-primary px-5 py-2 text-sm font-semibold text-white hover:bg-green-700"
+        >
+          + Cargar negocio
+        </a>
+        <a
+          href="/app/admin/farmacias"
+          class="rounded-full bg-gray-100 px-5 py-2 text-sm font-semibold text-gray-700 hover:bg-gray-200"
+        >
+          + Cargar turno de farmacia
+        </a>
+        <a
+          href="/app/admin/avisos"
+          class="rounded-full bg-gray-100 px-5 py-2 text-sm font-semibold text-gray-700 hover:bg-gray-200"
+        >
+          + Publicar aviso
+        </a>
+        <a
+          href="/app/admin/telefonos"
+          class="rounded-full bg-gray-100 px-5 py-2 text-sm font-semibold text-gray-700 hover:bg-gray-200"
+        >
+          + Agregar teléfono útil
+        </a>
+      </div>
     </div>
-
-    <p class="text-xs text-gray-400">
-      Turnos de farmacia, directorio de teléfonos y categorías se gestionan por
-      ahora desde el panel de Supabase (Table Editor).
-    </p>
-  </section>
-</Layout>
+  </div>
+</AdminLayout>
