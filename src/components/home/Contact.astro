@@ -107,48 +107,53 @@ import Logo from "../../assets/logo.svg";
 </section>
 
 <script is:inline data-astro-rerun>
-  const form = document.getElementById("contact-form");
-  const button = document.getElementById("submit-btn");
-  const overlay = document.getElementById("success-overlay");
-  const check = document.getElementById("success-check");
-  const content = document.getElementById("contact-content");
+  // IIFE: al re-ejecutarse tras cada navegación (data-astro-rerun), los
+  // const en scope global chocarían ("Identifier already declared").
+  (() => {
+    const form = document.getElementById("contact-form");
+    const button = document.getElementById("submit-btn");
+    const overlay = document.getElementById("success-overlay");
+    const check = document.getElementById("success-check");
+    const content = document.getElementById("contact-content");
+    if (!form) return;
 
-  form.addEventListener("submit", async (e) => {
-    e.preventDefault();
+    form.addEventListener("submit", async (e) => {
+      e.preventDefault();
 
-    button.disabled = true;
-    button.textContent = "Enviando…";
+      button.disabled = true;
+      button.textContent = "Enviando…";
 
-    const data = new FormData(form);
+      const data = new FormData(form);
 
-    try {
-      // El honeypot ("company") viaja al servidor, que es quien decide:
-      // un bot que postee directo a la API ya no puede saltearse el chequeo.
-      const res = await fetch("/api/contact", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          name: data.get("name"),
-          email: data.get("email"),
-          message: data.get("message"),
-          company: data.get("company"),
-        }),
-      });
+      try {
+        // El honeypot ("company") viaja al servidor, que es quien decide:
+        // un bot que postee directo a la API ya no puede saltearse el chequeo.
+        const res = await fetch("/api/contact", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            name: data.get("name"),
+            email: data.get("email"),
+            message: data.get("message"),
+            company: data.get("company"),
+          }),
+        });
 
-      if (!res.ok) throw new Error();
+        if (!res.ok) throw new Error();
 
-      form.style.opacity = "0";
-      content.style.opacity = "0";
+        form.style.opacity = "0";
+        content.style.opacity = "0";
 
-      setTimeout(() => {
-        overlay.classList.remove("pointer-events-none");
-        overlay.style.opacity = "1";
-        check.style.transform = "scale(1)";
-      }, 300);
-    } catch {
-      button.disabled = false;
-      button.textContent = "Enviar mensaje";
-      alert("Error al enviar el mensaje 😞");
-    }
-  });
+        setTimeout(() => {
+          overlay.classList.remove("pointer-events-none");
+          overlay.style.opacity = "1";
+          check.style.transform = "scale(1)";
+        }, 300);
+      } catch {
+        button.disabled = false;
+        button.textContent = "Enviar mensaje";
+        alert("Error al enviar el mensaje 😞");
+      }
+    });
+  })();
 </script>

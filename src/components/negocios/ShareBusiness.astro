@@ -4,7 +4,12 @@ import { Share, Copy, Check } from "@lucide/astro";
 const { url, title } = Astro.props;
 ---
 
-<div class="rounded-2xl bg-green-50 p-6 text-center space-y-3">
+<div
+  id="share-box"
+  data-url={url}
+  data-title={title}
+  class="rounded-2xl bg-green-50 p-6 text-center space-y-3"
+>
   <p class="text-sm text-gray-700">
     ¿Te gusta este lugar?
     <br />
@@ -42,36 +47,43 @@ const { url, title } = Astro.props;
   </p>
 </div>
 
-<script is:inline data-astro-rerun define:vars={{ url, title }}>
-  const shareBtn = document.getElementById("share-btn");
-  const copyBtn = document.getElementById("copy-btn");
-  const feedback = document.getElementById("copy-feedback");
+<script is:inline data-astro-rerun>
+  // IIFE + datos por data-attributes: al re-ejecutarse tras cada navegación
+  // (data-astro-rerun), los const globales chocarían. define:vars quedaba
+  // fuera del IIFE, por eso los datos viajan en el DOM.
+  (() => {
+    const box = document.getElementById("share-box");
+    const shareBtn = document.getElementById("share-btn");
+    const copyBtn = document.getElementById("copy-btn");
+    const feedback = document.getElementById("copy-feedback");
+    if (!box || !feedback) return;
 
-  function showFeedback() {
-    feedback.classList.remove("opacity-0");
-    setTimeout(() => {
-      feedback.classList.add("opacity-0");
-    }, 2000);
-  }
+    const url = box.dataset.url;
+    const title = box.dataset.title;
 
-  shareBtn?.addEventListener("click", async () => {
-    if (navigator.share) {
-      try {
-        await navigator.share({
-          title,
-          url,
-        });
-      } catch (e) {
-        // usuario canceló
+    function showFeedback() {
+      feedback.classList.remove("opacity-0");
+      setTimeout(() => {
+        feedback.classList.add("opacity-0");
+      }, 2000);
+    }
+
+    shareBtn?.addEventListener("click", async () => {
+      if (navigator.share) {
+        try {
+          await navigator.share({ title, url });
+        } catch (e) {
+          // usuario canceló
+        }
+      } else {
+        await navigator.clipboard.writeText(url);
+        showFeedback();
       }
-    } else {
+    });
+
+    copyBtn?.addEventListener("click", async () => {
       await navigator.clipboard.writeText(url);
       showFeedback();
-    }
-  });
-
-  copyBtn?.addEventListener("click", async () => {
-    await navigator.clipboard.writeText(url);
-    showFeedback();
-  });
+    });
+  })();
 </script>
