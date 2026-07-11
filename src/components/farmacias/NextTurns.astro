@@ -1,5 +1,6 @@
 ---
 import { supabase } from "../../lib/supabase";
+import { ARGENTINA_TZ } from "../../lib/hours";
 import PharmacyCard from "./PharmacyCard.astro";
 
 const now = new Date().toISOString();
@@ -25,10 +26,15 @@ if (error) {
 }
 
 const formatDay = (date: string) =>
-  new Date(date).toLocaleDateString("es-AR", { weekday: "long" }).toUpperCase();
+  new Date(date)
+    .toLocaleDateString("es-AR", { weekday: "long", timeZone: ARGENTINA_TZ })
+    .toUpperCase();
 
 const formatDate = (date: string) =>
-  new Date(date).toLocaleDateString("es-AR", { day: "numeric" });
+  new Date(date).toLocaleDateString("es-AR", {
+    day: "numeric",
+    timeZone: ARGENTINA_TZ,
+  });
 
 const hasTurns = nextTurns && nextTurns.length > 0;
 ---

@@ -1,0 +1,23 @@
+---
+import Layout from "../layouts/Layout.astro";
+
+export const prerender = true;
+---
+
+<Layout title="Página no encontrada | El Talar">
+  <section class="flex flex-col items-center gap-6 py-24 text-center">
+    <p class="text-7xl font-bold text-primary">404</p>
+    <h1 class="text-2xl font-bold text-gray-900">
+      Esta página no existe (o ya no está)
+    </h1>
+    <p class="max-w-md text-gray-600">
+      Puede que el link esté mal escrito o que el contenido se haya movido.
+    </p>
+    <a
+      href="/"
+      class="rounded-xl bg-primary px-6 py-3 font-semibold text-white transition-transform hover:scale-105"
+    >
+      Volver al inicio
+    </a>
+  </section>
+</Layout>

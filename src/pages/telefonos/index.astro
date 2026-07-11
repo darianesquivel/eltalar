@@ -3,9 +3,15 @@ import Layout from "../../layouts/Layout.astro";
 import Hero from "../../components/telefonos/Hero.astro";
 import Emergencies from "../../components/telefonos/Emergencies.astro";
 import Directory from "../../components/telefonos/Directory.astro";
+
+// Contenido fijo (hardcodeado por ahora): la página sale estática en el build.
+export const prerender = true;
 ---
 
-<Layout title="Teléfonos Útiles en El Talar">
+<Layout
+  title="Teléfonos Útiles en El Talar"
+  description="Teléfonos de emergencia y servicios de El Talar: bomberos, policía, salud, Edenor, AySA y más."
+>
   <Hero />
   <Emergencies />
   <Directory />

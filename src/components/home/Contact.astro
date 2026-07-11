@@ -2,7 +2,7 @@
 import Logo from "../../assets/logo.svg";
 ---
 
-<section class="flex justify-center w-full">
+<section id="contact" class="flex justify-center w-full">
   <div
     id="contact-container"
     class="relative flex w-full max-w-4xl flex-col gap-12 rounded-3xl bg-white p-8 shadow-sm md:flex-row md:items-center md:p-12 overflow-hidden"
@@ -139,9 +139,10 @@ import Logo from "../../assets/logo.svg";
     button.textContent = "Enviando…";
 
     const data = new FormData(form);
-    if (data.get("company")) return;
 
     try {
+      // El honeypot ("company") viaja al servidor, que es quien decide:
+      // un bot que postee directo a la API ya no puede saltearse el chequeo.
       const res = await fetch("/api/contact", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -149,6 +150,7 @@ import Logo from "../../assets/logo.svg";
           name: data.get("name"),
           email: data.get("email"),
           message: data.get("message"),
+          company: data.get("company"),
         }),
       });
 

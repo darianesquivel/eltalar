@@ -3,21 +3,25 @@ import Layout from "../../layouts/Layout.astro";
 import BusinessDetail from "../../components/negocios/BusinessDetail.astro";
 import { getBusinessBySlug } from "../../lib/repositories/business.repository";
 
-export const prerender = false;
-
 const { slug } = Astro.params;
 
-if (!slug) {
-  return Astro.redirect("/404");
-}
+const business = slug ? await getBusinessBySlug(slug) : null;
 
-const business = await getBusinessBySlug(slug);
-
+// Rewrite (no redirect): devuelve la página 404 con status 404 real,
+// que es lo que los buscadores esperan para un negocio inexistente.
 if (!business) {
-  return Astro.redirect("/404");
+  return Astro.rewrite("/404");
 }
+
+const description =
+  business.description?.slice(0, 160) ||
+  `${business.name} en El Talar: horarios, teléfono, WhatsApp y ubicación.`;
 ---
 
-<Layout title={`${business.name} | El Talar`}>
+<Layout
+  title={`${business.name} | El Talar`}
+  description={description}
+  image={business.coverPhoto?.url}
+>
   <BusinessDetail business={business} />
 </Layout>

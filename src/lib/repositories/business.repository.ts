@@ -1,5 +1,4 @@
 import { supabase } from "../supabase";
-import { getBusinessStatus } from "../businessHours";
 
 /* =======================
    TYPES
@@ -65,16 +64,14 @@ export async function getBusinesses(options: GetBusinessesOptions = {}) {
 
   const { data, error } = await query;
 
-  console.log("data", data);
-
   if (error || !data) {
     console.error("Error getBusinesses:", error);
     return [];
   }
 
+  // El estado abierto/cerrado NO se calcula acá: depende de la hora del que mira,
+  // así que lo calcula cada componente (getTodayStatus de lib/hours) al renderizar.
   return data.map((b) => {
-    const status = getBusinessStatus(b.business_hours ?? []);
-
     const photos: BusinessPhoto[] = Array.isArray(b.business_photos)
       ? b.business_photos
       : [];
@@ -87,7 +84,6 @@ export async function getBusinesses(options: GetBusinessesOptions = {}) {
     return {
       ...b,
       categories: b.business_categories?.map((bc: any) => bc.categories) ?? [],
-      ...status,
       coverPhoto,
     };
   });
@@ -129,8 +125,6 @@ export async function getBusinessBySlug(slug: string) {
     return null;
   }
 
-  const status = getBusinessStatus(data.business_hours ?? []);
-
   const photos: BusinessPhoto[] = Array.isArray(data.business_photos)
     ? data.business_photos
     : [];
@@ -143,7 +137,6 @@ export async function getBusinessBySlug(slug: string) {
   return {
     ...data,
     categories: data.business_categories?.map((bc: any) => bc.categories) ?? [],
-    ...status,
     coverPhoto,
   };
 }

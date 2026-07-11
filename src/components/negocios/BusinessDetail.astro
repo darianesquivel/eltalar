@@ -2,10 +2,12 @@
 const { business } = Astro.props;
 import backIcon from "../../../public/images/back-button-icon.svg";
 import MapPreview from "../MapPreview.astro";
-import { getBusinessHours } from "../../lib/getBusinessHours";
-const hours = getBusinessHours(business);
+import { getWeekSchedule } from "../../lib/hours";
+const hours = getWeekSchedule(business.business_hours);
 import whatsappLogo from "../../../public/images/whatsapp-icon.svg";
 import ShareBusiness from "./ShareBusiness.astro";
+
+import no_image from "../../../public/images/no-image.jpg";
 
 type Category = {
   id: string;
@@ -13,6 +15,12 @@ type Category = {
   slug: string;
   icon?: string | null;
 };
+
+// URL absoluta para compartir, derivada del dominio configurado en astro.config.
+const shareUrl = new URL(
+  `/negocios/${business.slug}`,
+  Astro.site ?? Astro.url,
+).toString();
 ---
 
 <section class="max-w-6xl mx-auto px-4 space-y-8">
@@ -26,7 +34,7 @@ type Category = {
   <div class="relative overflow-hidden rounded-3xl shadow">
     <img
       transition:name={`img-${business.slug}`}
-      src={business?.coverPhoto?.url}
+      src={business?.coverPhoto?.url || no_image.src}
       alt={business.name}
       class="h-[260px] w-full object-cover md:h-[540px]"
     />
@@ -223,10 +231,7 @@ type Category = {
       </div>
 
       <!-- COMPARTIR -->
-      <ShareBusiness
-        url={`https://eltalar.com.ar/negocios/${business.slug}`}
-        title={business.name}
-      />
+      <ShareBusiness url={shareUrl} title={business.name} />
     </div>
   </div>
 </section>

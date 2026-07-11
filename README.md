@@ -1,46 +1,57 @@
-# Astro Starter Kit: Basics
+# El Talar — Guía del barrio
+
+Portal barrial de El Talar (Tigre, Buenos Aires): guía de negocios y servicios,
+farmacias de turno y teléfonos útiles. Pensado para que cada comercio pueda
+gestionar su propia ficha (fotos, horarios, contacto).
+
+📄 **Hoja de ruta y arquitectura:** ver [`docs/REFACTOR.md`](docs/REFACTOR.md).
+
+## Stack
+
+- [Astro 7](https://astro.build) (SSR en Vercel) + islas de React 19
+- [Tailwind CSS 4](https://tailwindcss.com)
+- [Supabase](https://supabase.com) (Postgres + Storage; Auth en camino)
+
+## Desarrollo
 
 ```sh
-pnpm create astro@latest -- --template basics
+pnpm install
+pnpm dev        # http://localhost:4321
+pnpm build      # build de producción (genera .vercel/output)
+pnpm preview    # previsualizar el build
 ```
 
-> 🧑‍🚀 **Seasoned astronaut?** Delete this file. Have fun!
+### Variables de entorno
 
-## 🚀 Project Structure
+Crear un `.env` en la raíz (no se versiona):
 
-Inside of your Astro project, you'll see the following folders and files:
-
-```text
-/
-├── public/
-│   └── favicon.svg
-├── src
-│   ├── assets
-│   │   └── astro.svg
-│   ├── components
-│   │   └── Welcome.astro
-│   ├── layouts
-│   │   └── Layout.astro
-│   └── pages
-│       └── index.astro
-└── package.json
+```
+PUBLIC_SUPABASE_URL=...
+PUBLIC_SUPABASE_ANON_KEY=...
 ```
 
-To learn more about the folder structure of an Astro project, refer to [our guide on project structure](https://docs.astro.build/en/basics/project-structure/).
+## Deploy
 
-## 🧞 Commands
+**`git push` a `main` = deploy automático en Vercel.** No hay ningún otro paso.
 
-All commands are run from the root of the project, from a terminal:
+- Cada Pull Request genera un preview deploy con URL propia.
+- Los cambios de **contenido** (negocios, alertas, turnos en Supabase) se ven al
+  instante **sin deploy**: las páginas con datos son SSR.
+- Las env vars de producción se cargan una sola vez en Vercel
+  (Settings → Environment Variables).
 
-| Command                   | Action                                           |
-| :------------------------ | :----------------------------------------------- |
-| `pnpm install`             | Installs dependencies                            |
-| `pnpm dev`             | Starts local dev server at `localhost:4321`      |
-| `pnpm build`           | Build your production site to `./dist/`          |
-| `pnpm preview`         | Preview your build locally, before deploying     |
-| `pnpm astro ...`       | Run CLI commands like `astro add`, `astro check` |
-| `pnpm astro -- --help` | Get help using the Astro CLI                     |
+## Estructura
 
-## 👀 Want to learn more?
-
-Feel free to check [our documentation](https://docs.astro.build) or jump into our [Discord server](https://astro.build/chat).
+```
+src/
+├── pages/           # rutas (/, /negocios, /negocios/[slug], /farmacias, /telefonos)
+│   ├── api/         # endpoints (contact)
+│   └── sitemap.xml.ts
+├── components/      # por dominio: home/, negocios/, farmacias/, telefonos/
+├── layouts/         # Layout.astro (head, SEO, header/footer)
+├── lib/
+│   ├── supabase.ts  # cliente único de Supabase
+│   ├── hours.ts     # lógica de horarios (TZ Argentina)
+│   └── repositories/  # acceso a datos por dominio
+└── styles/          # global.css (tokens de diseño en @theme)
+```

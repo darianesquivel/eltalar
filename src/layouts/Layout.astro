@@ -2,18 +2,47 @@
 import Header from "../components/header/Header.astro";
 import Footer from "../components/footer/Footer.astro";
 import { ClientRouter } from "astro:transitions";
-const { title = "El Talar - Inicio" } = Astro.props;
 
 import "../styles/global.css";
+
+interface Props {
+  title?: string;
+  description?: string;
+  /** URL absoluta de imagen para compartir en redes (og:image). */
+  image?: string;
+}
+
+const {
+  title = "El Talar — Guía del barrio",
+  description = "Guía de El Talar, Tigre: negocios y servicios del barrio, farmacias de turno y teléfonos útiles, todo en un solo lugar.",
+  image,
+} = Astro.props;
+
+const canonical = new URL(Astro.url.pathname, Astro.site ?? Astro.url);
 ---
 
 <!doctype html>
 <html lang="es">
   <head>
     <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+
     <title>{title}</title>
+    <meta name="description" content={description} />
+    <link rel="canonical" href={canonical} />
+
+    <!-- Open Graph (WhatsApp, Facebook, etc.) -->
+    <meta property="og:type" content="website" />
+    <meta property="og:locale" content="es_AR" />
+    <meta property="og:site_name" content="El Talar" />
+    <meta property="og:title" content={title} />
+    <meta property="og:description" content={description} />
+    <meta property="og:url" content={canonical} />
+    {image && <meta property="og:image" content={image} />}
+
+    <meta name="twitter:card" content={image ? "summary_large_image" : "summary"} />
+
     <ClientRouter />
   </head>
 
