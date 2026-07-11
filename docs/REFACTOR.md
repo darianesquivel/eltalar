@@ -291,27 +291,34 @@ implementar (1)+(2) juntos → sumar (3) y (4) cuando haya masa de usuarios.
 - [x] JSON‑LD `LocalBusiness` en el detalle de negocio (con horarios, dirección y geo si hay lat/lng).
 - [x] Prettier + `astro check` + build en CI (GitHub Actions). _(ESLint queda opcional para más adelante.)_
 
-### Fase 2 — Auth + panel + seguridad (1-2 semanas) 🔐 ← **el corazón del proyecto**
+### Fase 2 — Auth + panel + seguridad ✅ COMPLETADA (2026-07-11)
 
-- [ ] Supabase Auth (login/registro para owners; magic link o email+password).
-- [ ] Columnas `owner_id`, `status` en `businesses`.
-- [ ] Middleware de Astro para proteger `/app/*`.
-- [ ] Panel del owner: alta de negocio, editar ficha, subir fotos, cargar horarios.
-- [ ] Panel admin: moderar altas (`pending → approved`), gestionar alertas, turnos, directorio.
-- [ ] Activar RLS en todas las tablas con las políticas de §2.4.
+- [x] Supabase Auth con **magic link** (`@supabase/ssr`, sesión en cookies).
+- [x] Columna `status` (pending/approved/rejected) en `businesses`; `owner_id` ya existía.
+- [x] Middleware de Astro protege `/app/*`; `/app/admin` solo para admins.
+- [x] Panel del owner (`/app`): alta de negocio, edición de ficha, fotos (Storage con carpeta por negocio), horarios.
+- [x] Panel admin (`/app/admin`): moderación pending→approved/rejected, destacar negocios, avisos del home. _(Turnos/directorio/categorías: por ahora vía Supabase Table Editor.)_
+- [x] RLS en TODAS las tablas (incl. `business_categories` que estaba sin proteger) + storage policies.
+- [x] Los owners **no pueden auto-aprobarse ni auto-destacarse**: grants por columna + RPCs `SECURITY DEFINER` (`admin_set_business_status`, `admin_set_featured`) que exigen `is_admin()`.
+- [x] Admin por email en tabla `admin_users` (seed: darianesquivelf@gmail.com).
 
-### Fase 3 — Monetización (1 semana) 💳
+> ⚙️ Config pendiente del dueño en Supabase (Authentication → URL Configuration):
+> Site URL `https://eltalar.vercel.app` + Redirect URLs `https://eltalar.vercel.app/app/auth`
+> y `http://localhost:4321/app/auth`. Sin esto el magic link no redirige bien.
 
-- [ ] Tablas `subscriptions`, campos `plan`/`featured_until`.
-- [ ] Integración Mercado Pago (preapproval) + webhook.
-- [ ] Lógica de "destacado" derivada del plan activo.
-- [ ] UI de "Destacá tu negocio" en el panel del owner.
+### Fase 3 — Monetización 🟡 INFRAESTRUCTURA LISTA (falta cuenta de Mercado Pago)
 
-### Fase 4 — Mapa (3-5 días) 🗺️
+- [x] Tabla `subscriptions` + campos `plan`/`featured_until` con RLS.
+- [x] Endpoint `/api/subscribe` (crea preapproval de MP) + webhook `/api/webhooks/mercadopago` (actualiza suscripción y destaca/des-destaca el negocio según el estado real en MP).
+- [x] UI "Destacá tu negocio" en el panel del owner (muestra "muy pronto" hasta que haya credenciales).
+- [ ] **Falta (requiere al dueño):** crear cuenta MP vendedor → cargar en Vercel `MP_ACCESS_TOKEN`, `MP_FEATURED_PRICE` (ARS/mes) y `SUPABASE_SERVICE_ROLE_KEY` → configurar la URL del webhook en el panel de MP.
 
-- [ ] `lat`/`lng` + geocoding al guardar.
-- [ ] Mapa con markers (MapLibre/Leaflet) + popups → link al detalle.
-- [ ] Filtro por categoría sobre el mapa.
+### Fase 4 — Mapa ✅ COMPLETADA (2026-07-11)
+
+- [x] Geocoding con Nominatim de los negocios existentes (22/24 con coordenadas).
+- [x] `/mapa` con Leaflet + OpenStreetMap: markers (destacados en ámbar, más grandes), popup → ficha. Link en el header.
+- [ ] Geocoding automático al guardar dirección desde el panel (hoy: correr el script o cargar lat/lng a mano).
+- [ ] Filtro por categoría sobre el mapa (mejora futura).
 
 ---
 

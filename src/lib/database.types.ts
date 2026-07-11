@@ -9,6 +9,21 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
+      admin_users: {
+        Row: {
+          created_at: string;
+          email: string;
+        };
+        Insert: {
+          created_at?: string;
+          email: string;
+        };
+        Update: {
+          created_at?: string;
+          email?: string;
+        };
+        Relationships: [];
+      };
       business_categories: {
         Row: {
           business_id: string;
@@ -120,6 +135,7 @@ export type Database = {
           address: string | null;
           created_at: string | null;
           description: string | null;
+          featured_until: string | null;
           id: string;
           instagram: string | null;
           is_active: boolean | null;
@@ -135,6 +151,7 @@ export type Database = {
           seo_description: string | null;
           seo_title: string | null;
           slug: string;
+          status: string;
           updated_at: string | null;
           website: string | null;
           whatsapp: string | null;
@@ -144,6 +161,7 @@ export type Database = {
           address?: string | null;
           created_at?: string | null;
           description?: string | null;
+          featured_until?: string | null;
           id?: string;
           instagram?: string | null;
           is_active?: boolean | null;
@@ -159,6 +177,7 @@ export type Database = {
           seo_description?: string | null;
           seo_title?: string | null;
           slug: string;
+          status?: string;
           updated_at?: string | null;
           website?: string | null;
           whatsapp?: string | null;
@@ -168,6 +187,7 @@ export type Database = {
           address?: string | null;
           created_at?: string | null;
           description?: string | null;
+          featured_until?: string | null;
           id?: string;
           instagram?: string | null;
           is_active?: boolean | null;
@@ -183,6 +203,7 @@ export type Database = {
           seo_description?: string | null;
           seo_title?: string | null;
           slug?: string;
+          status?: string;
           updated_at?: string | null;
           website?: string | null;
           whatsapp?: string | null;
@@ -374,12 +395,61 @@ export type Database = {
         };
         Relationships: [];
       };
+      subscriptions: {
+        Row: {
+          business_id: string;
+          created_at: string;
+          current_period_end: string | null;
+          external_id: string | null;
+          id: string;
+          provider: string;
+          status: string;
+          updated_at: string;
+        };
+        Insert: {
+          business_id: string;
+          created_at?: string;
+          current_period_end?: string | null;
+          external_id?: string | null;
+          id?: string;
+          provider?: string;
+          status?: string;
+          updated_at?: string;
+        };
+        Update: {
+          business_id?: string;
+          created_at?: string;
+          current_period_end?: string | null;
+          external_id?: string | null;
+          id?: string;
+          provider?: string;
+          status?: string;
+          updated_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "subscriptions_business_id_fkey";
+            columns: ["business_id"];
+            isOneToOne: false;
+            referencedRelation: "businesses";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
     };
     Views: {
       [_ in never]: never;
     };
     Functions: {
-      [_ in never]: never;
+      admin_set_business_status: {
+        Args: { p_business_id: string; p_status: string };
+        Returns: undefined;
+      };
+      admin_set_featured: {
+        Args: { p_business_id: string; p_featured: boolean; p_until?: string };
+        Returns: undefined;
+      };
+      is_admin: { Args: never; Returns: boolean };
     };
     Enums: {
       [_ in never]: never;

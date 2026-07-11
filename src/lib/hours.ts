@@ -16,7 +16,7 @@ export type BusinessHour = {
   day_of_week: number; // 0 domingo - 6 sábado
   open_time: string | null; // "09:00:00"
   close_time: string | null;
-  is_closed: boolean;
+  is_closed: boolean | null;
   is_open_24?: boolean | null;
 };
 
@@ -80,7 +80,7 @@ function getNextOpenRange(hours: BusinessHour[], fromDay: number) {
     const h = hours.find(
       (x) =>
         x.day_of_week === day &&
-        x.is_closed === false &&
+        !x.is_closed &&
         (x.is_open_24 === true || x.open_time != null),
     );
 

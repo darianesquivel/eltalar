@@ -1,0 +1,118 @@
+---
+import Layout from "../../../layouts/Layout.astro";
+import BusinessForm from "../../../components/app/BusinessForm";
+import HoursEditor from "../../../components/app/HoursEditor";
+import PhotoManager from "../../../components/app/PhotoManager";
+import FeaturedCard from "../../../components/app/FeaturedCard";
+import { createSupabaseServer } from "../../../lib/supabase/server";
+
+const { id } = Astro.params;
+const supabase = createSupabaseServer(Astro);
+
+// RLS: si el negocio no es del usuario (ni es admin), no vuelve nada.
+const { data: business } = await supabase
+  .from("businesses")
+  .select(
+    `
+    id, name, slug, description, address, phone, whatsapp, instagram, website,
+    status, is_active, is_featured,
+    business_categories ( category_id ),
+    business_hours ( day_of_week, open_time, close_time, is_closed, is_open_24 ),
+    business_photos ( id, url, is_cover, position )
+  `,
+  )
+  .eq("id", id!)
+  .single();
+
+if (!business) {
+  return Astro.redirect("/app");
+}
+
+const { data: categories } = await supabase
+  .from("categories")
+  .select("id, name, slug, icon")
+  .order("name");
+
+const selectedCategoryIds =
+  business.business_categories?.map((bc) => bc.category_id) ?? [];
+
+const justCreated = Astro.url.searchParams.has("creado");
+
+const STATUS_INFO: Record<string, { label: string; class: string }> = {
+  pending: { label: "En revisión", class: "bg-yellow-100 text-yellow-700" },
+  approved: { label: "Publicado", class: "bg-green-100 text-green-700" },
+  rejected: { label: "Rechazado", class: "bg-red-100 text-red-700" },
+};
+const statusInfo = STATUS_INFO[business.status] ?? STATUS_INFO.pending;
+---
+
+<Layout title={`Editar ${business.name} | El Talar`}>
+  <section class="mx-auto w-full max-w-2xl space-y-6 py-8">
+    <a href="/app" class="text-sm text-primary hover:underline">
+      ← Volver al panel
+    </a>
+
+    {
+      justCreated && (
+        <div class="rounded-2xl bg-green-50 p-5 text-sm text-green-800">
+          🎉 <strong>¡Tu negocio fue creado!</strong> Ahora sumale fotos y
+          horarios — las fichas completas se aprueban más rápido y atraen más
+          vecinos.
+        </div>
+      )
+    }
+
+    <div class="flex items-center gap-3">
+      <h1 class="text-2xl font-bold">{business.name}</h1>
+      <span
+        class={`rounded-full px-3 py-0.5 text-xs font-semibold ${statusInfo.class}`}
+      >
+        {statusInfo.label}
+      </span>
+    </div>
+
+    <div class="rounded-2xl bg-white p-8 shadow-sm space-y-4">
+      <h2 class="text-lg font-semibold">Datos del negocio</h2>
+      <BusinessForm
+        categories={categories ?? []}
+        business={{
+          id: business.id,
+          name: business.name,
+          description: business.description,
+          address: business.address,
+          phone: business.phone,
+          whatsapp: business.whatsapp,
+          instagram: business.instagram,
+          website: business.website,
+        }}
+        selectedCategoryIds={selectedCategoryIds}
+        client:load
+      />
+    </div>
+
+    <div class="rounded-2xl bg-white p-8 shadow-sm space-y-4">
+      <h2 class="text-lg font-semibold">Fotos</h2>
+      <PhotoManager
+        businessId={business.id}
+        initialPhotos={business.business_photos ?? []}
+        client:load
+      />
+    </div>
+
+    <div class="rounded-2xl bg-white p-8 shadow-sm space-y-4">
+      <h2 class="text-lg font-semibold">Horarios</h2>
+      <HoursEditor
+        businessId={business.id}
+        initialHours={business.business_hours ?? []}
+        client:load
+      />
+    </div>
+
+    <FeaturedCard
+      businessId={business.id}
+      isFeatured={business.is_featured === true}
+      isApproved={business.status === "approved"}
+      client:load
+    />
+  </section>
+</Layout>

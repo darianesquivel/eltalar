@@ -1,0 +1,87 @@
+---
+import Layout from "../../layouts/Layout.astro";
+
+// Si ya está logueado, directo al panel
+if (Astro.locals.user) {
+  return Astro.redirect("/app");
+}
+---
+
+<Layout title="Ingresar | El Talar">
+  <section class="mx-auto w-full max-w-md py-16">
+    <div class="rounded-2xl bg-white p-8 shadow-sm space-y-6">
+      <div class="space-y-2 text-center">
+        <h1 class="text-2xl font-bold">Panel de comercios</h1>
+        <p class="text-sm text-gray-600">
+          Ingresá tu email y te mandamos un link para entrar. Sin contraseñas.
+        </p>
+      </div>
+
+      <form id="login-form" class="space-y-4">
+        <input
+          type="email"
+          name="email"
+          required
+          placeholder="tu@email.com"
+          class="w-full rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
+        />
+        <button
+          id="login-btn"
+          type="submit"
+          class="w-full rounded-xl bg-primary px-6 py-3 text-sm font-semibold text-white transition hover:bg-green-700 disabled:opacity-60"
+        >
+          Enviarme el link
+        </button>
+      </form>
+
+      <p
+        id="login-feedback"
+        class="hidden rounded-xl bg-green-50 p-4 text-center text-sm text-green-700"
+      >
+        📬 ¡Listo! Revisá tu casilla y hacé click en el link para entrar.
+      </p>
+      <p
+        id="login-error"
+        class="hidden rounded-xl bg-red-50 p-4 text-center text-sm text-red-600"
+      >
+      </p>
+    </div>
+  </section>
+</Layout>
+
+<script>
+  import { supabaseBrowser } from "../../lib/supabase/browser";
+
+  const form = document.getElementById("login-form") as HTMLFormElement;
+  const button = document.getElementById("login-btn") as HTMLButtonElement;
+  const feedback = document.getElementById("login-feedback")!;
+  const errorBox = document.getElementById("login-error")!;
+
+  form?.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    button.disabled = true;
+    button.textContent = "Enviando…";
+    errorBox.classList.add("hidden");
+
+    const email = new FormData(form).get("email") as string;
+
+    const { error } = await supabaseBrowser.auth.signInWithOtp({
+      email,
+      options: {
+        emailRedirectTo: `${window.location.origin}/app/auth`,
+      },
+    });
+
+    if (error) {
+      errorBox.textContent =
+        "No pudimos enviar el link. Esperá un minuto y volvé a intentar.";
+      errorBox.classList.remove("hidden");
+      button.disabled = false;
+      button.textContent = "Enviarme el link";
+      return;
+    }
+
+    form.classList.add("hidden");
+    feedback.classList.remove("hidden");
+  });
+</script>

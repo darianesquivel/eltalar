@@ -1,0 +1,47 @@
+---
+import Layout from "../../layouts/Layout.astro";
+// Página de aterrizaje del magic link: el cliente del navegador toma la
+// sesión de la URL (code/hash), la guarda en cookies y redirige al panel.
+---
+
+<Layout title="Ingresando… | El Talar">
+  <section class="flex flex-col items-center gap-4 py-24 text-center">
+    <p class="text-lg font-semibold" id="auth-status">Ingresando…</p>
+  </section>
+</Layout>
+
+<script>
+  import { supabaseBrowser } from "../../lib/supabase/browser";
+
+  const status = document.getElementById("auth-status")!;
+
+  const goToPanel = () => window.location.replace("/app");
+
+  // createBrowserClient procesa automáticamente el ?code= / #access_token de
+  // la URL al inicializarse; esperamos a que la sesión exista.
+  const { data } = supabaseBrowser.auth.onAuthStateChange((event, session) => {
+    if (session) {
+      data.subscription.unsubscribe();
+      goToPanel();
+    }
+  });
+
+  // Por si la sesión ya estaba lista antes de suscribirnos
+  supabaseBrowser.auth.getSession().then(({ data: { session } }) => {
+    if (session) {
+      goToPanel();
+    } else {
+      setTimeout(async () => {
+        const {
+          data: { session: retry },
+        } = await supabaseBrowser.auth.getSession();
+        if (retry) {
+          goToPanel();
+        } else {
+          status.textContent =
+            "El link expiró o ya fue usado. Pedí uno nuevo desde la página de ingreso.";
+        }
+      }, 3000);
+    }
+  });
+</script>

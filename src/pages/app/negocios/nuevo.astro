@@ -1,0 +1,32 @@
+---
+import Layout from "../../../layouts/Layout.astro";
+import BusinessForm from "../../../components/app/BusinessForm";
+import { createSupabaseServer } from "../../../lib/supabase/server";
+
+const supabase = createSupabaseServer(Astro);
+
+const { data: categories } = await supabase
+  .from("categories")
+  .select("id, name, slug, icon")
+  .order("name");
+---
+
+<Layout title="Cargar negocio | El Talar">
+  <section class="mx-auto w-full max-w-2xl space-y-6 py-8">
+    <a href="/app" class="text-sm text-primary hover:underline">
+      ← Volver al panel
+    </a>
+
+    <div class="rounded-2xl bg-white p-8 shadow-sm space-y-6">
+      <div>
+        <h1 class="text-2xl font-bold">Cargar mi negocio</h1>
+        <p class="text-sm text-gray-600">
+          Completá los datos básicos. Después vas a poder agregar fotos y
+          horarios. La publicación pasa por una revisión rápida.
+        </p>
+      </div>
+
+      <BusinessForm categories={categories ?? []} client:load />
+    </div>
+  </section>
+</Layout>

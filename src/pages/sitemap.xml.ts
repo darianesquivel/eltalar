@@ -8,7 +8,7 @@ export const GET: APIRoute = async ({ site }) => {
     .toString()
     .replace(/\/$/, "");
 
-  const staticPaths = ["/", "/negocios", "/farmacias", "/telefonos"];
+  const staticPaths = ["/", "/negocios", "/farmacias", "/telefonos", "/mapa"];
 
   const { data: businesses } = await supabase
     .from("businesses")

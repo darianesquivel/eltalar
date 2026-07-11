@@ -1,0 +1,43 @@
+---
+import Layout from "../../../layouts/Layout.astro";
+import AdminBusinesses from "../../../components/app/AdminBusinesses";
+import AlertsManager from "../../../components/app/AlertsManager";
+import { createSupabaseServer } from "../../../lib/supabase/server";
+
+// El middleware ya validó que sea admin
+const supabase = createSupabaseServer(Astro);
+
+const [{ data: businesses }, { data: alerts }] = await Promise.all([
+  supabase
+    .from("businesses")
+    .select("id, name, slug, address, status, is_active, is_featured, owner_id")
+    .order("created_at", { ascending: false }),
+  supabase
+    .from("site_alerts")
+    .select("id, title, description, is_active")
+    .order("created_at", { ascending: false }),
+]);
+---
+
+<Layout title="Admin | El Talar">
+  <section class="mx-auto w-full max-w-4xl space-y-10 py-8">
+    <div class="flex items-center justify-between">
+      <h1 class="text-2xl font-bold">Panel de administración</h1>
+      <a href="/app" class="text-sm text-primary hover:underline">
+        ← Mi panel
+      </a>
+    </div>
+
+    <AdminBusinesses businesses={businesses ?? []} client:load />
+
+    <div class="rounded-2xl bg-white p-8 shadow-sm space-y-4">
+      <h2 class="text-lg font-semibold">Avisos del barrio (home)</h2>
+      <AlertsManager alerts={alerts ?? []} client:load />
+    </div>
+
+    <p class="text-xs text-gray-400">
+      Turnos de farmacia, directorio de teléfonos y categorías se gestionan por
+      ahora desde el panel de Supabase (Table Editor).
+    </p>
+  </section>
+</Layout>

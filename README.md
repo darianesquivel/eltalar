@@ -28,6 +28,11 @@ Crear un `.env` en la raíz (no se versiona):
 ```
 PUBLIC_SUPABASE_URL=...
 PUBLIC_SUPABASE_ANON_KEY=...
+
+# Opcionales (habilitan pagos / webhook de Mercado Pago):
+SUPABASE_SERVICE_ROLE_KEY=...   # solo server; NUNCA con prefijo PUBLIC_
+MP_ACCESS_TOKEN=...             # access token de Mercado Pago
+MP_FEATURED_PRICE=5000          # precio mensual del plan Destacado (ARS)
 ```
 
 ## Deploy
