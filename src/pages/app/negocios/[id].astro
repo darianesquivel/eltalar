@@ -113,6 +113,7 @@ const statusInfo = STATUS_INFO[business.status] ?? STATUS_INFO.pending;
       businessId={business.id}
       isFeatured={business.is_featured === true}
       isApproved={business.status === "approved"}
+      price={Number(import.meta.env.MP_FEATURED_PRICE ?? 5000)}
       client:load
     />
 

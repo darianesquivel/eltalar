@@ -4,12 +4,15 @@ type Props = {
   businessId: string;
   isFeatured: boolean;
   isApproved: boolean;
+  /** Precio mensual en ARS (viene de MP_FEATURED_PRICE en el servidor). */
+  price?: number;
 };
 
 export default function FeaturedCard({
   businessId,
   isFeatured,
   isApproved,
+  price,
 }: Props) {
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
@@ -56,11 +59,22 @@ export default function FeaturedCard({
 
   return (
     <div className="rounded-2xl border border-amber-200 bg-gradient-to-br from-amber-50 to-white p-6 space-y-3">
-      <p className="text-lg font-bold">⭐ Destacá tu negocio</p>
+      <div className="flex flex-wrap items-baseline justify-between gap-2">
+        <p className="text-lg font-bold">⭐ Destacá tu negocio</p>
+        {price != null && (
+          <p className="text-sm font-semibold text-amber-700">
+            ${price.toLocaleString("es-AR")}/mes
+            <span className="ml-1 font-normal text-gray-400">
+              · cancelás cuando quieras
+            </span>
+          </p>
+        )}
+      </div>
       <ul className="space-y-1 text-sm text-gray-600">
         <li>✓ Primero en el listado de negocios</li>
         <li>✓ En la portada de eltalar, que ven todos los vecinos</li>
-        <li>✓ Insignia de destacado en tu ficha</li>
+        <li>✓ Insignia ⭐ en tu card y tu ficha</li>
+        <li>✓ Marcador dorado en el mapa del barrio</li>
       </ul>
 
       {!isApproved ? (

@@ -73,7 +73,10 @@ export const POST: APIRoute = async (context) => {
     body: JSON.stringify({
       reason: `El Talar - Negocio destacado: ${business.name}`,
       external_reference: business.id,
-      payer_email: user.email,
+      // En sandbox (token TEST-) el pagador debe ser una cuenta de prueba de
+      // MP; MP_TEST_PAYER_EMAIL la pisa. En producción no se define y se usa
+      // el email real del comerciante.
+      payer_email: import.meta.env.MP_TEST_PAYER_EMAIL ?? user.email,
       back_url: `${origin}/app/negocios/${business.id}?pago=ok`,
       auto_recurring: {
         frequency: 1,

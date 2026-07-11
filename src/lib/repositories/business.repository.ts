@@ -92,6 +92,8 @@ export async function getBusinesses(
     .from("businesses")
     .select(BUSINESS_SELECT)
     .eq("is_active", true)
+    // Los destacados (plan pago) van primero en todo listado
+    .order("is_featured", { ascending: false })
     .order("priority", { ascending: false });
 
   if (featured === true) {
