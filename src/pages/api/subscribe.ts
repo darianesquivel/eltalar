@@ -61,7 +61,11 @@ export const POST: APIRoute = async (context) => {
   }
 
   const price = Number(import.meta.env.MP_FEATURED_PRICE ?? 5000);
-  const origin = context.url.origin;
+  // MP exige un back_url https público: en dev (localhost) usamos el dominio
+  // real del sitio; el redirect post-pago cae en producción, no afecta el test.
+  const origin = context.url.origin.includes("localhost")
+    ? (import.meta.env.SITE ?? "https://eltalar.com.ar")
+    : context.url.origin;
 
   // Crea la suscripción (preapproval) en Mercado Pago
   const mpRes = await fetch("https://api.mercadopago.com/preapproval", {
