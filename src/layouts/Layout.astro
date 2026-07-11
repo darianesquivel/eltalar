@@ -50,6 +50,46 @@ const canonical = new URL(Astro.url.pathname, Astro.site ?? Astro.url);
   </head>
 
   <body class="bg-gray-100">
+    <!-- Barra de progreso de navegación (feedback de que algo está cargando) -->
+    <div
+      id="nav-loader"
+      class="pointer-events-none fixed inset-x-0 top-0 z-[100] h-[3px]"
+    >
+      <div id="nav-loader-bar" class="h-full w-0 bg-primary opacity-0"></div>
+    </div>
+
+    <script>
+      const bar = document.getElementById("nav-loader-bar")!;
+      let hideTimer: ReturnType<typeof setTimeout> | undefined;
+
+      const start = () => {
+        clearTimeout(hideTimer);
+        // arranca visible y "gotea" hasta 85% mientras espera al servidor
+        bar.style.transition = "none";
+        bar.style.opacity = "1";
+        bar.style.width = "0%";
+        requestAnimationFrame(() => {
+          bar.style.transition =
+            "width 5s cubic-bezier(0.08, 0.82, 0.17, 1), opacity 0.3s ease";
+          bar.style.width = "85%";
+        });
+      };
+
+      const done = () => {
+        bar.style.transition = "width 0.2s ease, opacity 0.3s ease 0.25s";
+        bar.style.width = "100%";
+        bar.style.opacity = "0";
+        hideTimer = setTimeout(() => {
+          bar.style.transition = "none";
+          bar.style.width = "0%";
+        }, 600);
+      };
+
+      // Eventos del ClientRouter de Astro: cubren toda navegación interna
+      document.addEventListener("astro:before-preparation", start);
+      document.addEventListener("astro:page-load", done);
+    </script>
+
     <Header />
     <main class="flex flex-col gap-20 sm:mx-20 sm:my-10 mx-4 my-5">
       <slot />

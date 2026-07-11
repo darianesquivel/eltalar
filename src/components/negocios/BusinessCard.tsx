@@ -1,3 +1,4 @@
+import { navigate } from "astro:transitions/client";
 import { getTodayStatus } from "../../lib/hours";
 import type { Business } from "../../lib/repositories/business.repository";
 
@@ -15,8 +16,10 @@ export default function BusinessCard({ business }: BusinessCardProps) {
     business.whatsapp_message ?? "",
   )}`;
 
+  // navigate() usa el router de Astro: dispara la barra de progreso global
+  // y las view transitions, en vez de una recarga completa sin feedback.
   const handleClick = () => {
-    window.location.href = `/negocios/${business.slug}`;
+    navigate(`/negocios/${business.slug}`);
   };
 
   return (
