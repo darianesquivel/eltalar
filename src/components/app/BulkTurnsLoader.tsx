@@ -10,12 +10,35 @@ type Props = {
   pharmacies: Pharmacy[];
 };
 
+type ParsedEntry = {
+  name: string;
+  pharmacy: Pharmacy | null;
+};
+
 type ParsedLine = {
   raw: string;
-  date: string | null; // "2026-08-15"
-  pharmacy: Pharmacy | null;
+  date: string | null; // "2026-07-01"
+  weekdayWarn: string | null;
+  entries: ParsedEntry[];
   error: string | null;
 };
+
+const MONTHS = [
+  "Enero",
+  "Febrero",
+  "Marzo",
+  "Abril",
+  "Mayo",
+  "Junio",
+  "Julio",
+  "Agosto",
+  "Septiembre",
+  "Octubre",
+  "Noviembre",
+  "Diciembre",
+];
+
+const WEEKDAYS = ["dom", "lun", "mar", "mie", "jue", "vie", "sab"];
 
 /** Normaliza para comparar: minúsculas, sin tildes, sin "farmacia", solo alfanumérico */
 const norm = (s: string) =>
@@ -31,11 +54,9 @@ function matchPharmacy(text: string, pharmacies: Pharmacy[]): Pharmacy | null {
   const target = norm(text);
   if (!target) return null;
 
-  // 1. igualdad exacta
   let hit = pharmacies.find((p) => norm(p.name) === target);
   if (hit) return hit;
 
-  // 2. una contiene a la otra (elige el match más específico)
   const candidates = pharmacies.filter((p) => {
     const n = norm(p.name);
     return n.includes(target) || target.includes(n);
@@ -46,7 +67,6 @@ function matchPharmacy(text: string, pharmacies: Pharmacy[]): Pharmacy | null {
     return candidates[0];
   }
 
-  // 3. todas las palabras de la línea aparecen en el nombre
   const words = target.split(" ").filter((w) => w.length > 2);
   if (words.length > 0) {
     hit = pharmacies.find((p) => {
@@ -62,50 +82,100 @@ function matchPharmacy(text: string, pharmacies: Pharmacy[]): Pharmacy | null {
 function parseLines(
   text: string,
   pharmacies: Pharmacy[],
-  defaultYear: number,
+  month: number, // 1-12 (para líneas sin mes)
+  year: number,
 ): ParsedLine[] {
   return text
     .split("\n")
     .map((l) => l.trim())
     .filter(Boolean)
-    .map((raw) => {
-      // fecha al inicio: 15/8, 15-08, 15/08/2026...
-      const m = raw.match(/^(\d{1,2})[\/\-.](\d{1,2})(?:[\/\-.](\d{2,4}))?/);
-      if (!m) {
+    .map((raw): ParsedLine => {
+      let day: number, m: number, y: number;
+      let rest: string;
+
+      // Fecha completa (15/08, 15-08-2026) o solo el día (01, 15)
+      const full = raw.match(/^(\d{1,2})[\/\-.](\d{1,2})(?:[\/\-.](\d{2,4}))?/);
+      const dayOnly = raw.match(/^(\d{1,2})\b/);
+
+      if (full) {
+        day = Number(full[1]);
+        m = Number(full[2]);
+        y = full[3] ? Number(full[3]) : year;
+        if (y < 100) y += 2000;
+        rest = raw.slice(full[0].length);
+      } else if (dayOnly) {
+        day = Number(dayOnly[1]);
+        m = month;
+        y = year;
+        rest = raw.slice(dayOnly[0].length);
+      } else {
         return {
           raw,
           date: null,
-          pharmacy: null,
-          error: "No encuentro la fecha al inicio (formato: 15/08 Nombre)",
+          weekdayWarn: null,
+          entries: [],
+          error: "No encuentro el día al inicio de la línea",
         };
       }
 
-      const day = Number(m[1]);
-      const month = Number(m[2]);
-      let year = m[3] ? Number(m[3]) : defaultYear;
-      if (year < 100) year += 2000;
-
-      if (month < 1 || month > 12 || day < 1 || day > 31) {
-        return { raw, date: null, pharmacy: null, error: "Fecha inválida" };
+      if (m < 1 || m > 12 || day < 1 || day > 31) {
+        return {
+          raw,
+          date: null,
+          weekdayWarn: null,
+          entries: [],
+          error: "Fecha inválida",
+        };
       }
 
-      const date = `${year}-${String(month).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
-      const rest = raw.slice(m[0].length).replace(/^[\s:;,\-–—.]+/, "");
-      const pharmacy = matchPharmacy(rest, pharmacies);
+      const date = `${y}-${String(m).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
 
-      return {
-        raw,
-        date,
-        pharmacy,
-        error: pharmacy
-          ? null
-          : `No matchea ninguna farmacia cargada: «${rest}»`,
-      };
+      // Día de la semana declarado en la línea ("Mié:", "sab", ...) → validarlo
+      let weekdayWarn: string | null = null;
+      const wd = rest.match(
+        /^\s*(dom|lun|mar|mi[eé]|jue|vie|s[aá]b)[a-zé.]*\s*/i,
+      );
+      if (wd) {
+        const declared = norm(wd[1]).replace(/\s/g, "").slice(0, 3);
+        const realDay = new Date(`${date}T12:00:00`).getDay();
+        if (WEEKDAYS[realDay] !== declared) {
+          weekdayWarn = `La línea dice "${wd[1]}" pero el ${day}/${m}/${y} cae ${WEEKDAYS[realDay]} — ¿elegiste bien el mes?`;
+        }
+        rest = rest.slice(wd[0].length);
+      }
+
+      rest = rest.replace(/^[\s:;,\-–—.]+/, "");
+
+      // Varias farmacias por turno, separadas por " - ", "," o ";"
+      const names = rest
+        .split(/\s+[-–—]\s+|\s*[,;]\s*/)
+        .map((n) => n.trim())
+        .filter(Boolean);
+
+      if (names.length === 0) {
+        return {
+          raw,
+          date,
+          weekdayWarn,
+          entries: [],
+          error: "No hay farmacias en la línea",
+        };
+      }
+
+      const entries = names.map((name) => ({
+        name,
+        pharmacy: matchPharmacy(name, pharmacies),
+      }));
+
+      return { raw, date, weekdayWarn, entries, error: null };
     });
 }
 
 export default function BulkTurnsLoader({ pharmacies }: Props) {
+  const now = new Date();
   const [text, setText] = useState("");
+  const [month, setMonth] = useState(now.getMonth() + 1);
+  const [year, setYear] = useState(now.getFullYear());
   const [startTime, setStartTime] = useState("08:30");
   const [durationHours, setDurationHours] = useState(24);
   const [parsed, setParsed] = useState<ParsedLine[] | null>(null);
@@ -114,12 +184,11 @@ export default function BulkTurnsLoader({ pharmacies }: Props) {
   const [overlapWarning, setOverlapWarning] = useState<string | null>(null);
 
   const analyze = async () => {
-    const lines = parseLines(text, pharmacies, new Date().getFullYear());
+    const lines = parseLines(text, pharmacies, month, year);
     setParsed(lines);
     setResult(null);
     setOverlapWarning(null);
 
-    // Aviso si ya hay turnos cargados en el rango de fechas pegado
     const dates = lines.map((l) => l.date).filter(Boolean) as string[];
     if (dates.length > 0) {
       const min = `${dates.reduce((a, b) => (a < b ? a : b))}T00:00:00-03:00`;
@@ -137,19 +206,30 @@ export default function BulkTurnsLoader({ pharmacies }: Props) {
     }
   };
 
-  const load = async () => {
-    if (!parsed) return;
-    const valid = parsed.filter((l) => l.date && l.pharmacy);
-    if (valid.length === 0) return;
+  const validTurns = (parsed ?? []).flatMap((l) =>
+    l.date
+      ? l.entries
+          .filter((e) => e.pharmacy)
+          .map((e) => ({ date: l.date!, pharmacy: e.pharmacy! }))
+      : [],
+  );
+  const unmatchedCount = (parsed ?? []).reduce(
+    (acc, l) => acc + l.entries.filter((e) => !e.pharmacy).length,
+    0,
+  );
+  const badLines = (parsed ?? []).filter((l) => l.error).length;
+  const weekdayWarns = (parsed ?? []).filter((l) => l.weekdayWarn).length;
 
+  const load = async () => {
+    if (validTurns.length === 0) return;
     setLoading(true);
     setResult(null);
 
-    const rows = valid.map((l) => {
-      const starts = new Date(`${l.date}T${startTime}:00-03:00`);
+    const rows = validTurns.map((t) => {
+      const starts = new Date(`${t.date}T${startTime}:00-03:00`);
       const ends = new Date(starts.getTime() + durationHours * 3600000);
       return {
-        pharmacy_id: l.pharmacy!.id,
+        pharmacy_id: t.pharmacy.id,
         starts_at: starts.toISOString(),
         ends_at: ends.toISOString(),
       };
@@ -167,8 +247,8 @@ export default function BulkTurnsLoader({ pharmacies }: Props) {
     setLoading(false);
   };
 
-  const validCount = parsed?.filter((l) => l.date && l.pharmacy).length ?? 0;
-  const errorCount = (parsed?.length ?? 0) - validCount;
+  const inputClass =
+    "rounded-lg border border-gray-200 bg-white px-2 py-1.5 text-sm";
 
   return (
     <details className="rounded-2xl border border-primary/30 bg-primary-soft/30">
@@ -178,35 +258,59 @@ export default function BulkTurnsLoader({ pharmacies }: Props) {
 
       <div className="space-y-4 border-t border-primary/20 p-5">
         <p className="text-sm text-gray-600">
-          Pegá una línea por turno:{" "}
-          <strong>fecha + nombre de la farmacia</strong>. El nombre no necesita
-          ser exacto, lo matcheamos contra tus farmacias.
+          Pegá la lista tal cual sale publicada, una línea por día. Acepta
+          formatos como <code>01 Mié: Farmacia A - Farmacia B</code> o{" "}
+          <code>15/08 Nombre</code>. Si la línea tiene varias farmacias
+          separadas por «-», se carga un turno para cada una.
         </p>
 
+        <div className="flex flex-wrap items-center gap-3 text-sm text-gray-600">
+          Mes de la lista:
+          <select
+            value={month}
+            onChange={(e) => setMonth(Number(e.target.value))}
+            className={inputClass}
+          >
+            {MONTHS.map((name, i) => (
+              <option key={name} value={i + 1}>
+                {name}
+              </option>
+            ))}
+          </select>
+          <input
+            type="number"
+            value={year}
+            min={2024}
+            max={2100}
+            onChange={(e) => setYear(Number(e.target.value))}
+            className={`${inputClass} w-24`}
+          />
+        </div>
+
         <textarea
-          rows={8}
+          rows={10}
           value={text}
           onChange={(e) => {
             setText(e.target.value);
             setParsed(null);
           }}
           placeholder={
-            "15/08 Bernachea\n16/08 Farmacia Ríos\n17/08 Schinca\n18/08 Tantone…"
+            "01 Mié: Gral. Pacheco SCS - Lauría - Schinca SCS\n02 Jue: Gasparín - Rios - Bernachea\n…"
           }
           className="w-full rounded-xl border border-gray-200 bg-white p-3 font-mono text-sm focus:border-primary focus:outline-none"
         />
 
-        <div className="flex flex-wrap items-end gap-4">
-          <label className="text-sm text-gray-600">
+        <div className="flex flex-wrap items-center gap-4 text-sm text-gray-600">
+          <label>
             Cada turno empieza a las
             <input
               type="time"
               value={startTime}
               onChange={(e) => setStartTime(e.target.value)}
-              className="ml-2 rounded-lg border border-gray-200 bg-white px-2 py-1.5"
+              className={`${inputClass} ml-2`}
             />
           </label>
-          <label className="text-sm text-gray-600">
+          <label>
             y dura
             <input
               type="number"
@@ -214,7 +318,7 @@ export default function BulkTurnsLoader({ pharmacies }: Props) {
               max={72}
               value={durationHours}
               onChange={(e) => setDurationHours(Number(e.target.value))}
-              className="mx-2 w-16 rounded-lg border border-gray-200 bg-white px-2 py-1.5"
+              className={`${inputClass} mx-2 w-16`}
             />
             horas
           </label>
@@ -236,50 +340,75 @@ export default function BulkTurnsLoader({ pharmacies }: Props) {
 
         {parsed && (
           <div className="space-y-3">
-            <ul className="max-h-64 space-y-1 overflow-y-auto">
+            <ul className="max-h-72 space-y-1 overflow-y-auto">
               {parsed.map((l, i) => (
                 <li
                   key={i}
-                  className={`flex items-center gap-2 rounded-lg px-3 py-1.5 text-sm ${
+                  className={`rounded-lg px-3 py-1.5 text-sm ${
                     l.error ? "bg-red-50 text-red-700" : "bg-white"
                   }`}
                 >
                   {l.error ? (
                     <>
-                      <span>✗</span>
                       <span className="font-mono text-xs">{l.raw}</span>
-                      <span className="text-xs">— {l.error}</span>
+                      <span className="text-xs"> — {l.error}</span>
                     </>
                   ) : (
-                    <>
-                      <span className="text-green-600">✓</span>
+                    <div className="flex flex-wrap items-center gap-1.5">
                       <span className="font-semibold">
                         {new Date(`${l.date}T12:00:00`).toLocaleDateString(
                           "es-AR",
                           { weekday: "short", day: "numeric", month: "short" },
                         )}
                       </span>
-                      → {l.pharmacy!.name}
-                    </>
+                      {l.entries.map((e, j) => (
+                        <span
+                          key={j}
+                          className={`rounded-full px-2 py-0.5 text-xs ${
+                            e.pharmacy
+                              ? "bg-green-100 text-green-700"
+                              : "bg-red-100 text-red-700"
+                          }`}
+                          title={e.pharmacy ? e.pharmacy.name : "sin match"}
+                        >
+                          {e.pharmacy ? `✓ ${e.pharmacy.name}` : `✗ ${e.name}`}
+                        </span>
+                      ))}
+                      {l.weekdayWarn && (
+                        <span className="w-full text-xs text-amber-600">
+                          ⚠️ {l.weekdayWarn}
+                        </span>
+                      )}
+                    </div>
                   )}
                 </li>
               ))}
             </ul>
 
-            <div className="flex items-center gap-3">
+            <div className="flex flex-wrap items-center gap-3">
               <button
                 onClick={load}
-                disabled={loading || validCount === 0}
+                disabled={loading || validTurns.length === 0}
                 className="rounded-xl bg-primary px-6 py-2.5 text-sm font-semibold text-white hover:bg-green-700 disabled:opacity-50"
               >
                 {loading
                   ? "Cargando…"
-                  : `Cargar ${validCount} turno${validCount === 1 ? "" : "s"}`}
+                  : `Cargar ${validTurns.length} turno${validTurns.length === 1 ? "" : "s"}`}
               </button>
-              {errorCount > 0 && (
+              {unmatchedCount > 0 && (
                 <span className="text-sm text-red-600">
-                  {errorCount} línea{errorCount === 1 ? "" : "s"} con error (no
-                  se cargan — corregilas y volvé a analizar)
+                  {unmatchedCount} farmacia(s) sin match (no se cargan; crealas
+                  como negocio o corregí el nombre)
+                </span>
+              )}
+              {badLines > 0 && (
+                <span className="text-sm text-red-600">
+                  {badLines} línea(s) ilegibles
+                </span>
+              )}
+              {weekdayWarns > 0 && (
+                <span className="text-sm text-amber-600">
+                  {weekdayWarns} advertencia(s) de día de semana
                 </span>
               )}
             </div>
