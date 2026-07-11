@@ -1,6 +1,7 @@
 ---
 import AdminLayout from "../../../layouts/AdminLayout.astro";
 import TurnsManager from "../../../components/app/TurnsManager";
+import BulkTurnsLoader from "../../../components/app/BulkTurnsLoader";
 import { createSupabaseServer } from "../../../lib/supabase/server";
 
 const supabase = createSupabaseServer(Astro);
@@ -35,6 +36,8 @@ const pharmacyOptions = (pharmacies ?? []).map((p) => ({
         medida que salen publicados.
       </p>
     </div>
+
+    <BulkTurnsLoader pharmacies={pharmacyOptions} client:load />
 
     <TurnsManager
       turns={turns ?? []}
