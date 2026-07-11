@@ -10,6 +10,19 @@ export const onRequest = defineMiddleware(async (context, next) => {
   context.locals.user = null;
   context.locals.isAdmin = false;
 
+  // Canje del magic link en CUALQUIER página: si la config de Supabase manda
+  // el ?code= a un destino inesperado (p.ej. la home), igual iniciamos sesión
+  // acá en el servidor y seguimos al panel.
+  const code = context.url.searchParams.get("code");
+  if (code && !pathname.startsWith("/api")) {
+    const supabase = createSupabaseServer(context);
+    const { error } = await supabase.auth.exchangeCodeForSession(code);
+    if (!error) {
+      return context.redirect("/app");
+    }
+    // código vencido/ya usado: seguimos sin sesión (el usuario pide otro link)
+  }
+
   // Solo el panel (/app/*) requiere sesión; el resto del sitio es público.
   if (!pathname.startsWith("/app")) {
     return next();
