@@ -2,6 +2,7 @@ import { navigate } from "astro:transitions/client";
 import { BadgeCheck, PhoneCall } from "lucide-react";
 import InstagramIcon from "../icons/InstagramIcon";
 import { getTodayStatus } from "../../lib/hours";
+import { track } from "../../lib/track";
 import { optimizedImage } from "../../lib/images";
 import type { BusinessSummary } from "../../lib/repositories/business.repository";
 
@@ -109,6 +110,7 @@ export default function BusinessCard({ business }: BusinessCardProps) {
               href={whatsappUrl}
               target="_blank"
               rel="noopener noreferrer"
+              onClick={() => track(business.id, "whatsapp")}
               className="flex-1 flex items-center justify-center gap-1 text-xs bg-primary text-white px-4 py-1.5 rounded-lg hover:scale-105 transition"
             >
               <img width={18} src={wspLogo} />
@@ -121,6 +123,7 @@ export default function BusinessCard({ business }: BusinessCardProps) {
               href={business.instagram}
               target="_blank"
               rel="noopener noreferrer"
+              onClick={() => track(business.id, "instagram")}
               className="p-2 rounded-lg bg-secondary-soft/10 hover:bg-secondary-soft/30 transition"
             >
               <InstagramIcon size={20} className="text-gray-700" />
@@ -130,6 +133,7 @@ export default function BusinessCard({ business }: BusinessCardProps) {
           {business.phone && (
             <a
               href={`tel:${business.phone}`}
+              onClick={() => track(business.id, "phone")}
               className="p-2 rounded-lg bg-secondary-soft/10 hover:bg-secondary-soft/30 transition"
             >
               <PhoneCall size={20} className="text-gray-700" />

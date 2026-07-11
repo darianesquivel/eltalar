@@ -11,6 +11,7 @@ type BusinessFormData = {
   whatsapp: string | null;
   instagram: string | null;
   website: string | null;
+  services?: string | null;
 };
 
 type Props = {
@@ -21,6 +22,8 @@ type Props = {
   selectedCategoryIds?: string[];
   /** Habilita la carga administrativa (negocio sin dueño, reclamable). */
   isAdmin?: boolean;
+  /** El plan Destacado desbloquea la lista de servicios y precios. */
+  isFeatured?: boolean;
 };
 
 const slugify = (text: string) =>
@@ -38,6 +41,7 @@ export default function BusinessForm({
   business,
   selectedCategoryIds = [],
   isAdmin = false,
+  isFeatured = false,
 }: Props) {
   const isEdit = Boolean(business?.id);
   const [adminNoOwner, setAdminNoOwner] = useState(isAdmin);
@@ -50,6 +54,7 @@ export default function BusinessForm({
     whatsapp: business?.whatsapp ?? "",
     instagram: business?.instagram ?? "",
     website: business?.website ?? "",
+    services: business?.services ?? "",
   });
   const [selectedCats, setSelectedCats] =
     useState<string[]>(selectedCategoryIds);
@@ -101,6 +106,7 @@ export default function BusinessForm({
         whatsapp: form.whatsapp || null,
         instagram: form.instagram || null,
         website: form.website || null,
+        services: form.services || null,
       };
 
       if (isEdit) {
@@ -196,6 +202,40 @@ export default function BusinessForm({
           className={`${inputClass} resize-none`}
         />
       </div>
+
+      {isEdit && (
+        <div>
+          <label className="mb-1 block text-sm font-semibold">
+            Servicios y precios{" "}
+            {!isFeatured && (
+              <span className="ml-1 rounded-full bg-amber-100 px-2 py-0.5 text-[11px] font-semibold text-amber-700">
+                ⭐ Destacado
+              </span>
+            )}
+          </label>
+          {isFeatured ? (
+            <>
+              <textarea
+                rows={5}
+                value={form.services ?? ""}
+                onChange={set("services")}
+                placeholder={
+                  "Uno por línea, ej:\nCorte de pelo — $8.000\nColor — desde $25.000"
+                }
+                className={`${inputClass} resize-none`}
+              />
+              <p className="mt-1 text-xs text-gray-400">
+                Se muestran como lista en tu ficha. Un servicio por línea.
+              </p>
+            </>
+          ) : (
+            <p className="rounded-xl border border-amber-200 bg-amber-50 p-3 text-sm text-amber-800">
+              Con el <strong>plan Destacado</strong> podés publicar tu lista de
+              servicios y precios en la ficha.
+            </p>
+          )}
+        </div>
+      )}
 
       <div>
         <label className="mb-1 block text-sm font-semibold">Rubros</label>

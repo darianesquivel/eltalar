@@ -4,6 +4,7 @@ import BusinessForm from "../../../components/app/BusinessForm";
 import HoursEditor from "../../../components/app/HoursEditor";
 import PhotoManager from "../../../components/app/PhotoManager";
 import FeaturedCard from "../../../components/app/FeaturedCard";
+import StatsCard from "../../../components/app/StatsCard";
 import OffersManager from "../../../components/app/OffersManager";
 import DeleteBusiness from "../../../components/app/DeleteBusiness";
 import { createSupabaseServer } from "../../../lib/supabase/server";
@@ -16,7 +17,7 @@ const { data: business } = await supabase
   .from("businesses")
   .select(
     `
-    id, name, slug, description, address, phone, whatsapp, instagram, website,
+    id, name, slug, description, address, phone, whatsapp, instagram, website, services,
     status, is_active, is_featured,
     business_categories ( category_id ),
     business_hours ( day_of_week, open_time, close_time, is_closed, is_open_24 ),
@@ -75,6 +76,15 @@ const statusInfo = STATUS_INFO[business.status] ?? STATUS_INFO.pending;
     </div>
 
     <div class="rounded-2xl bg-white p-8 shadow-sm space-y-4">
+      <h2 class="text-lg font-semibold">📊 Tu negocio en números</h2>
+      <StatsCard
+        businessId={business.id}
+        isFeatured={business.is_featured === true}
+        client:load
+      />
+    </div>
+
+    <div class="rounded-2xl bg-white p-8 shadow-sm space-y-4">
       <h2 class="text-lg font-semibold">Datos del negocio</h2>
       <BusinessForm
         categories={categories ?? []}
@@ -87,8 +97,10 @@ const statusInfo = STATUS_INFO[business.status] ?? STATUS_INFO.pending;
           whatsapp: business.whatsapp,
           instagram: business.instagram,
           website: business.website,
+          services: business.services,
         }}
         selectedCategoryIds={selectedCategoryIds}
+        isFeatured={business.is_featured === true}
         client:load
       />
     </div>

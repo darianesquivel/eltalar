@@ -95,6 +95,35 @@ export type Database = {
           },
         ];
       };
+      business_events: {
+        Row: {
+          business_id: string;
+          created_at: string;
+          event: string;
+          id: number;
+        };
+        Insert: {
+          business_id: string;
+          created_at?: string;
+          event: string;
+          id?: never;
+        };
+        Update: {
+          business_id?: string;
+          created_at?: string;
+          event?: string;
+          id?: never;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "business_events_business_id_fkey";
+            columns: ["business_id"];
+            isOneToOne: false;
+            referencedRelation: "businesses";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
       business_hours: {
         Row: {
           business_id: string;
@@ -223,6 +252,7 @@ export type Database = {
           priority: number | null;
           seo_description: string | null;
           seo_title: string | null;
+          services: string | null;
           slug: string;
           status: string;
           updated_at: string | null;
@@ -249,6 +279,7 @@ export type Database = {
           priority?: number | null;
           seo_description?: string | null;
           seo_title?: string | null;
+          services?: string | null;
           slug: string;
           status?: string;
           updated_at?: string | null;
@@ -275,6 +306,7 @@ export type Database = {
           priority?: number | null;
           seo_description?: string | null;
           seo_title?: string | null;
+          services?: string | null;
           slug?: string;
           status?: string;
           updated_at?: string | null;
@@ -529,6 +561,14 @@ export type Database = {
       admin_set_featured: {
         Args: { p_business_id: string; p_featured: boolean; p_until?: string };
         Returns: undefined;
+      };
+      get_business_stats: {
+        Args: { p_business_id: string; p_days?: number };
+        Returns: {
+          current_total: number;
+          event: string;
+          previous_total: number;
+        }[];
       };
       is_admin: { Args: never; Returns: boolean };
       today_ar: { Args: never; Returns: string };

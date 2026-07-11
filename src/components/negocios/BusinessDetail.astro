@@ -1,6 +1,14 @@
 ---
 import { Image } from "astro:assets";
-import { Info, PhoneCall, Clock, ArrowLeft, Flame } from "@lucide/astro";
+import {
+  Info,
+  PhoneCall,
+  Clock,
+  ArrowLeft,
+  Flame,
+  ClipboardList,
+  Check,
+} from "@lucide/astro";
 import InstagramIcon from "../icons/InstagramIcon";
 import MapPreview from "../MapPreview.astro";
 import ShareBusiness from "./ShareBusiness.astro";
@@ -13,6 +21,12 @@ interface Props {
 
 const { business } = Astro.props;
 const hours = getWeekSchedule(business.business_hours);
+
+// Lista de servicios y precios (beneficio Destacado): un item por linea
+const serviceLines = (business.services ?? "")
+  .split("\n")
+  .map((l) => l.trim())
+  .filter(Boolean);
 
 // Galería: fotos extra además de la portada (las tienen los Destacados,
 // que pueden subir hasta 4). Se muestran debajo de la imagen principal.
@@ -30,7 +44,11 @@ const shareUrl = new URL(
 ).toString();
 ---
 
-<section class="max-w-6xl mx-auto px-4 space-y-8">
+<section
+  id="business-detail"
+  data-business-id={business.id}
+  class="max-w-6xl mx-auto px-4 space-y-8"
+>
   <a
     href="/negocios"
     class="inline-flex items-center gap-2 text-sm text-primary hover:underline"
@@ -139,6 +157,7 @@ const shareUrl = new URL(
               href={`https://wa.me/${business.whatsapp}`}
               target="_blank"
               rel="noopener noreferrer"
+              data-track="whatsapp"
               class="flex-1 h-15 text-xs flex items-center gap-1 justify-center transition-transform duration-200 hover:scale-105 bg-primary text-white px-5 py-1 rounded-lg"
             >
               <img width={20} src={whatsappLogo} alt="" /> Whatsapp
@@ -152,6 +171,7 @@ const shareUrl = new URL(
               href={business.instagram}
               target="_blank"
               rel="noopener noreferrer"
+              data-track="instagram"
               class="flex-1 h-15 inline-flex items-center justify-center transition-transform duration-300 hover:scale-105 bg-secondary-soft/10 hover:bg-secondary-soft/30 p-1 rounded-lg"
             >
               <InstagramIcon size={20} className="text-gray-700" />
@@ -163,6 +183,7 @@ const shareUrl = new URL(
           business.phone && (
             <a
               href={`tel:${business.phone}`}
+              data-track="phone"
               class="flex-1 h-15 inline-flex items-center justify-center transition-transform duration-200 hover:scale-105 bg-secondary-soft/10 hover:bg-secondary-soft/30 p-1 rounded-lg"
               aria-label="Llamar por teléfono"
             >
@@ -192,6 +213,25 @@ const shareUrl = new URL(
                 />
               </a>
             ))}
+          </div>
+        )
+      }
+
+      {
+        serviceLines.length > 0 && (
+          <div class="rounded-2xl bg-white p-6 shadow-sm">
+            <h2 class="mb-3 text-lg font-semibold flex items-center gap-2">
+              <ClipboardList size={24} class="text-primary" />
+              Servicios y precios
+            </h2>
+            <ul class="grid gap-2 sm:grid-cols-2">
+              {serviceLines.map((line) => (
+                <li class="flex items-start gap-2 text-sm text-gray-700">
+                  <Check size={15} class="mt-0.5 shrink-0 text-primary" />
+                  {line}
+                </li>
+              ))}
+            </ul>
           </div>
         )
       }
@@ -271,3 +311,30 @@ const shareUrl = new URL(
     </div>
   </div>
 </section>
+
+<script>
+  import { track, type TrackEvent } from "../../lib/track";
+
+  // Patrón page-load: con el ClientRouter los module scripts corren una vez
+  // por sesión; el setup debe re-ejecutarse en cada navegación.
+  const setupTracking = () => {
+    const root = document.getElementById("business-detail");
+    if (!root || root.dataset.tracked) return;
+    root.dataset.tracked = "1";
+
+    const businessId = root.dataset.businessId!;
+
+    // Vista de ficha (corre solo en visitas reales, no en prefetch)
+    track(businessId, "view");
+
+    // Clicks a los botones de contacto
+    root.querySelectorAll<HTMLElement>("[data-track]").forEach((el) => {
+      el.addEventListener("click", () => {
+        track(businessId, el.dataset.track as TrackEvent);
+      });
+    });
+  };
+
+  setupTracking();
+  document.addEventListener("astro:page-load", setupTracking);
+</script>
