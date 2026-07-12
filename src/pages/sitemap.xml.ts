@@ -18,15 +18,26 @@ export const GET: APIRoute = async ({ locals }) => {
     "/eventos",
   ];
 
-  const { data: businesses } = await supabase
-    .from("businesses")
-    .select("slug")
-    .eq("barrio_id", barrio.id)
-    .eq("is_active", true);
+  // En páginas de a 1000: Supabase corta cualquier consulta en 1000 filas y
+  // hay más negocios que eso — sin paginar, el sitemap quedaba incompleto.
+  const PAGE = 1000;
+  const businesses: { slug: string }[] = [];
+  for (let from = 0; ; from += PAGE) {
+    const { data } = await supabase
+      .from("businesses")
+      .select("slug")
+      .eq("barrio_id", barrio.id)
+      .eq("is_active", true)
+      .order("id")
+      .range(from, from + PAGE - 1);
+
+    businesses.push(...(data ?? []));
+    if (!data || data.length < PAGE) break;
+  }
 
   const urls = [
     ...staticPaths.map((p) => `${base}${p}`),
-    ...(businesses ?? []).map((b) => `${base}/negocios/${b.slug}`),
+    ...businesses.map((b) => `${base}/negocios/${b.slug}`),
   ];
 
   const xml = `<?xml version="1.0" encoding="UTF-8"?>
