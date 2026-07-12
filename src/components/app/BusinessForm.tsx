@@ -288,13 +288,11 @@ export default function BusinessForm({
           />
         </div>
         <div>
-          <label className="mb-1 block text-sm font-semibold">
-            Instagram (link)
-          </label>
+          <label className="mb-1 block text-sm font-semibold">Instagram</label>
           <input
             value={form.instagram ?? ""}
             onChange={set("instagram")}
-            placeholder="https://instagram.com/tunegocio"
+            placeholder="Tu usuario (ej: @tunegocio) o el link"
             className={inputClass}
           />
         </div>

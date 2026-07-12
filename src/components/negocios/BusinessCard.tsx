@@ -3,6 +3,7 @@ import { BadgeCheck, PhoneCall } from "lucide-react";
 import CategoryPlaceholder from "./CategoryPlaceholder";
 import InstagramIcon from "../icons/InstagramIcon";
 import { getTodayStatus } from "../../lib/hours";
+import { instagramUrl } from "../../lib/links";
 import { track } from "../../lib/track";
 import { optimizedImage } from "../../lib/images";
 import type { BusinessSummary } from "../../lib/repositories/business.repository";
@@ -137,7 +138,7 @@ export default function BusinessCard({ business }: BusinessCardProps) {
 
           {business.instagram && (
             <a
-              href={business.instagram}
+              href={instagramUrl(business.instagram)!}
               target="_blank"
               rel="noopener noreferrer"
               onClick={() => track(business.id, "instagram")}

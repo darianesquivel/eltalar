@@ -15,6 +15,7 @@ import InstagramIcon from "../icons/InstagramIcon";
 import MapPreview from "../MapPreview.astro";
 import ShareBusiness from "./ShareBusiness.astro";
 import { getWeekSchedule } from "../../lib/hours";
+import { instagramUrl } from "../../lib/links";
 import type { Business } from "../../lib/repositories/business.repository";
 
 interface Props {
@@ -171,7 +172,7 @@ const shareUrl = new URL(
         {
           business.instagram && (
             <a
-              href={business.instagram}
+              href={instagramUrl(business.instagram)}
               target="_blank"
               rel="noopener noreferrer"
               data-track="instagram"

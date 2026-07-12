@@ -2,6 +2,7 @@
 import Layout from "../../layouts/Layout.astro";
 import BusinessDetail from "../../components/negocios/BusinessDetail.astro";
 import { getBusinessBySlug } from "../../lib/repositories/business.repository";
+import { instagramUrl } from "../../lib/links";
 
 const { slug } = Astro.params;
 
@@ -72,7 +73,7 @@ const jsonLd = {
         longitude: business.lng,
       },
     }),
-  ...(business.instagram && { sameAs: [business.instagram] }),
+  ...(business.instagram && { sameAs: [instagramUrl(business.instagram)] }),
   ...(openingHours.length > 0 && { openingHoursSpecification: openingHours }),
 };
 ---
