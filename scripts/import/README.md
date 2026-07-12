@@ -70,3 +70,15 @@ node scripts/import/import-businesses.mjs --apply         # todo
 2. Dry-run de un rubro: `--type restaurant` → revisar la salida.
 3. `--type restaurant --apply` → revisar en `/app/admin/negocios` y en el sitio.
 4. Repetir por rubro, o `--apply` a secas para todo lo restante.
+
+## Mantenimiento — Chequeo de vigencia
+
+```
+node scripts/import/check-vigencia.mjs           # informe (no toca nada)
+node scripts/import/check-vigencia.mjs --apply   # desactiva los cerrados
+```
+
+Le pregunta a Google el estado actual de cada negocio importado y desactiva
+los que figuran "cerrado permanentemente" (o dados de baja de Maps). Los
+cerrados temporalmente solo se informan. Correrlo ~una vez por mes; el
+volumen entra en la franja gratuita de la API.
