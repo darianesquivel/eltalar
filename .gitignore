@@ -31,3 +31,5 @@ scripts/import/data/details-cache.json
 scripts/import/data/places-*.json
 scripts/import/data/el-talar-polygon.json
 scripts/import/data/pendientes-revision.*
+.vercel
+.env*

@@ -93,9 +93,14 @@ export const POST: APIRoute = async (context) => {
 
   if (!mpRes.ok) {
     console.error("MP preapproval error:", await mpRes.text());
-    return new Response(JSON.stringify({ error: "mp_error" }), {
-      status: 502,
-    });
+    return new Response(
+      JSON.stringify({
+        error: "mp_error",
+        message:
+          "Mercado Pago rechazó la operación. Probá de nuevo en un rato; si sigue pasando escribinos desde el formulario de contacto.",
+      }),
+      { status: 502 },
+    );
   }
 
   const preapproval = await mpRes.json();
