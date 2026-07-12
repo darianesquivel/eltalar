@@ -18,7 +18,7 @@ const { data: business } = await supabase
   .select(
     `
     id, name, slug, description, address, phone, whatsapp, instagram, website, services,
-    status, is_active, is_featured, by_appointment,
+    status, is_active, is_featured, by_appointment, lat, lng,
     business_categories ( category_id ),
     business_hours ( day_of_week, open_time, close_time, is_closed, is_open_24 ),
     business_photos ( id, url, is_cover, position ),

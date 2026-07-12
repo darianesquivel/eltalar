@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { supabaseBrowser } from "../../lib/supabase/browser";
+import AddressAutocomplete from "./AddressAutocomplete";
 import type { Category } from "../../lib/repositories/business.repository";
 
 type BusinessFormData = {
@@ -12,6 +13,8 @@ type BusinessFormData = {
   instagram: string | null;
   website: string | null;
   services?: string | null;
+  lat?: number | null;
+  lng?: number | null;
 };
 
 type Props = {
@@ -55,6 +58,8 @@ export default function BusinessForm({
     instagram: business?.instagram ?? "",
     website: business?.website ?? "",
     services: business?.services ?? "",
+    lat: business?.lat ?? null,
+    lng: business?.lng ?? null,
   });
   const [selectedCats, setSelectedCats] =
     useState<string[]>(selectedCategoryIds);
@@ -107,6 +112,9 @@ export default function BusinessForm({
         instagram: form.instagram || null,
         website: form.website || null,
         services: form.services || null,
+        // Del autocompletado de dirección: con esto aparece en el mapa
+        lat: form.lat ?? null,
+        lng: form.lng ?? null,
       };
 
       if (isEdit) {
@@ -260,12 +268,21 @@ export default function BusinessForm({
       <div className="grid gap-5 sm:grid-cols-2">
         <div>
           <label className="mb-1 block text-sm font-semibold">Dirección</label>
-          <input
+          <AddressAutocomplete
             value={form.address ?? ""}
-            onChange={set("address")}
-            placeholder="Av. H. Yrigoyen 1234, El Talar"
-            className={inputClass}
+            onChange={(address) => {
+              // Tipeo manual: la dirección cambió, las coordenadas viejas no valen
+              setForm((f) => ({ ...f, address, lat: null, lng: null }));
+              setSaved(false);
+            }}
+            onSelect={(address, lat, lng) => {
+              setForm((f) => ({ ...f, address, lat, lng }));
+              setSaved(false);
+            }}
           />
+          <p className="mt-1 text-xs text-gray-400">
+            Elegí una de las sugerencias y tu negocio aparece en el mapa
+          </p>
         </div>
         <div>
           <label className="mb-1 block text-sm font-semibold">Teléfono</label>
