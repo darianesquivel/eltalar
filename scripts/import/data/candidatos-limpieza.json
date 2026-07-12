@@ -1,0 +1,890 @@
+[
+ {
+  "id": "d4e85691-8a2f-43b1-9d67-2beae84e4216",
+  "tipo": "duplicado",
+  "motivo": "de 'Farmacia Lazecki'",
+  "name": "Farmacia Lazecki",
+  "slug": "farmacia-lazecki-hipolito",
+  "address": "hipolito yrigoyen (ruta 197) 1914, El Talar"
+ },
+ {
+  "id": "80204ca6-c898-4db5-ab49-9c69bc3dc39a",
+  "tipo": "duplicado",
+  "motivo": "de 'Farmacia Talar Salud Uno S.C.S'",
+  "name": "Farmacia Talar Salud Uno SCS",
+  "slug": "farmacia-talar-salud-uno-scs",
+  "address": "Colombia 1152, El Talar"
+ },
+ {
+  "id": "725c1fa8-dd1a-45ca-903e-c500f0131204",
+  "tipo": "duplicado",
+  "motivo": "de 'Toyota Panamericana - Sucursal Talar'",
+  "name": "Toyota Panamericana - Sucursal Talar",
+  "slug": "toyota-panamericana-sucursal-talar-colectora",
+  "address": "Colectora Este 29441, El Talar"
+ },
+ {
+  "id": "1d60edf7-d4bb-4e93-9282-ae881e8add79",
+  "tipo": "duplicado",
+  "motivo": "mismo tel que 'Farmacia Agnes'",
+  "name": "Agnes",
+  "slug": "agnes",
+  "address": "Av. Hipólito Yrigoyen 1655, El Talar"
+ },
+ {
+  "id": "edb49178-214f-43c2-9f96-1219a4d5192a",
+  "tipo": "duplicado",
+  "motivo": "mismo tel que 'Electro Rubi'",
+  "name": "Electro Rubi SRL.",
+  "slug": "electro-rubi-srl",
+  "address": "Av. Hipólito Yrigoyen 1692, El Talar"
+ },
+ {
+  "id": "039703bc-5a52-42c2-a691-499bff6e621c",
+  "tipo": "fantasma",
+  "motivo": "sin tel/web/IG/horarios/dirección con altura",
+  "name": "Autopartes",
+  "slug": "autopartes",
+  "address": "Fray Luis Beltrán, El Talar"
+ },
+ {
+  "id": "08cea312-95b4-4672-9c96-2efc86559840",
+  "tipo": "fantasma",
+  "motivo": "sin tel/web/IG/horarios/dirección con altura",
+  "name": "Tienda ropa Marty",
+  "slug": "tienda-ropa-marty",
+  "address": "Tte. Gral. Juan José Valle, El Talar"
+ },
+ {
+  "id": "0b8ccbde-1dc6-4c91-b870-76ba6b47ff8b",
+  "tipo": "fantasma",
+  "motivo": "sin tel/web/IG/horarios/dirección con altura",
+  "name": "Almacen El Lucero",
+  "slug": "almacen-el-lucero",
+  "address": "ABD, El Talar"
+ },
+ {
+  "id": "0e662a62-646f-45f0-825e-2c2e1bc0bb17",
+  "tipo": "fantasma",
+  "motivo": "sin tel/web/IG/horarios/dirección con altura",
+  "name": "Los Pinos",
+  "slug": "los-pinos",
+  "address": "El Talar, El Talar"
+ },
+ {
+  "id": "10a63fe1-ab20-4d13-bacd-bbb07641d8f5",
+  "tipo": "fantasma",
+  "motivo": "sin tel/web/IG/horarios/dirección con altura",
+  "name": "GRUPO EUROAMERIC",
+  "slug": "grupo-euroameric",
+  "address": "El Talar, El Talar"
+ },
+ {
+  "id": "19d6ad46-eecb-4e67-b5ec-3d8fe593d5d1",
+  "tipo": "fantasma",
+  "motivo": "sin tel/web/IG/horarios/dirección con altura",
+  "name": "Distribuidora El Tambo Mayorista",
+  "slug": "distribuidora-el-tambo-mayorista",
+  "address": "El Talar, El Talar"
+ },
+ {
+  "id": "1ac55e37-cd61-4ea7-8979-28b3c5c37107",
+  "tipo": "fantasma",
+  "motivo": "sin tel/web/IG/horarios/dirección con altura",
+  "name": "Tramontina",
+  "slug": "tramontina",
+  "address": "Colectora Este Panamericana, El Talar"
+ },
+ {
+  "id": "1f8c11d8-38d5-4e04-befd-0356201e7150",
+  "tipo": "fantasma",
+  "motivo": "sin tel/web/IG/horarios/dirección con altura",
+  "name": "Protección Total",
+  "slug": "proteccion-total",
+  "address": "El Talar, El Talar"
+ },
+ {
+  "id": "2049daf8-e877-433c-9092-d6e62c11da08",
+  "tipo": "fantasma",
+  "motivo": "sin tel/web/IG/horarios/dirección con altura",
+  "name": "La 30 FC",
+  "slug": "la-30-fc",
+  "address": "Hernán Cortés, El Talar"
+ },
+ {
+  "id": "236a0a56-6230-47c7-90f4-57f0c1724af6",
+  "tipo": "fantasma",
+  "motivo": "sin tel/web/IG/horarios/dirección con altura",
+  "name": "Brio Receptoria De Encomiendas",
+  "slug": "brio-receptoria-de-encomiendas",
+  "address": "El Talar, El Talar"
+ },
+ {
+  "id": "24865dcd-804f-4086-abda-745cf8cabeaf",
+  "tipo": "fantasma",
+  "motivo": "sin tel/web/IG/horarios/dirección con altura",
+  "name": "Centro Comercial Monteagudo Point",
+  "slug": "centro-comercial-monteagudo-point",
+  "address": "Ramal Fatima, El Talar"
+ },
+ {
+  "id": "25dfa9a7-b590-4455-9c16-f4f25483fef3",
+  "tipo": "fantasma",
+  "motivo": "sin tel/web/IG/horarios/dirección con altura",
+  "name": "Lovol",
+  "slug": "lovol",
+  "address": "El Talar, El Talar"
+ },
+ {
+  "id": "26254cc1-de99-46f9-90ee-ef50861fd745",
+  "tipo": "fantasma",
+  "motivo": "sin tel/web/IG/horarios/dirección con altura",
+  "name": "PAOLIN",
+  "slug": "paolin",
+  "address": "El Talar, El Talar"
+ },
+ {
+  "id": "268038f8-250b-4382-9d66-b4459312cc55",
+  "tipo": "fantasma",
+  "motivo": "sin tel/web/IG/horarios/dirección con altura",
+  "name": "La Casa Del Richard",
+  "slug": "la-casa-del-richard",
+  "address": "Pje. San Juan, El Talar"
+ },
+ {
+  "id": "2bd186de-2e5d-4881-ad2f-d71f476ae9f0",
+  "tipo": "fantasma",
+  "motivo": "sin tel/web/IG/horarios/dirección con altura",
+  "name": "R R CONSTRUCCIONES",
+  "slug": "r-r-construcciones",
+  "address": "BDS, El Talar"
+ },
+ {
+  "id": "2d8e28e5-2062-4e84-b918-720388f45d00",
+  "tipo": "fantasma",
+  "motivo": "sin tel/web/IG/horarios/dirección con altura",
+  "name": "Carniceria Dany",
+  "slug": "carniceria-dany",
+  "address": "El Talar, El Talar"
+ },
+ {
+  "id": "2f947e22-1c71-4a25-a0fa-eb516416f74f",
+  "tipo": "fantasma",
+  "motivo": "sin tel/web/IG/horarios/dirección con altura",
+  "name": "Establecimiento La Yaya",
+  "slug": "establecimiento-la-yaya",
+  "address": "El Talar, El Talar"
+ },
+ {
+  "id": "3036bf91-1d67-4c8a-8ba4-09ed588c8afc",
+  "tipo": "fantasma",
+  "motivo": "sin tel/web/IG/horarios/dirección con altura",
+  "name": "Gomeria",
+  "slug": "gomeria",
+  "address": "El Talar, El Talar"
+ },
+ {
+  "id": "31d1292b-e9a9-4268-912f-b5d35080d691",
+  "tipo": "fantasma",
+  "motivo": "sin tel/web/IG/horarios/dirección con altura",
+  "name": "Kiosco 197 Y Pna",
+  "slug": "kiosco-197-y-pna",
+  "address": "El Talar, El Talar"
+ },
+ {
+  "id": "3249b208-e1f7-4d63-98bf-06f222701001",
+  "tipo": "fantasma",
+  "motivo": "sin tel/web/IG/horarios/dirección con altura",
+  "name": "TRANSPORTE GUCAR",
+  "slug": "transporte-gucar",
+  "address": "El Talar, El Talar"
+ },
+ {
+  "id": "34c8bac7-5a44-40b3-92cd-e3b84f1153dd",
+  "tipo": "fantasma",
+  "motivo": "sin tel/web/IG/horarios/dirección con altura",
+  "name": "Enganchate Rock radio web",
+  "slug": "enganchate-rock-radio-web",
+  "address": "Hernan Cortés, El Talar"
+ },
+ {
+  "id": "395de9c1-0ae5-4d86-9e3f-ebb463e8813d",
+  "tipo": "fantasma",
+  "motivo": "sin tel/web/IG/horarios/dirección con altura",
+  "name": "CAPYBARA SPA",
+  "slug": "capybara-spa",
+  "address": "EOM, El Talar"
+ },
+ {
+  "id": "39ccc007-a16e-4172-a046-752f3b368eb3",
+  "tipo": "fantasma",
+  "motivo": "sin tel/web/IG/horarios/dirección con altura",
+  "name": "Art. De Limpieza \"La Burbujita\"",
+  "slug": "art-de-limpieza-la-burbujita",
+  "address": "AFF, El Talar"
+ },
+ {
+  "id": "3a9b88a9-fea7-46da-a9f8-cd662c22b40e",
+  "tipo": "fantasma",
+  "motivo": "sin tel/web/IG/horarios/dirección con altura",
+  "name": "Almacen",
+  "slug": "almacen",
+  "address": "EDI, El Talar"
+ },
+ {
+  "id": "3ae306ae-3077-41c3-97e7-a28aaf0b8b65",
+  "tipo": "fantasma",
+  "motivo": "sin tel/web/IG/horarios/dirección con altura",
+  "name": "Ñomi ñomi",
+  "slug": "nomi-nomi",
+  "address": "El Talar, El Talar"
+ },
+ {
+  "id": "3c166c43-1400-49b6-bc61-c9b8b2abb1f1",
+  "tipo": "fantasma",
+  "motivo": "sin tel/web/IG/horarios/dirección con altura",
+  "name": "PASCUAL Y PARAGUAY",
+  "slug": "pascual-y-paraguay",
+  "address": "Paraguay, El Talar"
+ },
+ {
+  "id": "3d76dc91-d639-4045-a45c-9705c0048391",
+  "tipo": "fantasma",
+  "motivo": "sin tel/web/IG/horarios/dirección con altura",
+  "name": "CriSol",
+  "slug": "crisol",
+  "address": "DPI, El Talar"
+ },
+ {
+  "id": "3e856d18-a92b-458e-ab80-d452133885cd",
+  "tipo": "fantasma",
+  "motivo": "sin tel/web/IG/horarios/dirección con altura",
+  "name": "Integra",
+  "slug": "integra",
+  "address": "El Talar, El Talar"
+ },
+ {
+  "id": "40ed70ac-3958-4276-b593-aa50dc3671a2",
+  "tipo": "fantasma",
+  "motivo": "sin tel/web/IG/horarios/dirección con altura",
+  "name": "Altos del talar sur",
+  "slug": "altos-del-talar-sur",
+  "address": "Servicio Chaco, El Talar"
+ },
+ {
+  "id": "44218eb5-c6cd-488b-b560-f32169369587",
+  "tipo": "fantasma",
+  "motivo": "sin tel/web/IG/horarios/dirección con altura",
+  "name": "Pacheco Por Mayor Y Menor",
+  "slug": "pacheco-por-mayor-y-menor",
+  "address": "El Talar, El Talar"
+ },
+ {
+  "id": "443df1d8-1e08-4d5d-b021-ae1633d90ee9",
+  "tipo": "fantasma",
+  "motivo": "sin tel/web/IG/horarios/dirección con altura",
+  "name": "DESPERTARES (RELOJERÍA Y RESTAURACIÓN)",
+  "slug": "despertares-relojeria-y-restauracion",
+  "address": "CPL, El Talar"
+ },
+ {
+  "id": "44b122d6-c01b-4ad6-949a-2ccc87869dbc",
+  "tipo": "fantasma",
+  "motivo": "sin tel/web/IG/horarios/dirección con altura",
+  "name": "Laura Daniela",
+  "slug": "laura-daniela",
+  "address": "COE, El Talar"
+ },
+ {
+  "id": "45a4df00-6eb8-4968-927c-f25492d14a6c",
+  "tipo": "fantasma",
+  "motivo": "sin tel/web/IG/horarios/dirección con altura",
+  "name": "Japoaleman",
+  "slug": "japoaleman",
+  "address": "Fray Luis Beltrán, El Talar"
+ },
+ {
+  "id": "46942122-847d-4752-ad31-a83b2667ff17",
+  "tipo": "fantasma",
+  "motivo": "sin tel/web/IG/horarios/dirección con altura",
+  "name": "El Record",
+  "slug": "el-record",
+  "address": "El Talar, El Talar"
+ },
+ {
+  "id": "4b858764-d26e-4f55-80ba-d0315758cd8f",
+  "tipo": "fantasma",
+  "motivo": "sin tel/web/IG/horarios/dirección con altura",
+  "name": "Lumita Nails 💜",
+  "slug": "lumita-nails",
+  "address": "BUD, El Talar"
+ },
+ {
+  "id": "4cc1c14a-14ff-475f-83d4-62f927f6870c",
+  "tipo": "fantasma",
+  "motivo": "sin tel/web/IG/horarios/dirección con altura",
+  "name": "A Z E R O T H",
+  "slug": "a-z-e-r-o-t-h",
+  "address": "El Talar, El Talar"
+ },
+ {
+  "id": "5062652a-f442-4782-ae02-1839ed392087",
+  "tipo": "fantasma",
+  "motivo": "sin tel/web/IG/horarios/dirección con altura",
+  "name": "Barugel. Nave N°5",
+  "slug": "barugel-nave-n-5",
+  "address": "El Talar, El Talar"
+ },
+ {
+  "id": "510c4031-58f1-460f-b3eb-808e7bf94572",
+  "tipo": "fantasma",
+  "motivo": "sin tel/web/IG/horarios/dirección con altura",
+  "name": "Tu Horno De Barro",
+  "slug": "tu-horno-de-barro",
+  "address": "DEC, El Talar"
+ },
+ {
+  "id": "58dc245a-2658-41e2-89a9-b77fa752bfcc",
+  "tipo": "fantasma",
+  "motivo": "sin tel/web/IG/horarios/dirección con altura",
+  "name": "CJM CARNICERIA",
+  "slug": "cjm-carniceria",
+  "address": "El Talar, El Talar"
+ },
+ {
+  "id": "5abdba98-a190-4bcf-853d-c18276893543",
+  "tipo": "fantasma",
+  "motivo": "sin tel/web/IG/horarios/dirección con altura",
+  "name": "\"Chuli\"- \"Sigue tus Sueños\"",
+  "slug": "chuli-sigue-tus-suenos",
+  "address": "EDG, El Talar"
+ },
+ {
+  "id": "5be59337-d05b-471b-92a8-b184943a78e4",
+  "tipo": "fantasma",
+  "motivo": "sin tel/web/IG/horarios/dirección con altura",
+  "name": "hotel hernandarias, santa fe",
+  "slug": "hotel-hernandarias-santa-fe",
+  "address": "CRU, El Talar"
+ },
+ {
+  "id": "5cba0eac-dc7b-43b7-b5f5-79cdacb8df70",
+  "tipo": "fantasma",
+  "motivo": "sin tel/web/IG/horarios/dirección con altura",
+  "name": "Transporte El Relampago S.r.l.",
+  "slug": "transporte-el-relampago-s-r-l",
+  "address": "DAY, El Talar"
+ },
+ {
+  "id": "5ddd1fe0-0df7-4a9b-9f21-371b281d8fcc",
+  "tipo": "fantasma",
+  "motivo": "sin tel/web/IG/horarios/dirección con altura",
+  "name": "Alpina",
+  "slug": "alpina-el",
+  "address": "El Talar, El Talar"
+ },
+ {
+  "id": "5f1c1dfe-2047-4508-b72f-0d1486c8b161",
+  "tipo": "fantasma",
+  "motivo": "sin tel/web/IG/horarios/dirección con altura",
+  "name": "La cabina del tropi",
+  "slug": "la-cabina-del-tropi",
+  "address": "Colectora Este Panamericana, El Talar"
+ },
+ {
+  "id": "5fb14ed3-7137-4d02-8d95-8a8368e53d84",
+  "tipo": "fantasma",
+  "motivo": "sin tel/web/IG/horarios/dirección con altura",
+  "name": "Hotel",
+  "slug": "hotel",
+  "address": "Av. Hipólito Yrigoyen, El Talar"
+ },
+ {
+  "id": "6136f2b8-b274-4c06-8339-26c105c42a9b",
+  "tipo": "fantasma",
+  "motivo": "sin tel/web/IG/horarios/dirección con altura",
+  "name": "Valentini S.A.",
+  "slug": "valentini-s-a",
+  "address": "El Talar, El Talar"
+ },
+ {
+  "id": "661cf9cc-a514-472f-a25f-bbf897b332f2",
+  "tipo": "fantasma",
+  "motivo": "sin tel/web/IG/horarios/dirección con altura",
+  "name": "9HWV+9C Cdad. Autónoma de Buenos Aires",
+  "slug": "9hwv-9c-cdad-autonoma-de-buenos-aires",
+  "address": "BDO, El Talar"
+ },
+ {
+  "id": "6a3367ec-d1d1-46e6-8378-c28b5ddbf06d",
+  "tipo": "fantasma",
+  "motivo": "sin tel/web/IG/horarios/dirección con altura",
+  "name": "Osico",
+  "slug": "osico",
+  "address": "Williams, El Talar"
+ },
+ {
+  "id": "6b8c43e1-8913-433d-873e-37777012137e",
+  "tipo": "fantasma",
+  "motivo": "sin tel/web/IG/horarios/dirección con altura",
+  "name": "Alpina",
+  "slug": "alpina",
+  "address": "AFD, El Talar"
+ },
+ {
+  "id": "6bb94342-578a-4892-b06a-398ae1a9690e",
+  "tipo": "fantasma",
+  "motivo": "sin tel/web/IG/horarios/dirección con altura",
+  "name": "efacec",
+  "slug": "efacec",
+  "address": "El Talar, El Talar"
+ },
+ {
+  "id": "6c46be3a-0aa2-4f64-90d4-2f588b32cee9",
+  "tipo": "fantasma",
+  "motivo": "sin tel/web/IG/horarios/dirección con altura",
+  "name": "gpv piero",
+  "slug": "gpv-piero",
+  "address": "El Talar, El Talar"
+ },
+ {
+  "id": "6d84dd8d-109c-4aa1-9790-0f12c20adb32",
+  "tipo": "fantasma",
+  "motivo": "sin tel/web/IG/horarios/dirección con altura",
+  "name": "El talar Buenos Aires",
+  "slug": "el-talar-buenos-aires",
+  "address": "El Talar, El Talar"
+ },
+ {
+  "id": "7100b8d7-3d9c-4d78-9a32-542439d48bf0",
+  "tipo": "fantasma",
+  "motivo": "sin tel/web/IG/horarios/dirección con altura",
+  "name": "Cancha futbol5 España",
+  "slug": "cancha-futbol5-espana",
+  "address": "Av. del Libertador Gral. San Martín, El Talar"
+ },
+ {
+  "id": "71cf035d-4a9d-46b9-b5ad-61bbc91f4f78",
+  "tipo": "fantasma",
+  "motivo": "sin tel/web/IG/horarios/dirección con altura",
+  "name": "Pasaje san Norberto",
+  "slug": "pasaje-san-norberto",
+  "address": "El Talar, El Talar"
+ },
+ {
+  "id": "71e63ac2-4f4f-46a8-b846-9fdd3dcc7807",
+  "tipo": "fantasma",
+  "motivo": "sin tel/web/IG/horarios/dirección con altura",
+  "name": "Twin Disc",
+  "slug": "twin-disc",
+  "address": "El Talar, El Talar"
+ },
+ {
+  "id": "725230af-e38c-4b93-a071-6ca7fee654ba",
+  "tipo": "fantasma",
+  "motivo": "sin tel/web/IG/horarios/dirección con altura",
+  "name": "Acá siempre gano (mi patio)",
+  "slug": "aca-siempre-gano-mi-patio",
+  "address": "El Talar, El Talar"
+ },
+ {
+  "id": "773eed6d-0a5d-4762-ab8a-85437ed4781a",
+  "tipo": "fantasma",
+  "motivo": "sin tel/web/IG/horarios/dirección con altura",
+  "name": "CHICOLO",
+  "slug": "chicolo",
+  "address": "Quevedo, El Talar"
+ },
+ {
+  "id": "79bfa27b-ede0-469c-b70d-239b9bfe6b62",
+  "tipo": "fantasma",
+  "motivo": "sin tel/web/IG/horarios/dirección con altura",
+  "name": "Taller",
+  "slug": "taller",
+  "address": "El Talar, El Talar"
+ },
+ {
+  "id": "7acc000f-b815-4fa5-9238-3e356085f2e9",
+  "tipo": "fantasma",
+  "motivo": "sin tel/web/IG/horarios/dirección con altura",
+  "name": "Zapateria",
+  "slug": "zapateria",
+  "address": "Gral. Pacheco, El Talar"
+ },
+ {
+  "id": "7e76583d-5d77-414c-957a-1f5ceb0bb5fa",
+  "tipo": "fantasma",
+  "motivo": "sin tel/web/IG/horarios/dirección con altura",
+  "name": "Galicia Más",
+  "slug": "galicia-mas",
+  "address": "El Talar, El Talar"
+ },
+ {
+  "id": "8089cd94-b152-4c4a-a998-037165db8407",
+  "tipo": "fantasma",
+  "motivo": "sin tel/web/IG/horarios/dirección con altura",
+  "name": "Ford Motor Argentina",
+  "slug": "ford-motor-argentina",
+  "address": "El Talar, El Talar"
+ },
+ {
+  "id": "837cd7e0-07e8-4e4a-a2b8-b840210966ed",
+  "tipo": "fantasma",
+  "motivo": "sin tel/web/IG/horarios/dirección con altura",
+  "name": "Polarizados Solar Gard",
+  "slug": "polarizados-solar-gard",
+  "address": "El Talar, El Talar"
+ },
+ {
+  "id": "84476b42-2801-4e51-949d-058f84e69625",
+  "tipo": "fantasma",
+  "motivo": "sin tel/web/IG/horarios/dirección con altura",
+  "name": "Induair",
+  "slug": "induair",
+  "address": "Libertad, El Talar"
+ },
+ {
+  "id": "86f49cd7-f286-4c3c-99aa-05359d6be017",
+  "tipo": "fantasma",
+  "motivo": "sin tel/web/IG/horarios/dirección con altura",
+  "name": "FRIO NORTE S.A.",
+  "slug": "frio-norte-s-a",
+  "address": "Italia, El Talar"
+ },
+ {
+  "id": "8a1ada8d-93a1-4b62-b836-114fb95abe7d",
+  "tipo": "fantasma",
+  "motivo": "sin tel/web/IG/horarios/dirección con altura",
+  "name": "Ilva",
+  "slug": "ilva",
+  "address": "El Talar, El Talar"
+ },
+ {
+  "id": "8abde065-ad5a-493f-8c40-db3b10440877",
+  "tipo": "fantasma",
+  "motivo": "sin tel/web/IG/horarios/dirección con altura",
+  "name": "GORILLA GROWSHOP",
+  "slug": "gorilla-growshop",
+  "address": "El Talar, El Talar"
+ },
+ {
+  "id": "9633a99d-2f14-4df7-b664-7eb72aef605a",
+  "tipo": "fantasma",
+  "motivo": "sin tel/web/IG/horarios/dirección con altura",
+  "name": "Cj",
+  "slug": "cj",
+  "address": "El Talar, El Talar"
+ },
+ {
+  "id": "964a05f1-85c9-4824-90e8-55f0306cef52",
+  "tipo": "fantasma",
+  "motivo": "sin tel/web/IG/horarios/dirección con altura",
+  "name": "CORTO LA BOCHA",
+  "slug": "corto-la-bocha",
+  "address": "El Talar, El Talar"
+ },
+ {
+  "id": "987ed9b0-f0d7-4d3d-a04f-6be387c5ce23",
+  "tipo": "fantasma",
+  "motivo": "sin tel/web/IG/horarios/dirección con altura",
+  "name": "Lotería De La Provincia",
+  "slug": "loteria-de-la-provincia",
+  "address": "El Talar, El Talar"
+ },
+ {
+  "id": "99718e20-ceba-429c-99de-fb3011a07cf6",
+  "tipo": "fantasma",
+  "motivo": "sin tel/web/IG/horarios/dirección con altura",
+  "name": "Insumos Sublimables",
+  "slug": "insumos-sublimables",
+  "address": "El Talar, El Talar"
+ },
+ {
+  "id": "9cabc08f-8756-4ed1-8ac3-39bf120c607d",
+  "tipo": "fantasma",
+  "motivo": "sin tel/web/IG/horarios/dirección con altura",
+  "name": "Dias Felices Candy Bar",
+  "slug": "dias-felices-candy-bar",
+  "address": "AFA, El Talar"
+ },
+ {
+  "id": "a0b8f4f5-c362-4e26-a56f-31fe1640ec19",
+  "tipo": "fantasma",
+  "motivo": "sin tel/web/IG/horarios/dirección con altura",
+  "name": "Prosegur",
+  "slug": "prosegur",
+  "address": "Colectora Oeste Ramal Pilar, El Talar"
+ },
+ {
+  "id": "a4c8ff5c-e2e5-48c6-92af-4b2d90af182d",
+  "tipo": "fantasma",
+  "motivo": "sin tel/web/IG/horarios/dirección con altura",
+  "name": "Alparamis Sa",
+  "slug": "alparamis-sa",
+  "address": "BBB, El Talar"
+ },
+ {
+  "id": "aa117b53-120a-43ab-b9c9-fbd3cd05cbee",
+  "tipo": "fantasma",
+  "motivo": "sin tel/web/IG/horarios/dirección con altura",
+  "name": "Rocklets",
+  "slug": "rocklets",
+  "address": "Colectora Este, El Talar"
+ },
+ {
+  "id": "abe0b74a-6a38-4bd8-ad37-e313083f88e3",
+  "tipo": "fantasma",
+  "motivo": "sin tel/web/IG/horarios/dirección con altura",
+  "name": "Sabbath-tattoo",
+  "slug": "sabbath-tattoo",
+  "address": "Vivaldi, El Talar"
+ },
+ {
+  "id": "af06f6cc-b44d-4dad-bd01-0f31f3554894",
+  "tipo": "fantasma",
+  "motivo": "sin tel/web/IG/horarios/dirección con altura",
+  "name": "Verduelvi",
+  "slug": "verduelvi",
+  "address": "ILG, El Talar"
+ },
+ {
+  "id": "b44f2427-9d1e-4692-b182-731f8e1377c7",
+  "tipo": "fantasma",
+  "motivo": "sin tel/web/IG/horarios/dirección con altura",
+  "name": "La tipica",
+  "slug": "la-tipica",
+  "address": "El Talar, El Talar"
+ },
+ {
+  "id": "bc07168e-0b39-4f10-b992-7493594b5fb5",
+  "tipo": "fantasma",
+  "motivo": "sin tel/web/IG/horarios/dirección con altura",
+  "name": "San Francisco",
+  "slug": "san-francisco",
+  "address": "DGS, El Talar"
+ },
+ {
+  "id": "c143692c-aad3-4877-95b2-6bbeb6425cec",
+  "tipo": "fantasma",
+  "motivo": "sin tel/web/IG/horarios/dirección con altura",
+  "name": "Palermo",
+  "slug": "palermo",
+  "address": "BCN, El Talar"
+ },
+ {
+  "id": "c3959a1d-187e-42da-93a3-f6602382383d",
+  "tipo": "fantasma",
+  "motivo": "sin tel/web/IG/horarios/dirección con altura",
+  "name": "Tijeras",
+  "slug": "tijeras",
+  "address": "ASG, El Talar"
+ },
+ {
+  "id": "c6aa9cc1-a08a-4cc6-b71e-e6b12425bbdc",
+  "tipo": "fantasma",
+  "motivo": "sin tel/web/IG/horarios/dirección con altura",
+  "name": "Fate O",
+  "slug": "fate-o",
+  "address": "El Talar, El Talar"
+ },
+ {
+  "id": "c74014c4-9375-486e-8610-b8d4affdf334",
+  "tipo": "fantasma",
+  "motivo": "sin tel/web/IG/horarios/dirección con altura",
+  "name": "armetal",
+  "slug": "armetal",
+  "address": "Au Panamericana, El Talar"
+ },
+ {
+  "id": "c968a2e9-003b-4da1-a2af-df1fc69f3b96",
+  "tipo": "fantasma",
+  "motivo": "sin tel/web/IG/horarios/dirección con altura",
+  "name": "Taller Leo",
+  "slug": "taller-leo",
+  "address": "BAL, El Talar"
+ },
+ {
+  "id": "cea2882a-d097-4662-8c81-8cfc3319e06c",
+  "tipo": "fantasma",
+  "motivo": "sin tel/web/IG/horarios/dirección con altura",
+  "name": "Kiosco",
+  "slug": "kiosco-colombia",
+  "address": "Colombia, El Talar"
+ },
+ {
+  "id": "d175e655-0ca7-40f2-9a73-1218522264d8",
+  "tipo": "fantasma",
+  "motivo": "sin tel/web/IG/horarios/dirección con altura",
+  "name": "Crismet Compro Metales",
+  "slug": "crismet-compro-metales",
+  "address": "El Talar, El Talar"
+ },
+ {
+  "id": "d226e6ac-bb75-4713-b47f-2bda5fcb57cc",
+  "tipo": "fantasma",
+  "motivo": "sin tel/web/IG/horarios/dirección con altura",
+  "name": "Instituto mecánico dental",
+  "slug": "instituto-mecanico-dental",
+  "address": "DKS, El Talar"
+ },
+ {
+  "id": "da215e95-9a32-485b-bf0d-12a9b60120ae",
+  "tipo": "fantasma",
+  "motivo": "sin tel/web/IG/horarios/dirección con altura",
+  "name": "AlePintor",
+  "slug": "alepintor",
+  "address": "Derqui, El Talar"
+ },
+ {
+  "id": "da59aca9-fa80-41cb-b3ef-5198c480c8d7",
+  "tipo": "fantasma",
+  "motivo": "sin tel/web/IG/horarios/dirección con altura",
+  "name": "Gonzalez Cian Abel Miguel",
+  "slug": "gonzalez-cian-abel-miguel",
+  "address": "Eduardo Ozanam, El Talar"
+ },
+ {
+  "id": "def24bd0-85ab-41b8-a434-a76fe92a5255",
+  "tipo": "fantasma",
+  "motivo": "sin tel/web/IG/horarios/dirección con altura",
+  "name": "Belutattoo2",
+  "slug": "belutattoo2",
+  "address": "Oficinas Espacios Emprendedores, El Talar"
+ },
+ {
+  "id": "dfb7a6a2-0ab9-449d-a4e0-9b546c57acb1",
+  "tipo": "fantasma",
+  "motivo": "sin tel/web/IG/horarios/dirección con altura",
+  "name": "Mercadito Carniceria Granga",
+  "slug": "mercadito-carniceria-granga",
+  "address": "Bolivia, El Talar"
+ },
+ {
+  "id": "e16f6868-a855-4553-8a91-2a136b0d4b05",
+  "tipo": "fantasma",
+  "motivo": "sin tel/web/IG/horarios/dirección con altura",
+  "name": "Clases particulares INGLES y APOYO ESCOLAR",
+  "slug": "clases-particulares-ingles-y-apoyo-escolar",
+  "address": "CCA, El Talar"
+ },
+ {
+  "id": "e1eb4ff7-ed9a-4eeb-9d19-3837ee6b3bee",
+  "tipo": "fantasma",
+  "motivo": "sin tel/web/IG/horarios/dirección con altura",
+  "name": "RABE",
+  "slug": "rabe",
+  "address": "El Talar, El Talar"
+ },
+ {
+  "id": "e6a3da05-66fe-46fe-bd5a-666c51c0953c",
+  "tipo": "fantasma",
+  "motivo": "sin tel/web/IG/horarios/dirección con altura",
+  "name": "Verduleria Y Almacen Benji Bebidas",
+  "slug": "verduleria-y-almacen-benji-bebidas",
+  "address": "El Talar, El Talar"
+ },
+ {
+  "id": "eaeeb273-95cd-4a79-b21c-c3ed9c45c24b",
+  "tipo": "fantasma",
+  "motivo": "sin tel/web/IG/horarios/dirección con altura",
+  "name": "Distribuidora Mayorista Don Diego",
+  "slug": "distribuidora-mayorista-don-diego",
+  "address": "Pitágoras, El Talar"
+ },
+ {
+  "id": "ec4d591f-0b6a-4007-a7cc-651fb5007c29",
+  "tipo": "fantasma",
+  "motivo": "sin tel/web/IG/horarios/dirección con altura",
+  "name": "Cia",
+  "slug": "cia",
+  "address": "El Talar, El Talar"
+ },
+ {
+  "id": "ee137d17-cea0-4113-9065-a6497e4fa944",
+  "tipo": "fantasma",
+  "motivo": "sin tel/web/IG/horarios/dirección con altura",
+  "name": "Lüsqtoff",
+  "slug": "lusqtoff",
+  "address": "El Talar, El Talar"
+ },
+ {
+  "id": "efa573c6-9c0e-4602-ba9e-1bcb220d20af",
+  "tipo": "fantasma",
+  "motivo": "sin tel/web/IG/horarios/dirección con altura",
+  "name": "La casita",
+  "slug": "la-casita",
+  "address": "Fray Luis Beltrán, El Talar"
+ },
+ {
+  "id": "f48fe738-6584-4438-94fd-d6727f4852b6",
+  "tipo": "fantasma",
+  "motivo": "sin tel/web/IG/horarios/dirección con altura",
+  "name": "KOHLER SDMO",
+  "slug": "kohler-sdmo",
+  "address": "El Talar, El Talar"
+ },
+ {
+  "id": "f4a2a189-b07a-4c4a-b3fc-11ce5a7af9aa",
+  "tipo": "fantasma",
+  "motivo": "sin tel/web/IG/horarios/dirección con altura",
+  "name": "Chango",
+  "slug": "chango",
+  "address": "Colectora Este Panamericana, El Talar"
+ },
+ {
+  "id": "f4e2f567-fe3e-48e8-a91a-4efc65df64d1",
+  "tipo": "fantasma",
+  "motivo": "sin tel/web/IG/horarios/dirección con altura",
+  "name": "Mini Flete - Traslado de mascotas",
+  "slug": "mini-flete-traslado-de-mascotas",
+  "address": "CPL, El Talar"
+ },
+ {
+  "id": "f71e11cd-63d5-4848-bca8-59aead682bb6",
+  "tipo": "fantasma",
+  "motivo": "sin tel/web/IG/horarios/dirección con altura",
+  "name": "los gladiolos 2040 González",
+  "slug": "los-gladiolos-2040-gonzalez",
+  "address": "Los Gladiolos, El Talar"
+ },
+ {
+  "id": "f97554d9-70a5-447d-93ed-a5967b05c774",
+  "tipo": "fantasma",
+  "motivo": "sin tel/web/IG/horarios/dirección con altura",
+  "name": "Peluquería escocia",
+  "slug": "peluqueria-escocia",
+  "address": "El Talar, El Talar"
+ },
+ {
+  "id": "f9a22499-fbb9-41e7-97d5-463e40c83b92",
+  "tipo": "fantasma",
+  "motivo": "sin tel/web/IG/horarios/dirección con altura",
+  "name": "La casa de la petty",
+  "slug": "la-casa-de-la-petty",
+  "address": "Castelli, El Talar"
+ },
+ {
+  "id": "fadd03d9-6c4f-45ad-8c3a-63af7072b35f",
+  "tipo": "fantasma",
+  "motivo": "sin tel/web/IG/horarios/dirección con altura",
+  "name": "estacion el talar",
+  "slug": "estacion-el-talar",
+  "address": "El Talar, El Talar"
+ },
+ {
+  "id": "fb01cbf4-9f56-439c-83b2-d7b13ddf184a",
+  "tipo": "fantasma",
+  "motivo": "sin tel/web/IG/horarios/dirección con altura",
+  "name": "Retiro buenos aires",
+  "slug": "retiro-buenos-aires",
+  "address": "RN9, El Talar"
+ },
+ {
+  "id": "ffec01f6-2ce4-467e-abdc-2fde6983752a",
+  "tipo": "fantasma",
+  "motivo": "sin tel/web/IG/horarios/dirección con altura",
+  "name": "Refrigeración Y Calefacción",
+  "slug": "refrigeracion-y-calefaccion",
+  "address": "BAZ, El Talar"
+ }
+]
