@@ -68,34 +68,33 @@ export const POST: APIRoute = async ({ request }) => {
       provider: "mercadopago",
       external_id: preapprovalId,
       status,
-      current_period_end:
-        status === "active"
-          ? new Date(Date.now() + FEATURED_DAYS * 86400000).toISOString()
-          : null,
+      // Solo se pisa cuando hay un período pagado nuevo: al cancelar se
+      // conserva la fecha del último período (hasta cuándo tiene beneficio)
+      ...(status === "active" && {
+        current_period_end: new Date(
+          Date.now() + FEATURED_DAYS * 86400000,
+        ).toISOString(),
+      }),
       updated_at: new Date().toISOString(),
     },
     { onConflict: "external_id" },
   );
 
-  if (businessId) {
-    if (status === "active") {
-      await admin
-        .from("businesses")
-        .update({
-          is_featured: true,
-          plan: "destacado",
-          featured_until: new Date(
-            Date.now() + FEATURED_DAYS * 86400000,
-          ).toISOString(),
-        })
-        .eq("id", businessId);
-    } else if (status === "cancelled" || status === "paused") {
-      await admin
-        .from("businesses")
-        .update({ is_featured: false, plan: "free", featured_until: null })
-        .eq("id", businessId);
-    }
+  if (businessId && status === "active") {
+    await admin
+      .from("businesses")
+      .update({
+        is_featured: true,
+        plan: "destacado",
+        featured_until: new Date(
+          Date.now() + FEATURED_DAYS * 86400000,
+        ).toISOString(),
+      })
+      .eq("id", businessId);
   }
+  // cancelled/paused: NO se apaga el destacado acá — el comerciante ya pagó
+  // el período vigente y lo conserva hasta featured_until. El job diario de
+  // la base (docs/sql/2026-07-12-expirar-destacados.sql) apaga los vencidos.
 
   return new Response("ok", { status: 200 });
 };
