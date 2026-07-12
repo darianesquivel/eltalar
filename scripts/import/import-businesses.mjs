@@ -69,7 +69,7 @@ const TYPE_TO_CATEGORY = {
   stationery_store: "libreria",
   supermarket: "almacen",
   grocery_store: "almacen",
-  convenience_store: "almacen",
+  convenience_store: "kiosco",
   market: "almacen",
   liquor_store: "almacen",
   food_store: "almacen",

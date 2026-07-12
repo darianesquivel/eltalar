@@ -37,12 +37,18 @@ const pharmacyOptions = (pharmacies ?? []).map((p) => ({
       </p>
     </div>
 
-    <BulkTurnsLoader pharmacies={pharmacyOptions} client:load />
+    {/* Envueltos en div: el <astro-island> de las islas no genera caja y el
+        space-y del contenedor no separaba una sección de la otra */}
+    <div>
+      <BulkTurnsLoader pharmacies={pharmacyOptions} client:load />
+    </div>
 
-    <TurnsManager
-      turns={turns ?? []}
-      pharmacies={pharmacyOptions}
-      client:load
-    />
+    <div>
+      <TurnsManager
+        turns={turns ?? []}
+        pharmacies={pharmacyOptions}
+        client:load
+      />
+    </div>
   </div>
 </AdminLayout>

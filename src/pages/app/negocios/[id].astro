@@ -135,19 +135,25 @@ const statusInfo = STATUS_INFO[business.status] ?? STATUS_INFO.pending;
       />
     </div>
 
-    <FeaturedCard
-      businessId={business.id}
-      isFeatured={business.is_featured === true}
-      isApproved={business.status === "approved"}
-      price={Number(import.meta.env.MP_FEATURED_PRICE ?? 6500)}
-      client:load
-    />
+    {/* Envueltos en div: el <astro-island> no genera caja y el space-y del
+        contenedor no separaba estas secciones de las anteriores */}
+    <div>
+      <FeaturedCard
+        businessId={business.id}
+        isFeatured={business.is_featured === true}
+        isApproved={business.status === "approved"}
+        price={Number(import.meta.env.MP_FEATURED_PRICE ?? 6500)}
+        client:load
+      />
+    </div>
 
-    <DeleteBusiness
-      businessId={business.id}
-      businessName={business.name}
-      photoUrls={(business.business_photos ?? []).map((p) => p.url)}
-      client:load
-    />
+    <div>
+      <DeleteBusiness
+        businessId={business.id}
+        businessName={business.name}
+        photoUrls={(business.business_photos ?? []).map((p) => p.url)}
+        client:load
+      />
+    </div>
   </section>
 </Layout>
