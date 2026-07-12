@@ -42,37 +42,6 @@ if (Astro.locals.user) {
         Continuar con Google
       </button>
 
-      <details class="text-center">
-        <summary
-          class="cursor-pointer text-xs text-gray-400 hover:text-gray-600"
-        >
-          ¿Preferís entrar con un link por email?
-        </summary>
-
-        <form id="login-form" class="mt-4 space-y-3">
-          <input
-            type="email"
-            name="email"
-            required
-            placeholder="tu@email.com"
-            class="field"
-          />
-          <button
-            id="login-btn"
-            type="submit"
-            class="w-full rounded-xl bg-primary px-6 py-3 text-sm font-semibold text-white transition hover:bg-green-700 disabled:opacity-60"
-          >
-            Enviarme el link
-          </button>
-        </form>
-      </details>
-
-      <p
-        id="login-feedback"
-        class="hidden rounded-xl bg-green-50 p-4 text-center text-sm text-green-700"
-      >
-        📬 ¡Listo! Revisá tu casilla y hacé click en el link para entrar.
-      </p>
       <p
         id="login-error"
         class="hidden rounded-xl bg-red-50 p-4 text-center text-sm text-red-600"
@@ -93,23 +62,14 @@ if (Astro.locals.user) {
     const googleBtn = document.getElementById(
       "google-btn",
     ) as HTMLButtonElement | null;
-    const form = document.getElementById("login-form") as HTMLFormElement;
-    const button = document.getElementById("login-btn") as HTMLButtonElement;
-    const feedback = document.getElementById("login-feedback");
     const errorBox = document.getElementById("login-error");
 
     // No estamos en la página de login (o ya se inicializó este DOM)
-    if (!googleBtn || !errorBox || !feedback || googleBtn.dataset.ready) {
+    if (!googleBtn || !errorBox || googleBtn.dataset.ready) {
       return;
     }
     googleBtn.dataset.ready = "1";
 
-    const showError = (msg: string) => {
-      errorBox.textContent = msg;
-      errorBox.classList.remove("hidden");
-    };
-
-    // --- Google OAuth (camino principal) ---
     googleBtn.addEventListener("click", async () => {
       googleBtn.disabled = true;
       errorBox.classList.add("hidden");
@@ -123,39 +83,12 @@ if (Astro.locals.user) {
 
       if (error) {
         console.error(error);
-        showError("No pudimos conectar con Google. Probá de nuevo.");
+        errorBox.textContent =
+          "No pudimos conectar con Google. Probá de nuevo.";
+        errorBox.classList.remove("hidden");
         googleBtn.disabled = false;
       }
       // si no hay error, el navegador ya está yendo a Google
-    });
-
-    // --- Magic link (alternativa) ---
-    form?.addEventListener("submit", async (e) => {
-      e.preventDefault();
-      button.disabled = true;
-      button.textContent = "Enviando…";
-      errorBox.classList.add("hidden");
-
-      const email = new FormData(form).get("email") as string;
-
-      const { error } = await supabaseBrowser.auth.signInWithOtp({
-        email,
-        options: {
-          emailRedirectTo: `${window.location.origin}/app/auth`,
-        },
-      });
-
-      if (error) {
-        showError(
-          "No pudimos enviar el link. Esperá un minuto y volvé a intentar.",
-        );
-        button.disabled = false;
-        button.textContent = "Enviarme el link";
-        return;
-      }
-
-      form.classList.add("hidden");
-      feedback.classList.remove("hidden");
     });
   };
 

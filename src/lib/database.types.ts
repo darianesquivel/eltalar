@@ -601,6 +601,15 @@ export type Database = {
         Args: { p_approve: boolean; p_claim_id: string };
         Returns: undefined;
       };
+      admin_usage_stats: {
+        Args: never;
+        Returns: {
+          db_bytes: number;
+          storage_bytes: number;
+          mau: number;
+          total_users: number;
+        };
+      };
       admin_set_business_active: {
         Args: { p_business_id: string; p_active: boolean };
         Returns: undefined;

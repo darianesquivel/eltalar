@@ -48,6 +48,44 @@ const [activos, pendientes, reclamos, mensajes, alertasActivas, turnosFuturos] =
     ),
   ]);
 
+// Uso vs límites del plan Free de Supabase (RPC admin_usage_stats).
+// Si el RPC todavía no se corrió en la base, usage queda null y el panel
+// muestra el aviso para correr el SQL.
+const { data: usage } = await supabase.rpc("admin_usage_stats");
+
+const MB = 1024 ** 2;
+const GB = 1024 ** 3;
+const fmtBytes = (b: number) =>
+  b >= GB
+    ? `${(b / GB).toFixed(2)} GB`
+    : `${Math.max(1, Math.round(b / MB))} MB`;
+
+// Semáforo: verde tranquilo, ámbar para mirar, rojo para actuar
+const barColor = (pct: number) =>
+  pct >= 90 ? "bg-red-500" : pct >= 70 ? "bg-amber-500" : "bg-green-500";
+
+const limits = usage
+  ? [
+      {
+        label: "Base de datos",
+        detail: `${fmtBytes(usage.db_bytes)} de 500 MB`,
+        pct: Math.min(100, (usage.db_bytes / (500 * MB)) * 100),
+      },
+      {
+        label: "Fotos y archivos (Storage)",
+        detail: `${fmtBytes(usage.storage_bytes)} de 1 GB`,
+        pct: Math.min(100, (usage.storage_bytes / GB) * 100),
+      },
+      {
+        label: "Usuarios activos del mes",
+        detail: `${usage.mau.toLocaleString("es-AR")} de 50.000 (${usage.total_users.toLocaleString("es-AR")} registrados)`,
+        pct: Math.min(100, (usage.mau / 50_000) * 100),
+      },
+    ]
+  : null;
+
+const limitsAttention = limits?.some((l) => l.pct >= 70) ?? false;
+
 const CARDS = [
   {
     label: "Negocios publicados",
@@ -116,6 +154,83 @@ const CARDS = [
           </a>
         ))
       }
+    </div>
+
+    <div class="relative rounded-2xl bg-white p-6 shadow-sm">
+      {
+        limitsAttention && (
+          <span class="absolute right-4 top-4 h-2.5 w-2.5 animate-pulse rounded-full bg-red-500" />
+        )
+      }
+      <h2 class="text-lg font-semibold">Límites del plan gratuito</h2>
+      <p class="mb-4 text-xs text-gray-400">
+        Mientras estas barras estén en verde, el sitio cuesta $0. Supabase Free
+        no factura: si un límite se llena, el servicio se frena.
+      </p>
+
+      {
+        limits ? (
+          <div class="space-y-4">
+            {limits.map((l) => (
+              <div>
+                <div class="mb-1 flex items-baseline justify-between gap-2 text-sm">
+                  <span class="font-medium text-gray-700">{l.label}</span>
+                  <span class="text-xs tabular-nums text-gray-500">
+                    {l.detail} · {Math.round(l.pct)}%
+                  </span>
+                </div>
+                <div class="h-2 overflow-hidden rounded-full bg-gray-100">
+                  <div
+                    class={`h-full rounded-full ${barColor(l.pct)}`}
+                    style={`width: ${Math.max(1, l.pct)}%`}
+                  />
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <p class="rounded-xl bg-amber-50 p-4 text-sm text-amber-700">
+            Falta habilitar la función en la base: corré{" "}
+            <code class="font-mono text-xs">
+              docs/sql/2026-07-12-admin-usage-stats.sql
+            </code>{" "}
+            en el SQL Editor de Supabase.
+          </p>
+        )
+      }
+
+      <p class="mt-4 text-xs text-gray-400">
+        Lo que no se puede medir desde acá (revisar una vez por mes): tráfico de{
+          " "
+        }
+        <a
+          href="https://supabase.com/dashboard/project/_/settings/billing/usage"
+          target="_blank"
+          rel="noopener noreferrer"
+          class="underline hover:text-gray-600"
+        >
+          Supabase
+        </a>{" "}
+        (5 GB/mes), ancho de banda de{" "}
+        <a
+          href="https://vercel.com/dashboard"
+          target="_blank"
+          rel="noopener noreferrer"
+          class="underline hover:text-gray-600"
+        >
+          Vercel
+        </a>{" "}
+        (100 GB/mes) y cuota de{" "}
+        <a
+          href="https://console.cloud.google.com/google/maps-apis/quotas"
+          target="_blank"
+          rel="noopener noreferrer"
+          class="underline hover:text-gray-600"
+        >
+          Google Places
+        </a>{" "}
+        (la única con tarjeta: ponele límite de cuota).
+      </p>
     </div>
 
     <div class="rounded-2xl bg-white p-6 shadow-sm">
