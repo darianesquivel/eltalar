@@ -45,9 +45,14 @@ export const POST: APIRoute = async (context) => {
     .single();
 
   if (!business || business.owner_id !== user.id) {
-    return new Response(JSON.stringify({ error: "forbidden" }), {
-      status: 403,
-    });
+    return new Response(
+      JSON.stringify({
+        error: "forbidden",
+        message:
+          "Solo el dueño del negocio puede destacarlo: entrá con la cuenta que tiene asignado este negocio.",
+      }),
+      { status: 403 },
+    );
   }
 
   if (business.status !== "approved") {
