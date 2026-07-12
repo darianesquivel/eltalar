@@ -40,11 +40,35 @@ export const POST: APIRoute = async ({ request }) => {
     return new Response("no id", { status: 200 });
   }
 
-  // Consulta el estado real a Mercado Pago
-  const mpRes = await fetch(
+  const mpHeaders = { Authorization: `Bearer ${mpToken}` };
+
+  // Consulta el estado real a Mercado Pago. Según el topic, data.id puede ser:
+  //  - subscription_preapproval → el id de la SUSCRIPCIÓN (directo)
+  //  - subscription_authorized_payment → el id del COBRO mensual: hay que
+  //    consultar /authorized_payments/{id} para llegar al preapproval_id.
+  //    (Esto era lo que faltaba: el aviso del pago se descartaba y el
+  //    negocio no se destacaba solo.)
+  let mpRes = await fetch(
     `https://api.mercadopago.com/preapproval/${preapprovalId}`,
-    { headers: { Authorization: `Bearer ${mpToken}` } },
+    { headers: mpHeaders },
   );
+
+  if (!mpRes.ok) {
+    const payRes = await fetch(
+      `https://api.mercadopago.com/authorized_payments/${preapprovalId}`,
+      { headers: mpHeaders },
+    );
+    if (payRes.ok) {
+      const payment = await payRes.json();
+      if (payment?.preapproval_id) {
+        preapprovalId = String(payment.preapproval_id);
+        mpRes = await fetch(
+          `https://api.mercadopago.com/preapproval/${preapprovalId}`,
+          { headers: mpHeaders },
+        );
+      }
+    }
+  }
 
   if (!mpRes.ok) {
     console.error("MP fetch preapproval error:", mpRes.status);
