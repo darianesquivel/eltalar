@@ -1,0 +1,18 @@
+---
+import AdminLayout from "../../../layouts/AdminLayout.astro";
+import EventsManager from "../../../components/app/EventsManager";
+---
+
+<AdminLayout title="Eventos">
+  <div class="mx-auto max-w-3xl space-y-6">
+    <div>
+      <h1 class="text-2xl font-bold">Eventos del barrio</h1>
+      <p class="text-sm text-gray-500">
+        Se muestran en /eventos mientras no haya pasado su fecha; después
+        desaparecen solos del sitio.
+      </p>
+    </div>
+
+    <EventsManager client:load />
+  </div>
+</AdminLayout>

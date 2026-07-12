@@ -6,22 +6,34 @@ import { supabase } from "../lib/supabase";
 // después de que Leaflet midiera el layout → mapa roto hasta recargar.
 import "leaflet/dist/leaflet.css";
 
-// Negocios activos con coordenadas, con su categoría principal
-const { data } = await supabase
-  .from("businesses")
-  .select(
-    "id, name, slug, address, lat, lng, is_featured, business_categories ( categories ( name ) )",
-  )
-  .eq("is_active", true)
-  .not("lat", "is", null)
-  .not("lng", "is", null);
+// Negocios activos con coordenadas, con su categoría principal.
+// En páginas de a 1000: Supabase corta cualquier consulta en 1000 filas,
+// y ya hay ~1700 negocios — una sola consulta dejaba medio mapa vacío.
+const PAGE = 1000;
+const rows: any[] = [];
+for (let from = 0; ; from += PAGE) {
+  const { data } = await supabase
+    .from("businesses")
+    .select(
+      "id, name, slug, address, lat, lng, is_featured, business_categories ( categories ( name ) )",
+    )
+    .eq("is_active", true)
+    .not("lat", "is", null)
+    .not("lng", "is", null)
+    .order("id")
+    .range(from, from + PAGE - 1);
 
-const markers = (data ?? []).map((b) => ({
+  rows.push(...(data ?? []));
+  if (!data || data.length < PAGE) break;
+}
+
+const markers = rows.map((b) => ({
   name: b.name,
   slug: b.slug,
   address: b.address,
-  lat: b.lat,
-  lng: b.lng,
+  // 5 decimales ≈ 1 m: suficiente para el mapa y achica el HTML
+  lat: Math.round(b.lat * 1e5) / 1e5,
+  lng: Math.round(b.lng * 1e5) / 1e5,
   featured: b.is_featured === true,
   category: b.business_categories?.[0]?.categories?.name ?? null,
 }));
@@ -68,8 +80,12 @@ const markers = (data ?? []).map((b) => ({
 
     const markers: MarkerData[] = JSON.parse(el.dataset.markers ?? "[]");
 
-    // Centro aproximado de El Talar
-    const map = L.map(el).setView([-34.4716, -58.655], 14);
+    // Centro aproximado de El Talar. preferCanvas: con ~1700 marcadores,
+    // dibujarlos en canvas es fluido; como SVG el mapa se arrastra.
+    const map = L.map(el, { preferCanvas: true }).setView(
+      [-34.4716, -58.655],
+      14,
+    );
 
     L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
       maxZoom: 19,

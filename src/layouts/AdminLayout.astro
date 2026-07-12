@@ -11,6 +11,7 @@ import {
   Mail,
   Globe,
   LogOut,
+  CalendarDays,
 } from "@lucide/astro";
 import NavLoader from "../components/NavLoader.astro";
 
@@ -31,6 +32,7 @@ const NAV = [
     exact: true,
   },
   { href: "/app/admin/negocios", label: "Negocios", icon: Store },
+  { href: "/app/admin/eventos", label: "Eventos", icon: CalendarDays },
   { href: "/app/admin/reclamos", label: "Reclamos", icon: UserCheck },
   { href: "/app/admin/avisos", label: "Avisos", icon: Megaphone },
   { href: "/app/admin/telefonos", label: "Teléfonos", icon: Phone },

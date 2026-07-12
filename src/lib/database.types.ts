@@ -420,6 +420,50 @@ export type Database = {
         };
         Relationships: [];
       };
+      // Agregada a mano (2026-07-12, sección Eventos): si regenerás los tipos
+      // con supabase gen types, esta entrada sale sola de la base.
+      events: {
+        Row: {
+          created_at: string;
+          date: string;
+          description: string | null;
+          end_date: string | null;
+          end_time: string | null;
+          id: string;
+          image_url: string | null;
+          is_active: boolean;
+          location: string | null;
+          start_time: string | null;
+          title: string;
+        };
+        Insert: {
+          created_at?: string;
+          date: string;
+          description?: string | null;
+          end_date?: string | null;
+          end_time?: string | null;
+          id?: string;
+          image_url?: string | null;
+          is_active?: boolean;
+          location?: string | null;
+          start_time?: string | null;
+          title: string;
+        };
+        Update: {
+          created_at?: string;
+          date?: string;
+          description?: string | null;
+          end_date?: string | null;
+          end_time?: string | null;
+          id?: string;
+          image_url?: string | null;
+          is_active?: boolean;
+          location?: string | null;
+          start_time?: string | null;
+          title?: string;
+        };
+        Relationships: [];
+      };
       pharmacy_turns: {
         Row: {
           created_at: string | null;

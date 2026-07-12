@@ -1,0 +1,147 @@
+---
+import Layout from "../layouts/Layout.astro";
+import { Image } from "astro:assets";
+import { CalendarDays, Clock, MapPin } from "@lucide/astro";
+import { getUpcomingEvents } from "../lib/repositories/event.repository";
+
+const events = await getUpcomingEvents();
+
+const MESES = [
+  "ENE",
+  "FEB",
+  "MAR",
+  "ABR",
+  "MAY",
+  "JUN",
+  "JUL",
+  "AGO",
+  "SEP",
+  "OCT",
+  "NOV",
+  "DIC",
+];
+const DIAS = [
+  "domingo",
+  "lunes",
+  "martes",
+  "miércoles",
+  "jueves",
+  "viernes",
+  "sábado",
+];
+
+// "2026-07-18" → partes para el badge de fecha (sin tocar timezones:
+// parsear el string evita el corrimiento de un día de new Date("YYYY-MM-DD"))
+function dateParts(iso: string) {
+  const [y, m, d] = iso.split("-").map(Number);
+  const weekday = DIAS[new Date(y, m - 1, d).getDay()];
+  return { day: d, month: MESES[m - 1], weekday };
+}
+
+const hora = (t: string | null) => (t ? t.slice(0, 5) : null);
+
+function rangoFechas(e: (typeof events)[number]) {
+  const from = dateParts(e.date);
+  if (!e.end_date || e.end_date === e.date) return null;
+  const to = dateParts(e.end_date);
+  return `Del ${from.day} ${from.month} al ${to.day} ${to.month}`;
+}
+---
+
+<Layout
+  title="Eventos en El Talar"
+  description="Agenda de eventos de El Talar: ferias, festivales, actividades del barrio con día, horario y lugar."
+>
+  <section class="mx-auto max-w-5xl space-y-8 px-4">
+    <div class="space-y-2 text-center">
+      <h1 class="text-3xl font-bold">Eventos del barrio</h1>
+      <p class="text-gray-600">
+        Lo que está pasando y lo que se viene en El Talar
+      </p>
+    </div>
+
+    {
+      events.length === 0 ? (
+        <div class="rounded-3xl bg-white py-16 text-center shadow-sm">
+          <CalendarDays size={40} class="mx-auto text-gray-300" />
+          <p class="mt-4 font-semibold text-gray-700">
+            No hay eventos anunciados por ahora
+          </p>
+          <p class="mt-1 text-sm text-gray-500">
+            Volvé a mirar en unos días — acá va a estar la agenda del barrio.
+          </p>
+        </div>
+      ) : (
+        <div class="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+          {events.map((e) => {
+            const { day, month, weekday } = dateParts(e.date);
+            const inicio = hora(e.start_time);
+            const fin = hora(e.end_time);
+            const rango = rangoFechas(e);
+            return (
+              <article class="flex flex-col overflow-hidden rounded-2xl bg-white shadow-lg">
+                <div class="relative">
+                  {e.image_url ? (
+                    <Image
+                      src={e.image_url}
+                      alt={e.title}
+                      width={640}
+                      height={320}
+                      widths={[480, 640]}
+                      sizes="(max-width: 640px) 100vw, 33vw"
+                      class="h-40 w-full object-cover"
+                    />
+                  ) : (
+                    <div
+                      class="flex h-40 w-full items-center justify-center"
+                      style="background: linear-gradient(135deg, #e5f0e8, #c7e3d2)"
+                    >
+                      <CalendarDays size={40} class="text-primary/60" />
+                    </div>
+                  )}
+
+                  {/* Badge de fecha */}
+                  <div class="absolute left-3 top-3 rounded-xl bg-white/95 px-3 py-1.5 text-center shadow">
+                    <p class="text-lg font-bold leading-none text-gray-900">
+                      {day}
+                    </p>
+                    <p class="text-[10px] font-bold tracking-wide text-primary">
+                      {month}
+                    </p>
+                  </div>
+                </div>
+
+                <div class="flex flex-1 flex-col gap-1.5 p-4">
+                  <h2 class="font-bold text-gray-900">{e.title}</h2>
+
+                  <p class="flex items-center gap-1.5 text-xs capitalize text-gray-600">
+                    <CalendarDays size={14} class="shrink-0 text-primary" />
+                    {rango ?? `${weekday} ${day} de ${MESES[Number(e.date.split("-")[1]) - 1].toLowerCase()}.`}
+                  </p>
+
+                  {inicio && (
+                    <p class="flex items-center gap-1.5 text-xs text-gray-600">
+                      <Clock size={14} class="shrink-0 text-primary" />
+                      {fin ? `${inicio} a ${fin} hs` : `${inicio} hs`}
+                    </p>
+                  )}
+
+                  {e.location && (
+                    <p class="flex items-center gap-1.5 text-xs text-gray-600">
+                      <MapPin size={14} class="shrink-0 text-primary" />
+                      {e.location}
+                    </p>
+                  )}
+
+                  {e.description && (
+                    <p class="mt-1 text-sm text-gray-600">{e.description}</p>
+                  )}
+                </div>
+              </article>
+            );
+          })}
+        </div>
+      )
+    }
+  </section>
+</Layout>
