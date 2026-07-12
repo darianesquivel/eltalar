@@ -1,5 +1,6 @@
 import { navigate } from "astro:transitions/client";
 import { BadgeCheck, PhoneCall } from "lucide-react";
+import CategoryPlaceholder from "./CategoryPlaceholder";
 import InstagramIcon from "../icons/InstagramIcon";
 import { getTodayStatus } from "../../lib/hours";
 import { track } from "../../lib/track";
@@ -10,7 +11,6 @@ type BusinessCardProps = {
   business: BusinessSummary;
 };
 
-const no_image = "/images/no-image.jpg";
 const wspLogo = "/images/whatsapp-icon.svg";
 
 export default function BusinessCard({ business }: BusinessCardProps) {
@@ -38,49 +38,56 @@ export default function BusinessCard({ business }: BusinessCardProps) {
             🔥 Oferta
           </span>
         )}
-        <div className="absolute top-2 left-2 z-10 flex flex-wrap gap-1">
+        <div className="absolute top-1.5 left-1.5 z-10 flex flex-wrap gap-1">
           {business.categories.map((category) => (
             <span
               key={category.id}
-              className="text-xs px-2 bg-primary text-white rounded-full border border-white/30"
+              className="text-[10px] px-2 bg-primary text-white rounded-full border border-white/30"
             >
               {category.name}
             </span>
           ))}
         </div>
 
-        <img
-          src={
-            business.coverPhoto?.url
-              ? optimizedImage(business.coverPhoto.url, 480)
-              : no_image
-          }
-          alt={business.name}
-          width={400}
-          height={192}
-          loading="lazy"
-          decoding="async"
-          className="h-48 w-full object-cover cursor-pointer"
-        />
+        {business.coverPhoto?.url ? (
+          <img
+            src={optimizedImage(business.coverPhoto.url, 480)}
+            alt={business.name}
+            width={400}
+            height={112}
+            loading="lazy"
+            decoding="async"
+            className="h-28 w-full object-cover cursor-pointer"
+          />
+        ) : (
+          <CategoryPlaceholder
+            categorySlug={business.categories[0]?.slug}
+            label={business.name}
+            iconSize={24}
+            className="h-28 w-full cursor-pointer"
+          />
+        )}
       </div>
 
       {/* CONTENT */}
-      <div className="flex flex-col p-3 flex-1">
+      <div className="flex flex-col p-2.5 flex-1">
         {/* TOP INFO */}
         <div>
           {/* NAME */}
-          <div className="flex items-center gap-2">
-            <h3 className="font-semibold text-gray-900">{business.name}</h3>
+          <div className="flex items-center gap-1.5">
+            <h3 className="text-sm font-semibold text-gray-900 line-clamp-1">
+              {business.name}
+            </h3>
 
             {business.is_featured && (
-              <BadgeCheck size={18} className="text-services" />
+              <BadgeCheck size={15} className="shrink-0 text-services" />
             )}
           </div>
 
           {/* STATUS */}
           {status && (
             <span
-              className={`text-xs uppercase ${
+              className={`text-[10px] uppercase ${
                 status.status === "open"
                   ? "text-green-600"
                   : status.status === "closed"
@@ -94,26 +101,30 @@ export default function BusinessCard({ business }: BusinessCardProps) {
 
           {/* ADDRESS */}
           {business.address && (
-            <p className="text-sm text-services">{business.address}</p>
+            <p className="text-xs text-services line-clamp-1">
+              {business.address}
+            </p>
           )}
 
           {/* DESCRIPTION */}
-          <p className="mt-1 text-xs text-gray-600 line-clamp-3">
-            {business.description}
-          </p>
+          {business.description && (
+            <p className="mt-0.5 text-[11px] text-gray-600 line-clamp-2">
+              {business.description}
+            </p>
+          )}
         </div>
 
         {/* BUTTONS — SIEMPRE ABAJO */}
-        <div className="mt-auto flex gap-2 pt-3">
+        <div className="mt-auto flex gap-1.5 pt-2">
           {business.whatsapp && (
             <a
               href={whatsappUrl}
               target="_blank"
               rel="noopener noreferrer"
               onClick={() => track(business.id, "whatsapp")}
-              className="flex-1 flex items-center justify-center gap-1 text-xs bg-primary text-white px-4 py-1.5 rounded-lg hover:scale-105 transition"
+              className="flex-1 flex items-center justify-center gap-1 text-[11px] bg-primary text-white px-2 py-1 rounded-lg hover:scale-105 transition"
             >
-              <img width={18} src={wspLogo} />
+              <img width={14} src={wspLogo} />
               Whatsapp
             </a>
           )}
@@ -124,9 +135,9 @@ export default function BusinessCard({ business }: BusinessCardProps) {
               target="_blank"
               rel="noopener noreferrer"
               onClick={() => track(business.id, "instagram")}
-              className="p-2 rounded-lg bg-secondary-soft/10 hover:bg-secondary-soft/30 transition"
+              className="p-1.5 rounded-lg bg-secondary-soft/10 hover:bg-secondary-soft/30 transition"
             >
-              <InstagramIcon size={20} className="text-gray-700" />
+              <InstagramIcon size={16} className="text-gray-700" />
             </a>
           )}
 
@@ -134,9 +145,9 @@ export default function BusinessCard({ business }: BusinessCardProps) {
             <a
               href={`tel:${business.phone}`}
               onClick={() => track(business.id, "phone")}
-              className="p-2 rounded-lg bg-secondary-soft/10 hover:bg-secondary-soft/30 transition"
+              className="p-1.5 rounded-lg bg-secondary-soft/10 hover:bg-secondary-soft/30 transition"
             >
-              <PhoneCall size={20} className="text-gray-700" />
+              <PhoneCall size={16} className="text-gray-700" />
             </a>
           )}
         </div>

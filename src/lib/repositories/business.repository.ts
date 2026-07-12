@@ -139,6 +139,75 @@ export async function getBusinesses(
   return data.map(toBusiness);
 }
 
+export type BusinessPage = {
+  items: BusinessSummary[];
+  total: number;
+};
+
+export interface GetBusinessesPageOptions {
+  limit?: number;
+  offset?: number;
+  categorySlug?: string | null;
+  search?: string | null;
+}
+
+// Variante con joins !inner: al filtrar por categoría, el join tiene que ser
+// inner para que el filtro excluya filas (con el join normal, PostgREST solo
+// vacía el array embebido y devuelve el negocio igual).
+const BUSINESS_SELECT_BY_CATEGORY = BUSINESS_SELECT.replace(
+  "business_categories (\n    categories (",
+  "business_categories!inner (\n    categories!inner (",
+);
+
+/**
+ * Página de negocios para el listado público: filtra y pagina EN LA BASE.
+ * Con ~1700 negocios, mandar todo al cliente era inviable; acá viaja solo
+ * la tanda pedida y el total (para el contador y el corte del scroll).
+ */
+export async function getBusinessesPage(
+  options: GetBusinessesPageOptions = {},
+): Promise<BusinessPage> {
+  const { limit = 24, offset = 0, categorySlug, search } = options;
+
+  let query = supabase
+    .from("businesses")
+    .select(categorySlug ? BUSINESS_SELECT_BY_CATEGORY : BUSINESS_SELECT, {
+      count: "exact",
+    })
+    .eq("is_active", true);
+
+  if (categorySlug) {
+    query = query.eq("business_categories.categories.slug", categorySlug);
+  }
+
+  if (search) {
+    // Caracteres con significado en la sintaxis .or() de PostgREST
+    const q = search.replace(/[,()%\\]/g, " ").trim();
+    if (q) {
+      query = query.or(
+        `name.ilike.%${q}%,description.ilike.%${q}%,address.ilike.%${q}%`,
+      );
+    }
+  }
+
+  const { data, error, count } = await query
+    .order("is_featured", { ascending: false })
+    .order("priority", { ascending: false })
+    // Desempates estables: sin esto el paginado puede duplicar/saltear filas
+    .order("name", { ascending: true })
+    .order("id", { ascending: true })
+    .range(offset, offset + limit - 1);
+
+  if (error || !data) {
+    console.error("Error getBusinessesPage:", error);
+    return { items: [], total: 0 };
+  }
+
+  // Payload liviano para listados: las cards solo usan coverPhoto
+  const items = data.map(toBusiness).map(({ photos, ...rest }) => rest);
+  return { items, total: count ?? items.length };
+}
+
 export async function getBusinessBySlug(
   slug: string,
 ): Promise<Business | null> {

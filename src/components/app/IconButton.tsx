@@ -9,6 +9,7 @@ type IconButtonProps = {
   disabled?: boolean;
   variant?: Variant;
   active?: boolean; // estado "encendido" (ej: destacado)
+  small?: boolean; // versión compacta para tablas densas
   children: ReactNode; // el ícono
 };
 
@@ -27,9 +28,10 @@ export default function IconButton({
   disabled,
   variant = "default",
   active = false,
+  small = false,
   children,
 }: IconButtonProps) {
-  const className = `inline-flex h-8 w-8 items-center justify-center rounded-lg border transition disabled:opacity-40 ${
+  const className = `inline-flex ${small ? "h-6 w-6 rounded-md" : "h-8 w-8 rounded-lg"} items-center justify-center border transition disabled:opacity-40 ${
     active
       ? "border-amber-300 bg-amber-100 text-amber-600"
       : `border-gray-200 bg-white ${VARIANTS[variant]}`

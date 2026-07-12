@@ -1,18 +1,12 @@
 ---
 import AdminLayout from "../../../layouts/AdminLayout.astro";
 import AdminBusinesses from "../../../components/app/AdminBusinesses";
-import { createSupabaseServer } from "../../../lib/supabase/server";
-
-const supabase = createSupabaseServer(Astro);
-
-const { data: businesses } = await supabase
-  .from("businesses")
-  .select("id, name, slug, address, status, is_active, is_featured, owner_id")
-  .order("created_at", { ascending: false });
 ---
 
+<!-- El componente busca y pagina contra la base directamente: con 1700
+     negocios, traer todo acá cortaba la lista en 1000 (límite de Supabase). -->
 <AdminLayout title="Negocios">
-  <div class="mx-auto flex h-full max-w-4xl flex-col gap-4">
+  <div class="mx-auto flex h-full max-w-6xl flex-col gap-4">
     <div class="flex shrink-0 flex-wrap items-center justify-between gap-3">
       <h1 class="text-2xl font-bold">Negocios</h1>
       <a
@@ -24,7 +18,7 @@ const { data: businesses } = await supabase
     </div>
 
     <div class="min-h-0 flex-1">
-      <AdminBusinesses businesses={businesses ?? []} client:load />
+      <AdminBusinesses client:load />
     </div>
   </div>
 </AdminLayout>

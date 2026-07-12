@@ -41,6 +41,15 @@ const TYPE_TO_CATEGORY = {
   ice_cream_shop: "gastronomia",
   bakery: "gastronomia",
   bar: "gastronomia",
+  cake_shop: "gastronomia",
+  pastry_shop: "gastronomia",
+  dessert_shop: "gastronomia",
+  salad_shop: "gastronomia",
+  barbecue_restaurant: "gastronomia",
+  brunch_restaurant: "gastronomia",
+  pizza_delivery: "gastronomia",
+  food_delivery: "gastronomia",
+  lounge_bar: "gastronomia",
   cafe: "cafeteria",
   coffee_shop: "cafeteria",
   pharmacy: "farmacia",
@@ -52,6 +61,8 @@ const TYPE_TO_CATEGORY = {
   barber_shop: "peluqueria",
   beauty_salon: "peluqueria",
   nail_salon: "peluqueria",
+  beautician: "peluqueria",
+  makeup_artist: "peluqueria",
   hardware_store: "ferreteria",
   butcher_shop: "carniceria",
   book_store: "libreria",
@@ -65,6 +76,8 @@ const TYPE_TO_CATEGORY = {
   pet_store: "mascotas",
   veterinary_care: "mascotas",
   pet_groomer: "mascotas",
+  pet_care: "mascotas",
+  pet_boarding_service: "mascotas",
   car_repair: "automotor",
   car_wash: "automotor",
   car_dealer: "automotor",
@@ -73,6 +86,7 @@ const TYPE_TO_CATEGORY = {
   gas_station: "automotor",
   motorcycle_dealer: "automotor",
   motorcycle_repair: "automotor",
+  truck_dealer: "automotor",
   doctor: "salud",
   dentist: "salud",
   dental_clinic: "salud",
@@ -81,12 +95,17 @@ const TYPE_TO_CATEGORY = {
   hospital: "salud",
   chiropractor: "salud",
   skin_care_clinic: "salud",
+  medical_clinic: "salud",
+  medical_center: "salud",
+  health: "salud",
+  wellness_center: "salud",
   electrician: "construccion",
   plumber: "construccion",
   painter: "construccion",
   roofing_contractor: "construccion",
   general_contractor: "construccion",
   home_improvement_store: "construccion",
+  building_materials_store: "construccion",
   laundry: "servicios",
   locksmith: "servicios",
   real_estate_agency: "servicios",
@@ -100,6 +119,49 @@ const TYPE_TO_CATEGORY = {
   moving_company: "servicios",
   florist: "servicios",
   tailor: "servicios",
+  service: "servicios",
+  massage: "servicios",
+  massage_spa: "servicios",
+  body_art_service: "servicios",
+  finance: "servicios",
+  taxi_service: "servicios",
+  chauffeur_service: "servicios",
+  shipping_service: "servicios",
+  employment_agency: "servicios",
+  child_care_agency: "servicios",
+  funeral_home: "servicios",
+  consultant: "servicios",
+  tour_agency: "servicios",
+  business_center: "servicios",
+  general_store: "almacen",
+  clothing_store: "indumentaria",
+  womens_clothing_store: "indumentaria",
+  shoe_store: "indumentaria",
+  sportswear_store: "indumentaria",
+  jewelry_store: "indumentaria",
+  cosmetics_store: "indumentaria",
+  home_goods_store: "hogar-y-muebles",
+  furniture_store: "hogar-y-muebles",
+  gift_shop: "hogar-y-muebles",
+  garden_center: "hogar-y-muebles",
+  educational_institution: "educacion-y-deporte",
+  sports_club: "educacion-y-deporte",
+  sports_school: "educacion-y-deporte",
+  cultural_center: "educacion-y-deporte",
+  hotel: "alojamiento-y-eventos",
+  lodging: "alojamiento-y-eventos",
+  hostel: "alojamiento-y-eventos",
+  motel: "alojamiento-y-eventos",
+  guest_house: "alojamiento-y-eventos",
+  private_guest_room: "alojamiento-y-eventos",
+  camping_cabin: "alojamiento-y-eventos",
+  event_venue: "alojamiento-y-eventos",
+  night_club: "alojamiento-y-eventos",
+  manufacturer: "industria-y-mayoristas",
+  wholesaler: "industria-y-mayoristas",
+  supplier: "industria-y-mayoristas",
+  corporate_office: "industria-y-mayoristas",
+  transportation_service: "industria-y-mayoristas",
 };
 
 // primaryTypes que no son comercios cargables en el directorio
@@ -141,6 +203,17 @@ const SKIP_TYPES = new Set([
   "sports_complex",
   "athletic_field",
   "community_center",
+  "historical_landmark",
+  "tourist_attraction",
+  "sculpture",
+  "castle",
+  "museum",
+  "toll_station",
+  "parking_lot",
+  "parking_garage",
+  "transit_depot",
+  "association_or_organization",
+  "non_profit_organization",
 ]);
 
 function loadEnv(path) {
@@ -176,6 +249,7 @@ const flag = (name) => {
 };
 const INPUT = flag("--file") ?? DEFAULT_INPUT;
 const ONLY_TYPE = flag("--type");
+const ONLY_CATEGORY = flag("--category"); // slug de la tabla categories
 const LIMIT = flag("--limit") ? Number(flag("--limit")) : Infinity;
 
 // ---------- Helpers de mapeo ----------
@@ -304,6 +378,7 @@ const categoryBySlug = new Map(categories.map((c) => [c.slug, c.id]));
 
 const stats = { imported: 0, skippedType: 0, dupes: 0, errors: 0 };
 const unmappedTypes = {};
+const exportRows = []; // en dry-run: filas para revisión manual (--export)
 let processed = 0;
 
 for (const place of places) {
@@ -318,6 +393,8 @@ for (const place of places) {
     continue;
   }
   if (ONLY_TYPE && type !== ONLY_TYPE) continue;
+  if (ONLY_CATEGORY && (type ? TYPE_TO_CATEGORY[type] : null) !== ONLY_CATEGORY)
+    continue;
 
   // Dedup: ya importado antes, o ya existe en la base
   const nameKey = `${normalize(name)}|${normalize(cleanAddress(place)).slice(0, 20)}`;
@@ -361,6 +438,18 @@ for (const place of places) {
     console.log(
       `[dry-run] ${name} · ${row.address ?? "sin dirección"} · cat=${categorySlug ?? "—"} · tel=${row.phone ?? "—"} · horarios=${hours.length ? "sí" : "no"}`,
     );
+    exportRows.push({
+      place_id: place.id,
+      name,
+      address: row.address,
+      category: categorySlug,
+      google_type: type,
+      phone: row.phone,
+      website,
+      instagram,
+      has_hours: hours.length > 0,
+      maps_url: place.googleMapsUri ?? null,
+    });
     stats.imported++;
     existingSlugs.add(slug);
     existingNames.set(nameKey, "dry");
@@ -406,6 +495,44 @@ for (const place of places) {
 }
 
 if (APPLY) writeFileSync(LEDGER_FILE, JSON.stringify(ledger, null, 2));
+
+// --export: guarda lo que se importaría (solo dry-run) en JSON y CSV
+if (!APPLY && args.includes("--export")) {
+  const jsonPath = join(DATA_DIR, "pendientes-revision.json");
+  const csvPath = join(DATA_DIR, "pendientes-revision.csv");
+  writeFileSync(jsonPath, JSON.stringify(exportRows, null, 2));
+
+  const esc = (v) => `"${String(v ?? "").replace(/"/g, '""')}"`;
+  const header = [
+    "nombre",
+    "direccion",
+    "categoria",
+    "tipo_google",
+    "telefono",
+    "web",
+    "instagram",
+    "tiene_horarios",
+    "google_maps",
+  ];
+  const csv = [
+    header.join(","),
+    ...exportRows.map((r) =>
+      [
+        esc(r.name),
+        esc(r.address),
+        esc(r.category),
+        esc(r.google_type),
+        esc(r.phone),
+        esc(r.website),
+        esc(r.instagram),
+        r.has_hours ? "si" : "no",
+        esc(r.maps_url),
+      ].join(","),
+    ),
+  ].join("\n");
+  writeFileSync(csvPath, "﻿" + csv); // BOM para que Excel abra bien los acentos
+  console.log(`\nExport para revisión:\n  ${jsonPath}\n  ${csvPath}`);
+}
 
 console.log(
   `\n== Resumen ${APPLY ? "(APLICADO)" : "(dry-run, nada se escribió)"} ==`,

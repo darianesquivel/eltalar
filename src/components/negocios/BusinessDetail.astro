@@ -9,6 +9,8 @@ import {
   ClipboardList,
   Check,
 } from "@lucide/astro";
+import CategoryPlaceholder from "./CategoryPlaceholder";
+import ReportBusiness from "./ReportBusiness";
 import InstagramIcon from "../icons/InstagramIcon";
 import MapPreview from "../MapPreview.astro";
 import ShareBusiness from "./ShareBusiness.astro";
@@ -35,7 +37,6 @@ const galleryPhotos = (business.photos ?? []).filter(
 );
 
 const whatsappLogo = "/images/whatsapp-icon.svg";
-const no_image = "/images/no-image.jpg";
 
 // URL absoluta para compartir, derivada del dominio configurado en astro.config.
 const shareUrl = new URL(
@@ -71,12 +72,14 @@ const shareUrl = new URL(
           class="h-[260px] w-full object-cover md:h-[540px]"
         />
       ) : (
-        <img
-          transition:name={`img-${business.slug}`}
-          src={no_image}
-          alt={business.name}
-          class="h-[260px] w-full object-cover md:h-[540px]"
-        />
+        <div transition:name={`img-${business.slug}`}>
+          <CategoryPlaceholder
+            categorySlug={business.categories?.[0]?.slug}
+            label={business.name}
+            iconSize={72}
+            className="h-[260px] w-full md:h-[540px]"
+          />
+        </div>
       )
     }
 
@@ -308,6 +311,13 @@ const shareUrl = new URL(
           </div>
         )
       }
+
+      <!-- REPORTAR ERROR: los vecinos ayudan a curar los datos -->
+      <ReportBusiness
+        slug={business.slug}
+        businessName={business.name}
+        client:visible
+      />
     </div>
   </div>
 </section>

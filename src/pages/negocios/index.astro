@@ -3,19 +3,26 @@ import Layout from "../../layouts/Layout.astro";
 import Hero from "../../components/negocios/Hero.astro";
 import CategoryFilter from "../../components/negocios/CategoryFilter.client";
 import BusinessGrid from "../../components/negocios/BusinessGrid.client";
-import { getBusinesses } from "../../lib/repositories/business.repository";
+import { getBusinessesPage } from "../../lib/repositories/business.repository";
 import { supabase } from "../../lib/supabase";
 
-// Fetch en el SERVIDOR: los negocios llegan en el HTML inicial (SEO) y las
-// islas de React solo se encargan de filtrar/buscar sobre esos datos.
-const [businesses, { data: categories }] = await Promise.all([
-  getBusinesses(),
+const PAGE_SIZE = 24;
+
+// El listado se pagina en la base: acá viaja solo la PRIMERA tanda (SEO y
+// primer paint); el resto lo pide BusinessGrid a /api/negocios al scrollear.
+// Los filtros de la URL se respetan en el servidor para que una URL
+// compartida (ej. ?categoria=gastronomia) cargue ya filtrada.
+const categoria = Astro.url.searchParams.get("categoria");
+const buscar = Astro.url.searchParams.get("buscar");
+
+const [page, { data: categories }] = await Promise.all([
+  getBusinessesPage({
+    limit: PAGE_SIZE,
+    categorySlug: categoria,
+    search: buscar,
+  }),
   supabase.from("categories").select("id, name, slug, icon").order("name"),
 ]);
-
-// Payload liviano para la isla: las cards solo usan coverPhoto, el array
-// completo de fotos duplicaba peso en el HTML serializado.
-const summaries = businesses.map(({ photos, ...rest }) => rest);
 ---
 
 <Layout
@@ -24,5 +31,12 @@ const summaries = businesses.map(({ photos, ...rest }) => rest);
 >
   <Hero />
   <CategoryFilter categories={categories ?? []} client:load />
-  <BusinessGrid businesses={summaries} client:load />
+  <BusinessGrid
+    initialItems={page.items}
+    initialTotal={page.total}
+    initialCategory={categoria}
+    initialSearch={buscar}
+    pageSize={PAGE_SIZE}
+    client:load
+  />
 </Layout>
