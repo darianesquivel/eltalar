@@ -2,67 +2,103 @@
 import AdminLayout from "../../../layouts/AdminLayout.astro";
 import { createSupabaseServer } from "../../../lib/supabase/server";
 import { getAdminBarrio } from "../../../lib/barrio";
+import { todayInArgentina } from "../../../lib/hours";
 
 // El middleware ya validó que sea admin
 const supabase = createSupabaseServer(Astro);
 const barrio = await getAdminBarrio(Astro);
 const now = new Date().toISOString();
+const today = todayInArgentina();
 
 const count = (q: PromiseLike<{ count: number | null }>) =>
   Promise.resolve(q).then((r) => r.count ?? 0);
 
 // Todos los números son DEL BARRIO elegido en el selector; reclamos y turnos
 // no tienen barrio propio: se filtra por el del negocio (join !inner)
-const [activos, pendientes, reclamos, mensajes, alertasActivas, turnosFuturos] =
-  await Promise.all([
-    count(
-      supabase
-        .from("businesses")
-        .select("id", { count: "exact", head: true })
-        .eq("barrio_id", barrio.id)
-        .eq("is_active", true),
-    ),
-    count(
-      supabase
-        .from("businesses")
-        .select("id", { count: "exact", head: true })
-        .eq("barrio_id", barrio.id)
-        .eq("status", "pending"),
-    ),
-    count(
-      supabase
-        .from("business_claims")
-        .select("id, businesses!inner(barrio_id)", {
-          count: "exact",
-          head: true,
-        })
-        .eq("businesses.barrio_id", barrio.id)
-        .eq("status", "pending"),
-    ),
-    count(
-      supabase
-        .from("contact_messages")
-        .select("id", { count: "exact", head: true })
-        .eq("barrio_id", barrio.id),
-    ),
-    count(
-      supabase
-        .from("site_alerts")
-        .select("id", { count: "exact", head: true })
-        .eq("barrio_id", barrio.id)
-        .eq("is_active", true),
-    ),
-    count(
-      supabase
-        .from("pharmacy_turns")
-        .select("id, businesses!inner(barrio_id)", {
-          count: "exact",
-          head: true,
-        })
-        .eq("businesses.barrio_id", barrio.id)
-        .gt("ends_at", now),
-    ),
-  ]);
+const [
+  activos,
+  pendientes,
+  reclamos,
+  mensajes,
+  alertasActivas,
+  turnosFuturos,
+  conDueno,
+  destacados,
+  eventosVigentes,
+] = await Promise.all([
+  count(
+    supabase
+      .from("businesses")
+      .select("id", { count: "exact", head: true })
+      .eq("barrio_id", barrio.id)
+      .eq("is_active", true),
+  ),
+  count(
+    supabase
+      .from("businesses")
+      .select("id", { count: "exact", head: true })
+      .eq("barrio_id", barrio.id)
+      .eq("status", "pending"),
+  ),
+  count(
+    supabase
+      .from("business_claims")
+      .select("id, businesses!inner(barrio_id)", {
+        count: "exact",
+        head: true,
+      })
+      .eq("businesses.barrio_id", barrio.id)
+      .eq("status", "pending"),
+  ),
+  count(
+    supabase
+      .from("contact_messages")
+      .select("id", { count: "exact", head: true })
+      .eq("barrio_id", barrio.id),
+  ),
+  count(
+    supabase
+      .from("site_alerts")
+      .select("id", { count: "exact", head: true })
+      .eq("barrio_id", barrio.id)
+      .eq("is_active", true),
+  ),
+  count(
+    supabase
+      .from("pharmacy_turns")
+      .select("id, businesses!inner(barrio_id)", {
+        count: "exact",
+        head: true,
+      })
+      .eq("businesses.barrio_id", barrio.id)
+      .gt("ends_at", now),
+  ),
+  // Con dueño = reclamados + los que cargó el propio comerciante:
+  // mide cuántos negocios ya se autogestionan
+  count(
+    supabase
+      .from("businesses")
+      .select("id", { count: "exact", head: true })
+      .eq("barrio_id", barrio.id)
+      .not("owner_id", "is", null),
+  ),
+  count(
+    supabase
+      .from("businesses")
+      .select("id", { count: "exact", head: true })
+      .eq("barrio_id", barrio.id)
+      .eq("is_featured", true),
+  ),
+  // Mismo criterio de vigencia que la página pública /eventos
+  count(
+    supabase
+      .from("events")
+      .select("id", { count: "exact", head: true })
+      .eq("barrio_id", barrio.id)
+      .eq("is_active", true)
+      .or(`end_date.gte.${today},and(end_date.is.null,date.gte.${today})`),
+  ),
+]);
 
 // Uso vs límites del plan Free de Supabase (RPC admin_usage_stats).
 // Si el RPC todavía no se corrió en la base, usage queda null y el panel
@@ -117,6 +153,18 @@ const CARDS = [
     attention: pendientes > 0,
   },
   {
+    label: "Con dueño (autogestionados)",
+    value: conDueno,
+    href: "/app/admin/negocios",
+    accent: "text-blue-600",
+  },
+  {
+    label: "Destacados ⭐",
+    value: destacados,
+    href: "/app/admin/negocios",
+    accent: destacados > 0 ? "text-amber-500" : "text-gray-400",
+  },
+  {
     label: "Reclamos pendientes",
     value: reclamos,
     href: "/app/admin/reclamos",
@@ -128,6 +176,12 @@ const CARDS = [
     value: mensajes,
     href: "/app/admin/mensajes",
     accent: "text-gray-700",
+  },
+  {
+    label: "Eventos vigentes",
+    value: eventosVigentes,
+    href: "/app/admin/eventos",
+    accent: "text-violet-600",
   },
   {
     label: "Avisos activos",
