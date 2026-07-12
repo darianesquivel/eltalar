@@ -18,7 +18,7 @@ const { data: business } = await supabase
   .select(
     `
     id, name, slug, description, address, phone, whatsapp, instagram, website, services,
-    status, is_active, is_featured,
+    status, is_active, is_featured, by_appointment,
     business_categories ( category_id ),
     business_hours ( day_of_week, open_time, close_time, is_closed, is_open_24 ),
     business_photos ( id, url, is_cover, position ),
@@ -130,6 +130,7 @@ const statusInfo = STATUS_INFO[business.status] ?? STATUS_INFO.pending;
       <HoursEditor
         businessId={business.id}
         initialHours={business.business_hours ?? []}
+        initialByAppointment={business.by_appointment === true}
         client:load
       />
     </div>

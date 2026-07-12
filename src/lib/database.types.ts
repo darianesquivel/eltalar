@@ -235,6 +235,7 @@ export type Database = {
       businesses: {
         Row: {
           address: string | null;
+          by_appointment: boolean;
           created_at: string | null;
           description: string | null;
           featured_until: string | null;
@@ -262,6 +263,7 @@ export type Database = {
         };
         Insert: {
           address?: string | null;
+          by_appointment?: boolean;
           created_at?: string | null;
           description?: string | null;
           featured_until?: string | null;
@@ -289,6 +291,7 @@ export type Database = {
         };
         Update: {
           address?: string | null;
+          by_appointment?: boolean;
           created_at?: string | null;
           description?: string | null;
           featured_until?: string | null;

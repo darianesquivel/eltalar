@@ -29,7 +29,11 @@ const SCHEMA_DAYS = [
   "Saturday",
 ];
 
-const openingHours = (business.business_hours ?? [])
+// Con turno no hay horarios fijos: no exponerlos en el SEO
+const openingHours = (business.by_appointment
+  ? []
+  : (business.business_hours ?? [])
+)
   .filter(
     (h) => !h.is_closed && (h.is_open_24 || (h.open_time && h.close_time)),
   )

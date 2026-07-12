@@ -84,19 +84,25 @@ export default function BusinessCard({ business }: BusinessCardProps) {
             )}
           </div>
 
-          {/* STATUS */}
-          {status && (
-            <span
-              className={`text-[10px] uppercase ${
-                status.status === "open"
-                  ? "text-green-600"
-                  : status.status === "closed"
-                    ? "text-red-500"
-                    : "text-gray-500"
-              }`}
-            >
-              ● {status.label}
+          {/* STATUS: con turno no hay abierto/cerrado */}
+          {business.by_appointment ? (
+            <span className="text-[10px] uppercase text-services">
+              ● Atiende con turno
             </span>
+          ) : (
+            status && (
+              <span
+                className={`text-[10px] uppercase ${
+                  status.status === "open"
+                    ? "text-green-600"
+                    : status.status === "closed"
+                      ? "text-red-500"
+                      : "text-gray-500"
+                }`}
+              >
+                ● {status.label}
+              </span>
+            )
           )}
 
           {/* ADDRESS */}

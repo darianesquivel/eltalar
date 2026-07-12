@@ -246,9 +246,21 @@ const shareUrl = new URL(
       <div class="rounded-2xl bg-white p-6 shadow-sm">
         <h2 class="mb-4 text-lg font-semibold flex items-center gap-2">
           <Clock size={24} class="text-primary" />
-          Horarios
+          {business.by_appointment ? "Atención" : "Horarios"}
         </h2>
 
+        {
+          business.by_appointment && (
+            <div class="space-y-1 rounded-xl bg-primary-soft/40 p-4 text-sm">
+              <p class="font-semibold text-gray-800">📅 Atiende con turno</p>
+              <p class="text-gray-600">
+                Escribile o llamalo para coordinar un turno.
+              </p>
+            </div>
+          )
+        }
+
+        {!business.by_appointment && (
         <ul class="space-y-2 text-sm">
           {
             hours.map((day) => (
@@ -287,6 +299,7 @@ const shareUrl = new URL(
             ))
           }
         </ul>
+        )}
       </div>
 
       <!-- COMPARTIR -->
