@@ -5,7 +5,7 @@ import { Image } from "astro:assets";
 import { CalendarDays, Clock, MapPin } from "@lucide/astro";
 import { getUpcomingEvents } from "../lib/repositories/event.repository";
 
-const events = await getUpcomingEvents();
+const events = await getUpcomingEvents(Astro.locals.barrio.id);
 
 const MESES = [
   "ENE",
@@ -50,8 +50,8 @@ function rangoFechas(e: (typeof events)[number]) {
 ---
 
 <Layout
-  title="Eventos en El Talar"
-  description="Agenda de eventos de El Talar: ferias, festivales, actividades del barrio con día, horario y lugar."
+  title={`Eventos en ${Astro.locals.barrio.name}`}
+  description={`Agenda de eventos de ${Astro.locals.barrio.name}: ferias, festivales, actividades del barrio con día, horario y lugar.`}
 >
   <Hero />
 

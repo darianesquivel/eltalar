@@ -5,9 +5,7 @@
  * "instagram.com/miusuario" o la URL completa. Sin normalizar, un usuario
  * suelto se interpretaba como ruta relativa (eltalar.com.ar/miusuario).
  */
-export function instagramUrl(
-  value: string | null | undefined,
-): string | null {
+export function instagramUrl(value: string | null | undefined): string | null {
   if (!value) return null;
   const v = value.trim();
   if (!v) return null;

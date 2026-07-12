@@ -1,5 +1,6 @@
 import { defineMiddleware } from "astro:middleware";
 import { createSupabaseServer } from "./lib/supabase/server";
+import { resolveBarrio } from "./lib/barrio";
 
 // Rutas de /app accesibles sin sesión
 const PUBLIC_APP_PATHS = ["/app/login", "/app/auth"];
@@ -9,6 +10,10 @@ export const onRequest = defineMiddleware(async (context, next) => {
 
   context.locals.user = null;
   context.locals.isAdmin = false;
+
+  // Multi-barrio: el dominio del request define qué portal se sirve
+  // (cacheado en memoria; localhost y previews caen al barrio default)
+  context.locals.barrio = await resolveBarrio(context.url.hostname);
 
   // Canje del magic link en CUALQUIER página: si la config de Supabase manda
   // el ?code= a un destino inesperado (p.ej. la home), igual iniciamos sesión

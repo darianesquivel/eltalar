@@ -38,6 +38,8 @@ export type Business = BusinessRow & {
 export type BusinessSummary = Omit<Business, "photos">;
 
 interface GetBusinessesOptions {
+  /** Multi-barrio: cada portal solo lista los negocios de su barrio. */
+  barrioId: string;
   featured?: boolean;
   limit?: number;
 }
@@ -107,13 +109,14 @@ function toBusiness(raw: any): Business {
 ======================= */
 
 export async function getBusinesses(
-  options: GetBusinessesOptions = {},
+  options: GetBusinessesOptions,
 ): Promise<Business[]> {
-  const { featured, limit } = options;
+  const { barrioId, featured, limit } = options;
 
   let query = supabase
     .from("businesses")
     .select(BUSINESS_SELECT)
+    .eq("barrio_id", barrioId)
     .eq("is_active", true)
     // Los destacados (plan pago) van primero en todo listado
     .order("is_featured", { ascending: false })
@@ -145,6 +148,8 @@ export type BusinessPage = {
 };
 
 export interface GetBusinessesPageOptions {
+  /** Multi-barrio: cada portal solo lista los negocios de su barrio. */
+  barrioId: string;
   limit?: number;
   offset?: number;
   categorySlug?: string | null;
@@ -165,15 +170,16 @@ const BUSINESS_SELECT_BY_CATEGORY = BUSINESS_SELECT.replace(
  * la tanda pedida y el total (para el contador y el corte del scroll).
  */
 export async function getBusinessesPage(
-  options: GetBusinessesPageOptions = {},
+  options: GetBusinessesPageOptions,
 ): Promise<BusinessPage> {
-  const { limit = 24, offset = 0, categorySlug, search } = options;
+  const { barrioId, limit = 24, offset = 0, categorySlug, search } = options;
 
   let query = supabase
     .from("businesses")
     .select(categorySlug ? BUSINESS_SELECT_BY_CATEGORY : BUSINESS_SELECT, {
       count: "exact",
     })
+    .eq("barrio_id", barrioId)
     .eq("is_active", true);
 
   if (categorySlug) {
@@ -210,10 +216,13 @@ export async function getBusinessesPage(
 
 export async function getBusinessBySlug(
   slug: string,
+  barrioId: string,
 ): Promise<Business | null> {
+  // El slug es único POR BARRIO: dos barrios pueden tener "kiosco-central"
   const { data, error } = await supabase
     .from("businesses")
     .select(BUSINESS_SELECT)
+    .eq("barrio_id", barrioId)
     .eq("slug", slug)
     .single();
 

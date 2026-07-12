@@ -7,7 +7,7 @@ if (Astro.locals.user) {
 }
 ---
 
-<Layout title="Ingresar | El Talar">
+<Layout title={`Ingresar | ${Astro.locals.barrio.name}`}>
   <section class="mx-auto w-full max-w-md py-16">
     <div class="rounded-2xl bg-white p-8 shadow-sm space-y-6">
       <div class="space-y-2 text-center">

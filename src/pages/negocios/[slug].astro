@@ -5,8 +5,9 @@ import { getBusinessBySlug } from "../../lib/repositories/business.repository";
 import { instagramUrl } from "../../lib/links";
 
 const { slug } = Astro.params;
+const { barrio } = Astro.locals;
 
-const business = slug ? await getBusinessBySlug(slug) : null;
+const business = slug ? await getBusinessBySlug(slug, barrio.id) : null;
 
 // Rewrite (no redirect): devuelve la página 404 con status 404 real,
 // que es lo que los buscadores esperan para un negocio inexistente.
@@ -16,7 +17,7 @@ if (!business) {
 
 const description =
   business.description?.slice(0, 160) ||
-  `${business.name} en El Talar: horarios, teléfono, WhatsApp y ubicación.`;
+  `${business.name} en ${barrio.name}: horarios, teléfono, WhatsApp y ubicación.`;
 
 // Datos estructurados schema.org: le dicen a Google que esto es un negocio
 // local con dirección y horarios (mejora el SEO local y los rich results).
@@ -31,9 +32,8 @@ const SCHEMA_DAYS = [
 ];
 
 // Con turno no hay horarios fijos: no exponerlos en el SEO
-const openingHours = (business.by_appointment
-  ? []
-  : (business.business_hours ?? [])
+const openingHours = (
+  business.by_appointment ? [] : (business.business_hours ?? [])
 )
   .filter(
     (h) => !h.is_closed && (h.is_open_24 || (h.open_time && h.close_time)),
@@ -50,17 +50,14 @@ const jsonLd = {
   "@type": "LocalBusiness",
   name: business.name,
   description,
-  url: new URL(
-    `/negocios/${business.slug}`,
-    Astro.site ?? Astro.url,
-  ).toString(),
+  url: new URL(`/negocios/${business.slug}`, barrio.url).toString(),
   ...(business.coverPhoto?.url && { image: business.coverPhoto.url }),
   ...(business.phone && { telephone: business.phone }),
   ...(business.address && {
     address: {
       "@type": "PostalAddress",
       streetAddress: business.address,
-      addressLocality: "El Talar",
+      addressLocality: barrio.name,
       addressRegion: "Buenos Aires",
       addressCountry: "AR",
     },
@@ -79,7 +76,7 @@ const jsonLd = {
 ---
 
 <Layout
-  title={`${business.name} | El Talar`}
+  title={`${business.name} | ${barrio.name}`}
   description={description}
   image={business.coverPhoto?.url}
 >

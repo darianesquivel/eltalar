@@ -31,30 +31,42 @@ async function requireAdmin(context: APIContext) {
 }
 
 export const GET: APIRoute = async (context) => {
-  if (!(await requireAdmin(context))) return json({ error: "No autorizado" }, 403);
+  if (!(await requireAdmin(context)))
+    return json({ error: "No autorizado" }, 403);
   const admin = createSupabaseAdmin();
   if (!admin) return json({ error: "Falta service role" }, 500);
 
-  const { data, error } = await admin
+  // Multi-barrio: el manager pide los eventos del barrio del selector
+  const barrioId = context.url.searchParams.get("barrio");
+
+  let query = admin
     .from("events")
     .select("*")
     .order("date", { ascending: false })
     .order("start_time", { ascending: true });
+  if (barrioId) query = query.eq("barrio_id", barrioId);
+
+  const { data, error } = await query;
 
   if (error) return json({ error: error.message }, 500);
   return json({ events: data }, 200);
 };
 
 export const POST: APIRoute = async (context) => {
-  if (!(await requireAdmin(context))) return json({ error: "No autorizado" }, 403);
+  if (!(await requireAdmin(context)))
+    return json({ error: "No autorizado" }, 403);
   const admin = createSupabaseAdmin();
   if (!admin) return json({ error: "Falta service role" }, 500);
 
   const form = await context.request.formData();
   const title = String(form.get("title") ?? "").trim();
   const date = String(form.get("date") ?? "").trim();
+  const barrio_id = String(form.get("barrio_id") ?? "").trim();
   if (!title || !/^\d{4}-\d{2}-\d{2}$/.test(date)) {
     return json({ error: "Faltan título o fecha" }, 400);
+  }
+  if (!barrio_id) {
+    return json({ error: "Falta el barrio del evento" }, 400);
   }
 
   const optional = (key: string) => {
@@ -75,13 +87,14 @@ export const POST: APIRoute = async (context) => {
       .from("event-photos")
       .upload(path, photo, { contentType: photo.type });
     if (upErr) return json({ error: `Foto: ${upErr.message}` }, 500);
-    image_url = admin.storage.from("event-photos").getPublicUrl(path).data
-      .publicUrl;
+    image_url = admin.storage.from("event-photos").getPublicUrl(path)
+      .data.publicUrl;
   }
 
   const { data, error } = await admin
     .from("events")
     .insert({
+      barrio_id,
       title,
       date,
       end_date: optional("end_date"),
@@ -99,7 +112,8 @@ export const POST: APIRoute = async (context) => {
 };
 
 export const PATCH: APIRoute = async (context) => {
-  if (!(await requireAdmin(context))) return json({ error: "No autorizado" }, 403);
+  if (!(await requireAdmin(context)))
+    return json({ error: "No autorizado" }, 403);
   const admin = createSupabaseAdmin();
   if (!admin) return json({ error: "Falta service role" }, 500);
 
@@ -108,13 +122,17 @@ export const PATCH: APIRoute = async (context) => {
     return json({ error: "Datos inválidos" }, 400);
   }
 
-  const { error } = await admin.from("events").update({ is_active }).eq("id", id);
+  const { error } = await admin
+    .from("events")
+    .update({ is_active })
+    .eq("id", id);
   if (error) return json({ error: error.message }, 500);
   return json({ success: true }, 200);
 };
 
 export const DELETE: APIRoute = async (context) => {
-  if (!(await requireAdmin(context))) return json({ error: "No autorizado" }, 403);
+  if (!(await requireAdmin(context)))
+    return json({ error: "No autorizado" }, 403);
   const admin = createSupabaseAdmin();
   if (!admin) return json({ error: "Falta service role" }, 500);
 

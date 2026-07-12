@@ -1,5 +1,7 @@
 ---
 import { Phone } from "@lucide/astro";
+
+const { barrio } = Astro.locals;
 ---
 
 <section
@@ -28,8 +30,8 @@ import { Phone } from "@lucide/astro";
       class="animate-fade-up mx-auto max-w-2xl text-lg text-gray-600"
       style="animation-delay: 0.24s"
     >
-      Conectamos a los vecinos de <span class="font-medium">El Talar</span> con servicios
-      esenciales, emergencias y atención rápida cuando más se necesita.
+      Conectamos a los vecinos de <span class="font-medium">{barrio.name}</span> con
+      servicios esenciales, emergencias y atención rápida cuando más se necesita.
     </p>
 
     <div

@@ -1,6 +1,9 @@
 ---
 import AdminLayout from "../../../layouts/AdminLayout.astro";
 import EventsManager from "../../../components/app/EventsManager";
+import { getAdminBarrio } from "../../../lib/barrio";
+
+const barrio = await getAdminBarrio(Astro);
 ---
 
 <AdminLayout title="Eventos">
@@ -13,6 +16,6 @@ import EventsManager from "../../../components/app/EventsManager";
       </p>
     </div>
 
-    <EventsManager client:load />
+    <EventsManager barrioId={barrio.id} client:load />
   </div>
 </AdminLayout>

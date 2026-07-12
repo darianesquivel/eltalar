@@ -1,5 +1,7 @@
 ---
 import { Store } from "@lucide/astro";
+
+const { barrio } = Astro.locals;
 ---
 
 <section
@@ -23,7 +25,7 @@ import { Store } from "@lucide/astro";
       style="animation-delay: 0.12s"
     >
       Negocios de{" "}
-      <span class="text-blue-500">El Talar</span>
+      <span class="text-blue-500">{barrio.name}</span>
     </h1>
 
     <p

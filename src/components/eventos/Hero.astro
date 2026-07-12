@@ -1,5 +1,7 @@
 ---
 import { PartyPopper } from "@lucide/astro";
+
+const { barrio } = Astro.locals;
 ---
 
 <section
@@ -23,7 +25,7 @@ import { PartyPopper } from "@lucide/astro";
       style="animation-delay: 0.12s"
     >
       Eventos de{" "}
-      <span class="text-violet-600">El Talar</span>
+      <span class="text-violet-600">{barrio.name}</span>
     </h1>
 
     <p

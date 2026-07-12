@@ -51,7 +51,7 @@ const STATUS_INFO: Record<string, { label: string; class: string }> = {
 const statusInfo = STATUS_INFO[business.status] ?? STATUS_INFO.pending;
 ---
 
-<Layout title={`Editar ${business.name} | El Talar`}>
+<Layout title={`Editar ${business.name} | ${Astro.locals.barrio.name}`}>
   <section class="mx-auto w-full max-w-2xl space-y-6 py-8">
     <a
       href="/app"

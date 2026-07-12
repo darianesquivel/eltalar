@@ -9,12 +9,13 @@ export type EventRow = Database["public"]["Tables"]["events"]["Row"];
  * Un evento se muestra hasta el final de su día (o de end_date si dura varios
  * días); al día siguiente desaparece solo.
  */
-export async function getUpcomingEvents(): Promise<EventRow[]> {
+export async function getUpcomingEvents(barrioId: string): Promise<EventRow[]> {
   const today = todayInArgentina();
 
   const { data, error } = await supabase
     .from("events")
     .select("*")
+    .eq("barrio_id", barrioId)
     .eq("is_active", true)
     .or(`end_date.gte.${today},and(end_date.is.null,date.gte.${today})`)
     .order("date", { ascending: true })

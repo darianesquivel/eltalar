@@ -28,7 +28,7 @@ const STATUS_BADGE: Record<string, { label: string; class: string }> = {
 };
 ---
 
-<Layout title="Mi panel | El Talar">
+<Layout title={`Mi panel | ${Astro.locals.barrio.name}`}>
   <section class="mx-auto w-full max-w-3xl space-y-8 py-8">
     <div class="flex flex-wrap items-center justify-between gap-4">
       <div>

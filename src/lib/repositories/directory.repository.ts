@@ -8,10 +8,13 @@ export type DirectoryEntry =
  * Teléfonos útiles del barrio, ordenados por posición.
  * `is_priority = true` son las cards grandes de Emergencias.
  */
-export async function getDirectoryEntries(): Promise<DirectoryEntry[]> {
+export async function getDirectoryEntries(
+  barrioId: string,
+): Promise<DirectoryEntry[]> {
   const { data, error } = await supabase
     .from("directory_entries")
     .select("*")
+    .eq("barrio_id", barrioId)
     .eq("is_active", true)
     .order("position");
 

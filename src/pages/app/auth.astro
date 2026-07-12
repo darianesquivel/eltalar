@@ -4,7 +4,7 @@ import Layout from "../../layouts/Layout.astro";
 // sesión de la URL (code/hash), la guarda en cookies y redirige al panel.
 ---
 
-<Layout title="Ingresando… | El Talar">
+<Layout title={`Ingresando… | ${Astro.locals.barrio.name}`}>
   <section class="flex flex-col items-center gap-4 py-24 text-center">
     <p class="text-lg font-semibold" id="auth-status">Ingresando…</p>
   </section>

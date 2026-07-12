@@ -5,17 +5,19 @@ import Emergencies from "../../components/telefonos/Emergencies.astro";
 import Directory from "../../components/telefonos/Directory.astro";
 import { getDirectoryEntries } from "../../lib/repositories/directory.repository";
 
+const { barrio } = Astro.locals;
+
 // Los teléfonos viven en la tabla directory_entries: se editan en Supabase
 // y se ven al instante, sin deploy. Por eso la página es SSR.
-const entries = await getDirectoryEntries();
+const entries = await getDirectoryEntries(barrio.id);
 
 const priority = entries.filter((e) => e.is_priority);
 const general = entries.filter((e) => !e.is_priority);
 ---
 
 <Layout
-  title="Teléfonos Útiles en El Talar"
-  description="Teléfonos de emergencia y servicios de El Talar: bomberos, policía, salud, Edenor, AySA y más."
+  title={`Teléfonos Útiles en ${barrio.name}`}
+  description={`Teléfonos de emergencia y servicios de ${barrio.name}: bomberos, policía, salud, Edenor, AySA y más.`}
 >
   <Hero />
   <Emergencies entries={priority} />

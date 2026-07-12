@@ -19,6 +19,8 @@ type BusinessFormData = {
 
 type Props = {
   categories: Category[];
+  /** Barrio al que pertenece el negocio (multi-barrio). Requerido en alta. */
+  barrioId?: string;
   /** Si viene, es edición; si no, alta. */
   business?: BusinessFormData;
   /** IDs de categorías ya asignadas (en edición). */
@@ -41,6 +43,7 @@ const inputClass = "field";
 
 export default function BusinessForm({
   categories,
+  barrioId,
   business,
   selectedCategoryIds = [],
   isAdmin = false,
@@ -131,6 +134,7 @@ export default function BusinessForm({
           data: { user },
         } = await supabaseBrowser.auth.getUser();
         if (!user) throw new Error("Sesión expirada, volvé a ingresar");
+        if (!barrioId) throw new Error("Falta el barrio del negocio");
 
         let slug = slugify(form.name);
 
@@ -140,6 +144,7 @@ export default function BusinessForm({
             .from("businesses")
             .insert({
               ...payload,
+              barrio_id: barrioId,
               slug,
               // Carga administrativa: sin dueño, el comerciante lo reclama después
               owner_id: isAdmin && adminNoOwner ? null : user.id,

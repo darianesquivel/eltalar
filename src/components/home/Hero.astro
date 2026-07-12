@@ -2,6 +2,8 @@
 import { Image } from "astro:assets";
 import { MapPin, Cross } from "@lucide/astro";
 import heroBg from "../../images/hero-bg.jpg";
+
+const { barrio } = Astro.locals;
 ---
 
 <section
@@ -10,7 +12,7 @@ import heroBg from "../../images/hero-bg.jpg";
   <!-- Fondo con zoom lento (ken burns) -->
   <Image
     src={heroBg}
-    alt="El Talar"
+    alt={barrio.name}
     widths={[640, 1024, 1600]}
     sizes="100vw"
     loading="eager"
@@ -58,7 +60,7 @@ import heroBg from "../../images/hero-bg.jpg";
       <span
         class="bg-linear-to-r from-green-300 via-emerald-300 to-primary bg-clip-text text-transparent"
       >
-        El Talar
+        {barrio.name}
       </span>
     </h1>
 

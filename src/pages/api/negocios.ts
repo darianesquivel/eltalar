@@ -6,7 +6,7 @@ import { getBusinessesPage } from "../../lib/repositories/business.repository";
  * GET /api/negocios?categoria=<slug>&buscar=<texto>&offset=0&limit=24
  * Responde { items, total }; lo consume BusinessGrid para el scroll infinito.
  */
-export const GET: APIRoute = async ({ url }) => {
+export const GET: APIRoute = async ({ url, locals }) => {
   const limit = Math.min(
     Math.max(Number(url.searchParams.get("limit")) || 24, 1),
     48,
@@ -14,6 +14,7 @@ export const GET: APIRoute = async ({ url }) => {
   const offset = Math.max(Number(url.searchParams.get("offset")) || 0, 0);
 
   const page = await getBusinessesPage({
+    barrioId: locals.barrio.id,
     limit,
     offset,
     categorySlug: url.searchParams.get("categoria"),

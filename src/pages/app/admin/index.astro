@@ -1,49 +1,65 @@
 ---
 import AdminLayout from "../../../layouts/AdminLayout.astro";
 import { createSupabaseServer } from "../../../lib/supabase/server";
+import { getAdminBarrio } from "../../../lib/barrio";
 
 // El middleware ya validó que sea admin
 const supabase = createSupabaseServer(Astro);
+const barrio = await getAdminBarrio(Astro);
 const now = new Date().toISOString();
 
 const count = (q: PromiseLike<{ count: number | null }>) =>
   Promise.resolve(q).then((r) => r.count ?? 0);
 
+// Todos los números son DEL BARRIO elegido en el selector; reclamos y turnos
+// no tienen barrio propio: se filtra por el del negocio (join !inner)
 const [activos, pendientes, reclamos, mensajes, alertasActivas, turnosFuturos] =
   await Promise.all([
     count(
       supabase
         .from("businesses")
         .select("id", { count: "exact", head: true })
+        .eq("barrio_id", barrio.id)
         .eq("is_active", true),
     ),
     count(
       supabase
         .from("businesses")
         .select("id", { count: "exact", head: true })
+        .eq("barrio_id", barrio.id)
         .eq("status", "pending"),
     ),
     count(
       supabase
         .from("business_claims")
-        .select("id", { count: "exact", head: true })
+        .select("id, businesses!inner(barrio_id)", {
+          count: "exact",
+          head: true,
+        })
+        .eq("businesses.barrio_id", barrio.id)
         .eq("status", "pending"),
     ),
     count(
       supabase
         .from("contact_messages")
-        .select("id", { count: "exact", head: true }),
+        .select("id", { count: "exact", head: true })
+        .eq("barrio_id", barrio.id),
     ),
     count(
       supabase
         .from("site_alerts")
         .select("id", { count: "exact", head: true })
+        .eq("barrio_id", barrio.id)
         .eq("is_active", true),
     ),
     count(
       supabase
         .from("pharmacy_turns")
-        .select("id", { count: "exact", head: true })
+        .select("id, businesses!inner(barrio_id)", {
+          count: "exact",
+          head: true,
+        })
+        .eq("businesses.barrio_id", barrio.id)
         .gt("ends_at", now),
     ),
   ]);

@@ -67,9 +67,9 @@ export const POST: APIRoute = async (context) => {
 
   const price = Number(import.meta.env.MP_FEATURED_PRICE ?? 6500);
   // MP exige un back_url https público: en dev (localhost) usamos el dominio
-  // real del sitio; el redirect post-pago cae en producción, no afecta el test.
+  // real del barrio; el redirect post-pago cae en producción, no afecta el test.
   const origin = context.url.origin.includes("localhost")
-    ? (import.meta.env.SITE ?? "https://eltalar.com.ar")
+    ? context.locals.barrio.url
     : context.url.origin;
 
   // Crea la suscripción (preapproval) en Mercado Pago
@@ -80,7 +80,7 @@ export const POST: APIRoute = async (context) => {
       "Content-Type": "application/json",
     },
     body: JSON.stringify({
-      reason: `El Talar - Negocio destacado: ${business.name}`,
+      reason: `${context.locals.barrio.name} - Negocio destacado: ${business.name}`,
       external_reference: business.id,
       // En sandbox (token TEST-) el pagador debe ser una cuenta de prueba de
       // MP; MP_TEST_PAYER_EMAIL la pisa. En producción no se define y se usa

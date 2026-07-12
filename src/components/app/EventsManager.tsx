@@ -31,9 +31,14 @@ const fmtFecha = (iso: string) => {
   return `${d}/${m}/${y.slice(2)}`;
 };
 
+type Props = {
+  /** Barrio elegido en el selector del panel (multi-barrio). */
+  barrioId: string;
+};
+
 // Alta y gestión de eventos. La página pública (/eventos) solo muestra los
 // activos cuya fecha no pasó; acá el admin ve todo, incluso los pasados.
-export default function EventsManager() {
+export default function EventsManager({ barrioId }: Props) {
   const [events, setEvents] = useState<EventItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [form, setForm] = useState(EMPTY_FORM);
@@ -46,11 +51,11 @@ export default function EventsManager() {
   const fileRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
-    fetch("/api/admin/eventos")
+    fetch(`/api/admin/eventos?barrio=${barrioId}`)
       .then((r) => r.json())
       .then((d) => setEvents(d.events ?? []))
       .finally(() => setLoading(false));
-  }, []);
+  }, [barrioId]);
 
   const set =
     (field: keyof typeof EMPTY_FORM) =>
@@ -70,9 +75,13 @@ export default function EventsManager() {
     try {
       const fd = new FormData();
       Object.entries(form).forEach(([k, v]) => fd.set(k, v));
+      fd.set("barrio_id", barrioId);
       if (photo) fd.set("photo", photo);
 
-      const res = await fetch("/api/admin/eventos", { method: "POST", body: fd });
+      const res = await fetch("/api/admin/eventos", {
+        method: "POST",
+        body: fd,
+      });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error ?? "Error creando el evento");
 
@@ -97,7 +106,9 @@ export default function EventsManager() {
     });
     if (res.ok) {
       setEvents((prev) =>
-        prev.map((e) => (e.id === ev.id ? { ...e, is_active: !ev.is_active } : e)),
+        prev.map((e) =>
+          e.id === ev.id ? { ...e, is_active: !ev.is_active } : e,
+        ),
       );
     } else {
       alert("Error actualizando el evento");
@@ -173,7 +184,11 @@ export default function EventsManager() {
             >
               <Check size={13} />
             </IconButton>
-            <IconButton small label="Cancelar" onClick={() => setConfirmDelete(null)}>
+            <IconButton
+              small
+              label="Cancelar"
+              onClick={() => setConfirmDelete(null)}
+            >
               <X size={13} />
             </IconButton>
           </>

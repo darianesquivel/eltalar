@@ -6,7 +6,7 @@ import CurrentTurn from "../../components/farmacias/CurrentTurn.astro";
 import NextTurns from "../../components/farmacias/NextTurns.astro";
 ---
 
-<Layout title="Farmacias de Turno en El Talar">
+<Layout title={`Farmacias de Turno en ${Astro.locals.barrio.name}`}>
   <Hero />
   <CurrentTurn />
   <NextTurns />

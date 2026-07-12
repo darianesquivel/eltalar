@@ -6,6 +6,8 @@ import type { DirectoryEntry } from "../../lib/repositories/directory.repository
 
 type Props = {
   entries: DirectoryEntry[];
+  /** Barrio elegido en el selector del panel (multi-barrio). */
+  barrioId: string;
 };
 
 const CATEGORIES = [
@@ -25,7 +27,7 @@ const EMPTY = {
   is_priority: false,
 };
 
-export default function DirectoryManager({ entries }: Props) {
+export default function DirectoryManager({ entries, barrioId }: Props) {
   const [items, setItems] = useState(entries);
   const [form, setForm] = useState(EMPTY);
   const [saving, setSaving] = useState(false);
@@ -36,6 +38,7 @@ export default function DirectoryManager({ entries }: Props) {
     const { data } = await supabaseBrowser
       .from("directory_entries")
       .select("*")
+      .eq("barrio_id", barrioId)
       .order("position");
     if (data) setItems(data);
   };
@@ -52,6 +55,7 @@ export default function DirectoryManager({ entries }: Props) {
     const { error: insError } = await supabaseBrowser
       .from("directory_entries")
       .insert({
+        barrio_id: barrioId,
         title: form.title.trim(),
         subtitle: form.subtitle.trim() || null,
         phone: form.phone.trim(),

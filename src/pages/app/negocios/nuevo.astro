@@ -3,8 +3,12 @@ import Layout from "../../../layouts/Layout.astro";
 import BusinessForm from "../../../components/app/BusinessForm";
 import { ArrowLeft } from "@lucide/astro";
 import { createSupabaseServer } from "../../../lib/supabase/server";
+import { getAdminBarrio } from "../../../lib/barrio";
 
 const supabase = createSupabaseServer(Astro);
+
+// El comerciante carga en el barrio del dominio; el admin, en el del selector
+const barrio = await getAdminBarrio(Astro);
 
 const { data: categories } = await supabase
   .from("categories")
@@ -12,7 +16,7 @@ const { data: categories } = await supabase
   .order("name");
 ---
 
-<Layout title="Cargar negocio | El Talar">
+<Layout title={`Cargar negocio | ${barrio.name}`}>
   <section class="mx-auto w-full max-w-2xl space-y-6 py-8">
     <a
       href="/app"
@@ -32,6 +36,7 @@ const { data: categories } = await supabase
 
       <BusinessForm
         categories={categories ?? []}
+        barrioId={barrio.id}
         isAdmin={Astro.locals.isAdmin}
         client:load
       />

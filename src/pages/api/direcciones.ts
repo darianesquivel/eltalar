@@ -7,7 +7,7 @@ import type { APIRoute } from "astro";
  *   GET /api/direcciones?placeId=ChIJ...  → { address, lat, lng }
  *
  * Proxy a Places API (New) DEL LADO DEL SERVIDOR: la key de Google nunca
- * llega al navegador. El sesgo geográfico apunta a El Talar y alrededores.
+ * llega al navegador. El sesgo geográfico apunta al barrio del dominio.
  */
 
 const json = (body: object, status = 200, cache = false) =>
@@ -20,9 +20,11 @@ const json = (body: object, status = 200, cache = false) =>
     },
   });
 
-export const GET: APIRoute = async ({ url }) => {
+export const GET: APIRoute = async ({ url, locals }) => {
   const apiKey = import.meta.env.GOOGLE_MAPS_API_KEY;
   if (!apiKey) return json({ error: "Geocoding no configurado" }, 500);
+
+  const { barrio } = locals;
 
   const placeId = url.searchParams.get("placeId");
   const q = url.searchParams.get("q")?.trim() ?? "";
@@ -41,7 +43,8 @@ export const GET: APIRoute = async ({ url }) => {
         },
       },
     );
-    if (!res.ok) return json({ error: "No pudimos resolver la dirección" }, 502);
+    if (!res.ok)
+      return json({ error: "No pudimos resolver la dirección" }, 502);
     const p = await res.json();
     return json(
       {
@@ -55,25 +58,29 @@ export const GET: APIRoute = async ({ url }) => {
   }
 
   // --- Sugerencias mientras se tipea ---
-  if (q.length < 4 || q.length > 120) return json({ suggestions: [] }, 200, true);
+  if (q.length < 4 || q.length > 120)
+    return json({ suggestions: [] }, 200, true);
 
-  const res = await fetch("https://places.googleapis.com/v1/places:autocomplete", {
-    method: "POST",
-    headers: { "Content-Type": "application/json", "X-Goog-Api-Key": apiKey },
-    body: JSON.stringify({
-      input: q,
-      languageCode: "es",
-      includedRegionCodes: ["ar"],
-      // SOLO la zona (El Talar, Pacheco, Troncos, Ricardo Rojas): con el
-      // sesgo a secas, "Perú 749" sugería primero la calle Perú de CABA
-      locationRestriction: {
-        circle: {
-          center: { latitude: -34.4716, longitude: -58.655 },
-          radius: 6000,
+  const res = await fetch(
+    "https://places.googleapis.com/v1/places:autocomplete",
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "X-Goog-Api-Key": apiKey },
+      body: JSON.stringify({
+        input: q,
+        languageCode: "es",
+        includedRegionCodes: ["ar"],
+        // SOLO la zona del barrio (centro/radio de la tabla barrios): con el
+        // sesgo a secas, "Perú 749" sugería primero la calle Perú de CABA
+        locationRestriction: {
+          circle: {
+            center: { latitude: barrio.lat, longitude: barrio.lng },
+            radius: barrio.radius_m,
+          },
         },
-      },
-    }),
-  });
+      }),
+    },
+  );
   if (!res.ok) return json({ suggestions: [] }, 200);
 
   const data = await res.json();

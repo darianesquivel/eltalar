@@ -1,5 +1,7 @@
 ---
 import { Cross } from "@lucide/astro";
+
+const { barrio } = Astro.locals;
 ---
 
 <section
@@ -31,7 +33,7 @@ import { Cross } from "@lucide/astro";
       style="animation-delay: 0.24s"
     >
       Consultá qué farmacia está abierta <span class="font-medium"
-        >hoy en El Talar</span
+        >hoy en {barrio.name}</span
       >
       para urgencias, guardias nocturnas y atención fuera de horario.
     </p>

@@ -20,8 +20,9 @@ const json = (body: object, status: number) =>
  * Se guarda como mensaje en contact_messages: el admin los ve en la misma
  * bandeja de /app/admin/mensajes, prefijados con [REPORTE].
  */
-export const POST: APIRoute = async ({ request }) => {
+export const POST: APIRoute = async ({ request, locals }) => {
   try {
+    const { barrio } = locals;
     const body = await request.json();
     const { slug, businessName, motivo, detalle, email, company } = body;
 
@@ -46,7 +47,7 @@ export const POST: APIRoute = async ({ request }) => {
 
     const message = [
       `[REPORTE] ${businessName.trim().slice(0, 120)}`,
-      `Ficha: https://eltalar.com.ar/negocios/${slug.trim().slice(0, 120)}`,
+      `Ficha: ${barrio.url}/negocios/${slug.trim().slice(0, 120)}`,
       `Motivo: ${motivo}`,
       detalle?.trim() ? `Detalle: ${detalle.trim()}` : null,
     ]
@@ -54,8 +55,9 @@ export const POST: APIRoute = async ({ request }) => {
       .join("\n");
 
     const { error } = await supabase.from("contact_messages").insert({
+      barrio_id: barrio.id,
       name: "Reporte de ficha",
-      email: email?.trim() || "sin-email@eltalar.com.ar",
+      email: email?.trim() || `sin-email@${barrio.domain}`,
       message,
     });
 

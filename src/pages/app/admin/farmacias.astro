@@ -3,20 +3,26 @@ import AdminLayout from "../../../layouts/AdminLayout.astro";
 import TurnsManager from "../../../components/app/TurnsManager";
 import BulkTurnsLoader from "../../../components/app/BulkTurnsLoader";
 import { createSupabaseServer } from "../../../lib/supabase/server";
+import { getAdminBarrio } from "../../../lib/barrio";
 
 const supabase = createSupabaseServer(Astro);
+const barrio = await getAdminBarrio(Astro);
 const weekAgo = new Date(Date.now() - 7 * 86400000).toISOString();
 
 const [{ data: turns }, { data: pharmacies }] = await Promise.all([
   supabase
     .from("pharmacy_turns")
-    .select("id, pharmacy_id, starts_at, ends_at, businesses ( name )")
+    .select(
+      "id, pharmacy_id, starts_at, ends_at, businesses!inner ( name, barrio_id )",
+    )
+    .eq("businesses.barrio_id", barrio.id)
     .gte("ends_at", weekAgo)
     .order("starts_at"),
-  // Farmacias = negocios cuya categoría contiene "farmacia"
+  // Farmacias = negocios del barrio cuya categoría contiene "farmacia"
   supabase
     .from("businesses")
     .select("id, name, business_categories!inner ( categories!inner ( name ) )")
+    .eq("barrio_id", barrio.id)
     .ilike("business_categories.categories.name", "%farmacia%")
     .order("name"),
 ]);
@@ -37,8 +43,10 @@ const pharmacyOptions = (pharmacies ?? []).map((p) => ({
       </p>
     </div>
 
-    {/* Envueltos en div: el <astro-island> de las islas no genera caja y el
-        space-y del contenedor no separaba una sección de la otra */}
+    {
+      /* Envueltos en div: el <astro-island> de las islas no genera caja y el
+        space-y del contenedor no separaba una sección de la otra */
+    }
     <div>
       <BulkTurnsLoader pharmacies={pharmacyOptions} client:load />
     </div>

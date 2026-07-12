@@ -72,7 +72,7 @@ export default function FeaturedCard({
       </div>
       <ul className="space-y-1 text-sm text-gray-600">
         <li>✓ Primero en el listado de negocios</li>
-        <li>✓ En la portada de eltalar, que ven todos los vecinos</li>
+        <li>✓ En la portada del sitio, que ven todos los vecinos</li>
         <li>✓ Galería de hasta 4 fotos en tu ficha (el gratuito incluye 1)</li>
         <li>✓ Hasta 5 ofertas activas a la vez (el gratuito incluye 1)</li>
         <li>

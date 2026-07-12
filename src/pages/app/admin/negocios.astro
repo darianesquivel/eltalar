@@ -1,6 +1,9 @@
 ---
 import AdminLayout from "../../../layouts/AdminLayout.astro";
 import AdminBusinesses from "../../../components/app/AdminBusinesses";
+import { getAdminBarrio } from "../../../lib/barrio";
+
+const barrio = await getAdminBarrio(Astro);
 ---
 
 <!-- El componente busca y pagina contra la base directamente: con 1700
@@ -18,7 +21,7 @@ import AdminBusinesses from "../../../components/app/AdminBusinesses";
     </div>
 
     <div class="min-h-0 flex-1">
-      <AdminBusinesses client:load />
+      <AdminBusinesses barrioId={barrio.id} client:load />
     </div>
   </div>
 </AdminLayout>

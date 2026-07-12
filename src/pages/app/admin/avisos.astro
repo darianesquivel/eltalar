@@ -2,12 +2,15 @@
 import AdminLayout from "../../../layouts/AdminLayout.astro";
 import AlertsManager from "../../../components/app/AlertsManager";
 import { createSupabaseServer } from "../../../lib/supabase/server";
+import { getAdminBarrio } from "../../../lib/barrio";
 
 const supabase = createSupabaseServer(Astro);
+const barrio = await getAdminBarrio(Astro);
 
 const { data: alerts } = await supabase
   .from("site_alerts")
   .select("id, title, description, is_active")
+  .eq("barrio_id", barrio.id)
   .order("created_at", { ascending: false });
 ---
 
@@ -21,6 +24,6 @@ const { data: alerts } = await supabase
       </p>
     </div>
 
-    <AlertsManager alerts={alerts ?? []} client:load />
+    <AlertsManager alerts={alerts ?? []} barrioId={barrio.id} client:load />
   </div>
 </AdminLayout>

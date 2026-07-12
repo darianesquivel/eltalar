@@ -1,5 +1,7 @@
 ---
 import { Pill, Store, PhoneCall } from "@lucide/astro";
+
+const { barrio } = Astro.locals;
 ---
 
 <section class="mx-auto max-w-6xl px-6">
@@ -16,7 +18,7 @@ import { Pill, Store, PhoneCall } from "@lucide/astro";
           <div class="flex flex-col gap-2">
             <h3 class="font-semibold">Farmacias de Turno</h3>
             <p class="text-xs text-primary">
-              Encuentra qué farmacia está abierta ahora en El Talar.
+              Encuentra qué farmacia está abierta ahora en {barrio.name}.
             </p>
           </div>
         </div>

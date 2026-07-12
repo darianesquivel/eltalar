@@ -9,7 +9,7 @@ const json = (body: object, status: number) =>
     headers: { "Content-Type": "application/json" },
   });
 
-export const POST: APIRoute = async ({ request }) => {
+export const POST: APIRoute = async ({ request, locals }) => {
   try {
     const body = await request.json();
     const { name, email, message, company } = body;
@@ -40,6 +40,7 @@ export const POST: APIRoute = async ({ request }) => {
     }
 
     const { error } = await supabase.from("contact_messages").insert({
+      barrio_id: locals.barrio.id,
       name: name.trim(),
       email: email.trim(),
       message: message.trim(),

@@ -2,12 +2,15 @@
 import AdminLayout from "../../../layouts/AdminLayout.astro";
 import DirectoryManager from "../../../components/app/DirectoryManager";
 import { createSupabaseServer } from "../../../lib/supabase/server";
+import { getAdminBarrio } from "../../../lib/barrio";
 
 const supabase = createSupabaseServer(Astro);
+const barrio = await getAdminBarrio(Astro);
 
 const { data: entries } = await supabase
   .from("directory_entries")
   .select("*")
+  .eq("barrio_id", barrio.id)
   .order("position");
 ---
 
@@ -23,6 +26,10 @@ const { data: entries } = await supabase
       </p>
     </div>
 
-    <DirectoryManager entries={entries ?? []} client:load />
+    <DirectoryManager
+      entries={entries ?? []}
+      barrioId={barrio.id}
+      client:load
+    />
   </div>
 </AdminLayout>

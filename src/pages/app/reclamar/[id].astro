@@ -20,7 +20,7 @@ if (!business || business.owner_id) {
 }
 ---
 
-<Layout title={`Reclamar ${business.name} | El Talar`}>
+<Layout title={`Reclamar ${business.name} | ${Astro.locals.barrio.name}`}>
   <section class="mx-auto w-full max-w-xl space-y-6 py-10">
     <a
       href={`/negocios`}
@@ -38,7 +38,7 @@ if (!business || business.owner_id) {
           )
         }
         <p class="text-sm text-gray-600">
-          Este negocio fue cargado por el equipo de El Talar. Si es tuyo,
+          Este negocio fue cargado por el equipo del portal. Si es tuyo,
           reclamalo: cuando lo verifiquemos vas a poder editar la ficha, subir
           fotos y gestionar los horarios vos mismo.
         </p>

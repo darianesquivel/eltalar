@@ -5,18 +5,20 @@ import PharmacyCard from "./PharmacyCard.astro";
 
 const now = new Date().toISOString();
 
+// El barrio del turno viene implícito por la farmacia (join !inner)
 const { data: nextTurns, error } = await supabase
   .from("pharmacy_turns")
   .select(
     `
     starts_at,
-    businesses (
+    businesses!inner (
       name,
       address,
       phone
     )
     `,
   )
+  .eq("businesses.barrio_id", Astro.locals.barrio.id)
   .gt("starts_at", now)
   .order("starts_at", { ascending: true })
   .limit(6);

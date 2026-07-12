@@ -1,7 +1,7 @@
 ---
 const { address } = Astro.props;
 
-const fallbackAddress = "El Talar, Buenos Aires, Argentina";
+const fallbackAddress = `${Astro.locals.barrio.name}, Buenos Aires, Argentina`;
 
 const query =
   typeof address === "string" && address.trim().length > 0

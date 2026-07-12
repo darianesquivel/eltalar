@@ -2,14 +2,18 @@
 import AdminLayout from "../../../layouts/AdminLayout.astro";
 import ClaimsManager from "../../../components/app/ClaimsManager";
 import { createSupabaseServer } from "../../../lib/supabase/server";
+import { getAdminBarrio } from "../../../lib/barrio";
 
 const supabase = createSupabaseServer(Astro);
+const barrio = await getAdminBarrio(Astro);
 
+// El barrio del reclamo viene implícito por el negocio reclamado (join !inner)
 const { data: claims } = await supabase
   .from("business_claims")
   .select(
-    "id, business_id, claimer_email, message, status, created_at, businesses ( name )",
+    "id, business_id, claimer_email, message, status, created_at, businesses!inner ( name, barrio_id )",
   )
+  .eq("businesses.barrio_id", barrio.id)
   .eq("status", "pending")
   .order("created_at");
 ---

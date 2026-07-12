@@ -101,7 +101,7 @@ export default function OffersManager({
     <div className="space-y-4">
       <p className="text-sm text-gray-600">
         Publicá promos con fecha de vencimiento: aparecen en tu ficha y en la
-        sección <strong>Ofertas en El Talar</strong>, y se dan de baja solas
+        sección <strong>Ofertas del barrio</strong>, y se dan de baja solas
         cuando vencen.
       </p>
 

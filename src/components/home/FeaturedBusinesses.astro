@@ -8,6 +8,7 @@ interface Props {
 }
 
 const { businesses: featuredBusinesses } = Astro.props;
+const { barrio } = Astro.locals;
 ---
 
 <section class="mx-auto w-full max-w-6xl px-2 sm:px-6">
@@ -32,8 +33,8 @@ const { businesses: featuredBusinesses } = Astro.props;
           Los comercios que apuestan por el barrio
         </h2>
         <p class="max-w-xl text-sm text-gray-500">
-          Negocios de El Talar con lugar preferencial en el portal. Tu apoyo los
-          mantiene creciendo — y ellos mantienen esta página gratuita.
+          Negocios de {barrio.name} con lugar preferencial en el portal. Tu apoyo
+          los mantiene creciendo — y ellos mantienen esta página gratuita.
         </p>
       </div>
 

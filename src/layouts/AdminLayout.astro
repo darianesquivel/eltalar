@@ -14,6 +14,11 @@ import {
   CalendarDays,
 } from "@lucide/astro";
 import NavLoader from "../components/NavLoader.astro";
+import {
+  getAdminBarrio,
+  listBarrios,
+  ADMIN_BARRIO_COOKIE,
+} from "../lib/barrio";
 
 import "../styles/global.css";
 
@@ -23,6 +28,13 @@ interface Props {
 
 const { title } = Astro.props;
 const path = Astro.url.pathname;
+
+// Superadmin multi-barrio: sobre qué barrio trabaja el panel (cookie) y la
+// lista para el selector (solo se muestra si hay más de un barrio)
+const [adminBarrio, barrios] = await Promise.all([
+  getAdminBarrio(Astro),
+  listBarrios(),
+]);
 
 const NAV = [
   {
@@ -52,7 +64,7 @@ const isActive = (item: (typeof NAV)[number]) =>
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="robots" content="noindex" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-    <title>{title} · Admin El Talar</title>
+    <title>{title} · Admin {adminBarrio.name}</title>
     <ClientRouter />
   </head>
 
@@ -67,8 +79,24 @@ const isActive = (item: (typeof NAV)[number]) =>
         class="hidden w-56 shrink-0 flex-col border-r border-gray-200 bg-white md:flex"
       >
         <div class="border-b border-gray-100 px-5 py-4">
-          <p class="font-bold">El Talar</p>
-          <p class="text-xs text-gray-400">Panel de control</p>
+          {
+            barrios.length > 1 ? (
+              <select
+                id="barrio-select"
+                class="w-full rounded-lg border border-gray-200 bg-white px-2 py-1.5 text-sm font-bold"
+                aria-label="Barrio"
+              >
+                {barrios.map((b) => (
+                  <option value={b.slug} selected={b.id === adminBarrio.id}>
+                    {b.name}
+                  </option>
+                ))}
+              </select>
+            ) : (
+              <p class="font-bold">{adminBarrio.name}</p>
+            )
+          }
+          <p class="mt-1 text-xs text-gray-400">Panel de control</p>
         </div>
 
         <nav class="flex flex-1 flex-col gap-1 overflow-y-auto p-3">
@@ -134,5 +162,17 @@ const isActive = (item: (typeof NAV)[number]) =>
         </main>
       </div>
     </div>
+
+    <script define:vars={{ cookieName: ADMIN_BARRIO_COOKIE }} is:inline>
+      // Cambio de barrio: cookie + recarga completa (el server re-renderiza
+      // todo el panel con los datos del barrio elegido)
+      document.addEventListener("change", (e) => {
+        const select = e.target;
+        if (!(select instanceof HTMLSelectElement)) return;
+        if (select.id !== "barrio-select") return;
+        document.cookie = `${cookieName}=${select.value}; path=/; max-age=31536000; samesite=lax`;
+        window.location.reload();
+      });
+    </script>
   </body>
 </html>

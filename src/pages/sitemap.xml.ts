@@ -1,12 +1,11 @@
 import type { APIRoute } from "astro";
 import { supabase } from "../lib/supabase";
 
-// Sitemap dinámico: incluye las páginas fijas + una URL por negocio activo.
-// Al ser un endpoint SSR, un negocio nuevo aparece acá sin re-deploy.
-export const GET: APIRoute = async ({ site }) => {
-  const base = (site ?? new URL("https://eltalar.com.ar"))
-    .toString()
-    .replace(/\/$/, "");
+// Sitemap dinámico: incluye las páginas fijas + una URL por negocio activo
+// DEL BARRIO del dominio consultado. Al ser SSR, se actualiza sin re-deploy.
+export const GET: APIRoute = async ({ locals }) => {
+  const { barrio } = locals;
+  const base = barrio.url.replace(/\/$/, "");
 
   const staticPaths = [
     "/",
@@ -16,11 +15,13 @@ export const GET: APIRoute = async ({ site }) => {
     "/mapa",
     "/anunciate",
     "/ofertas",
+    "/eventos",
   ];
 
   const { data: businesses } = await supabase
     .from("businesses")
     .select("slug")
+    .eq("barrio_id", barrio.id)
     .eq("is_active", true);
 
   const urls = [

@@ -8,7 +8,9 @@ import tailwindcss from "@tailwindcss/vite";
 
 export default defineConfig({
   // Dominio canónico: lo usan el sitemap, las URLs de compartir y las meta OG.
-  site: "https://eltalar.com.ar",
+  // Por barrio: cada proyecto de Vercel define su PUBLIC_SITE_URL
+  // (mismo default que src/config/site.ts).
+  site: process.env.PUBLIC_SITE_URL ?? "https://eltalar.com.ar",
 
   // SSR por defecto: los cambios de contenido en Supabase se ven al instante,
   // sin necesidad de re-deployar. Las páginas realmente fijas (teléfonos, 404)

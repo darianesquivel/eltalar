@@ -57,9 +57,14 @@ function applyTabFilter<T extends { eq: any; not: any }>(
   return request;
 }
 
+type AdminBusinessesProps = {
+  /** Barrio elegido en el selector del panel (multi-barrio). */
+  barrioId: string;
+};
+
 // La lista se filtra y pagina EN LA BASE (Supabase corta cualquier select en
 // 1000 filas: con 1700 negocios, "traer todo" mostraba una lista incompleta).
-export default function AdminBusinesses() {
+export default function AdminBusinesses({ barrioId }: AdminBusinessesProps) {
   // Filtros (aplican a la tabla principal)
   const [query, setQuery] = useState("");
   const [debounced, setDebounced] = useState("");
@@ -107,7 +112,8 @@ export default function AdminBusinesses() {
       .select(
         catId ? `${SELECT}, business_categories!inner(category_id)` : SELECT,
         { count: "exact" },
-      );
+      )
+      .eq("barrio_id", barrioId);
 
     request = applyTabFilter(request, tabArg);
     if (catId) request = request.eq("business_categories.category_id", catId);
@@ -136,10 +142,10 @@ export default function AdminBusinesses() {
   // Contadores de las pestañas (consultas head: solo el count, sin filas)
   const loadCounts = async () => {
     const base = () =>
-      supabaseBrowser.from("businesses").select("id", {
-        count: "exact",
-        head: true,
-      });
+      supabaseBrowser
+        .from("businesses")
+        .select("id", { count: "exact", head: true })
+        .eq("barrio_id", barrioId);
 
     const results = await Promise.all(
       TABS.map((t) => applyTabFilter(base(), t.key)),
@@ -157,6 +163,7 @@ export default function AdminBusinesses() {
     const { data, count, error } = await supabaseBrowser
       .from("businesses")
       .select(SELECT, { count: "exact" })
+      .eq("barrio_id", barrioId)
       .eq("status", "pending")
       .order("created_at", { ascending: false })
       .limit(100);

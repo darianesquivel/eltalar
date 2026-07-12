@@ -24,6 +24,50 @@ export type Database = {
         };
         Relationships: [];
       };
+      // Agregada a mano (2026-07-12, multi-barrio): si regenerás los tipos
+      // con supabase gen types, esta entrada sale sola de la base.
+      barrios: {
+        Row: {
+          created_at: string;
+          domain: string;
+          id: string;
+          is_active: boolean;
+          lat: number;
+          lng: number;
+          name: string;
+          partido: string;
+          radius_m: number;
+          slug: string;
+          url: string;
+        };
+        Insert: {
+          created_at?: string;
+          domain: string;
+          id?: string;
+          is_active?: boolean;
+          lat: number;
+          lng: number;
+          name: string;
+          partido?: string;
+          radius_m?: number;
+          slug: string;
+          url: string;
+        };
+        Update: {
+          created_at?: string;
+          domain?: string;
+          id?: string;
+          is_active?: boolean;
+          lat?: number;
+          lng?: number;
+          name?: string;
+          partido?: string;
+          radius_m?: number;
+          slug?: string;
+          url?: string;
+        };
+        Relationships: [];
+      };
       business_categories: {
         Row: {
           business_id: string;
@@ -235,6 +279,7 @@ export type Database = {
       businesses: {
         Row: {
           address: string | null;
+          barrio_id: string;
           by_appointment: boolean;
           created_at: string | null;
           description: string | null;
@@ -263,6 +308,7 @@ export type Database = {
         };
         Insert: {
           address?: string | null;
+          barrio_id: string;
           by_appointment?: boolean;
           created_at?: string | null;
           description?: string | null;
@@ -291,6 +337,7 @@ export type Database = {
         };
         Update: {
           address?: string | null;
+          barrio_id?: string;
           by_appointment?: boolean;
           created_at?: string | null;
           description?: string | null;
@@ -359,6 +406,7 @@ export type Database = {
       };
       contact_messages: {
         Row: {
+          barrio_id: string;
           created_at: string;
           email: string;
           id: string;
@@ -368,6 +416,7 @@ export type Database = {
           status: string;
         };
         Insert: {
+          barrio_id: string;
           created_at?: string;
           email: string;
           id?: string;
@@ -377,6 +426,7 @@ export type Database = {
           status?: string;
         };
         Update: {
+          barrio_id?: string;
           created_at?: string;
           email?: string;
           id?: string;
@@ -389,6 +439,7 @@ export type Database = {
       };
       directory_entries: {
         Row: {
+          barrio_id: string;
           category: string;
           created_at: string;
           id: string;
@@ -400,6 +451,7 @@ export type Database = {
           title: string;
         };
         Insert: {
+          barrio_id: string;
           category?: string;
           created_at?: string;
           id?: string;
@@ -411,6 +463,7 @@ export type Database = {
           title: string;
         };
         Update: {
+          barrio_id?: string;
           category?: string;
           created_at?: string;
           id?: string;
@@ -427,6 +480,7 @@ export type Database = {
       // con supabase gen types, esta entrada sale sola de la base.
       events: {
         Row: {
+          barrio_id: string;
           created_at: string;
           date: string;
           description: string | null;
@@ -440,6 +494,7 @@ export type Database = {
           title: string;
         };
         Insert: {
+          barrio_id: string;
           created_at?: string;
           date: string;
           description?: string | null;
@@ -453,6 +508,7 @@ export type Database = {
           title: string;
         };
         Update: {
+          barrio_id?: string;
           created_at?: string;
           date?: string;
           description?: string | null;
@@ -522,6 +578,7 @@ export type Database = {
       };
       site_alerts: {
         Row: {
+          barrio_id: string;
           created_at: string;
           description: string;
           id: string;
@@ -530,6 +587,7 @@ export type Database = {
           updated_at: string;
         };
         Insert: {
+          barrio_id: string;
           created_at?: string;
           description: string;
           id?: string;
@@ -538,6 +596,7 @@ export type Database = {
           updated_at?: string;
         };
         Update: {
+          barrio_id?: string;
           created_at?: string;
           description?: string;
           id?: string;

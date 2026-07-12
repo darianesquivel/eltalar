@@ -10,9 +10,11 @@ type Alert = {
 
 type Props = {
   alerts: Alert[];
+  /** Barrio elegido en el selector del panel (multi-barrio). */
+  barrioId: string;
 };
 
-export default function AlertsManager({ alerts }: Props) {
+export default function AlertsManager({ alerts, barrioId }: Props) {
   const [items, setItems] = useState(alerts);
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
@@ -22,6 +24,7 @@ export default function AlertsManager({ alerts }: Props) {
     const { data } = await supabaseBrowser
       .from("site_alerts")
       .select("id, title, description, is_active")
+      .eq("barrio_id", barrioId)
       .order("created_at", { ascending: false });
     if (data) setItems(data);
   };
@@ -31,6 +34,7 @@ export default function AlertsManager({ alerts }: Props) {
     if (!title.trim()) return;
     setSaving(true);
     const { error } = await supabaseBrowser.from("site_alerts").insert({
+      barrio_id: barrioId,
       title: title.trim(),
       description: description.trim(),
       is_active: true,

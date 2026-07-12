@@ -69,7 +69,9 @@ export default function AddressAutocomplete({
     setSuggestions([]);
     setResolving(true);
     try {
-      const res = await fetch(`/api/direcciones?placeId=${encodeURIComponent(s.placeId)}`);
+      const res = await fetch(
+        `/api/direcciones?placeId=${encodeURIComponent(s.placeId)}`,
+      );
       const data = await res.json();
       const address = data.address ?? s.texto;
       onSelect(address, data.lat ?? null, data.lng ?? null);

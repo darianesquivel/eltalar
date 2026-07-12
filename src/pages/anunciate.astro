@@ -14,12 +14,14 @@ import {
 import Layout from "../layouts/Layout.astro";
 import { supabase } from "../lib/supabase";
 
+const { barrio } = Astro.locals;
 const price = Number(import.meta.env.MP_FEATURED_PRICE ?? 6500);
 
-// Social proof real: cuántos negocios ya están en el portal
+// Social proof real: cuántos negocios del barrio ya están en el portal
 const { count: totalNegocios } = await supabase
   .from("businesses")
   .select("id", { count: "exact", head: true })
+  .eq("barrio_id", barrio.id)
   .eq("is_active", true);
 
 const PASOS = [
@@ -32,8 +34,7 @@ const PASOS = [
   {
     icon: BadgeCheck,
     titulo: "Lo revisamos y publicamos",
-    texto:
-      "Verificamos que sea un comercio real del barrio y tu ficha queda visible en la guía, el buscador y el mapa de El Talar.",
+    texto: `Verificamos que sea un comercio real del barrio y tu ficha queda visible en la guía, el buscador y el mapa de ${barrio.name}.`,
   },
   {
     icon: Star,
@@ -46,9 +47,9 @@ const PASOS = [
 const GRATIS = [
   "Ficha completa con foto, horarios y descripción",
   "Botón directo de WhatsApp y teléfono",
-  "1 oferta activa en Ofertas de El Talar 🔥",
+  `1 oferta activa en Ofertas de ${barrio.name} 🔥`,
   "Aparecés en la guía, el buscador y el mapa",
-  "Link propio para compartir (eltalar.com.ar/negocios/tu-negocio)",
+  `Link propio para compartir (${barrio.domain}/negocios/tu-negocio)`,
   "La editás vos mismo cuando quieras, desde el celular",
 ];
 
@@ -66,8 +67,8 @@ const DESTACADO = [
 ---
 
 <Layout
-  title="Anunciá tu negocio en El Talar"
-  description={`Sumá tu comercio gratis al portal de El Talar y destacalo por $${price.toLocaleString("es-AR")}/mes. Ficha con WhatsApp, fotos, horarios y mapa. Sin permanencia.`}
+  title={`Anunciá tu negocio en ${barrio.name}`}
+  description={`Sumá tu comercio gratis al portal de ${barrio.name} y destacalo por $${price.toLocaleString("es-AR")}/mes. Ficha con WhatsApp, fotos, horarios y mapa. Sin permanencia.`}
 >
   <!-- HERO -->
   <section
@@ -95,7 +96,7 @@ const DESTACADO = [
         class="animate-fade-up text-4xl font-extrabold leading-tight text-gray-900 md:text-5xl"
         style="animation-delay: 0.1s"
       >
-        Que todo El Talar{" "}
+        Que todo {barrio.name}{" "}
         <span
           class="bg-linear-to-r from-primary to-emerald-500 bg-clip-text text-transparent"
         >
@@ -179,7 +180,7 @@ const DESTACADO = [
         <div class="flex flex-col gap-5 rounded-3xl bg-white p-8 shadow-sm">
           <div>
             <h3 class="text-lg font-bold text-gray-900">
-              Tu ficha en El Talar
+              Tu ficha en {barrio.name}
             </h3>
             <p class="mt-1 text-3xl font-extrabold text-gray-900">
               Gratis
@@ -274,7 +275,7 @@ const DESTACADO = [
           <MapPin size={20} class="text-primary" />
           <p class="text-sm font-semibold">100% barrial</p>
           <p class="text-xs text-gray-500">
-            Te ven vecinos de El Talar que ya buscan lo que ofrecés.
+            Te ven vecinos de {barrio.name} que ya buscan lo que ofrecés.
           </p>
         </div>
       </div>
@@ -291,10 +292,9 @@ const DESTACADO = [
         Al destacarte, sostenés el portal del barrio
       </h2>
       <p class="max-w-xl text-sm text-gray-600">
-        El Talar es un proyecto independiente hecho por y para los vecinos: la
-        guía de comercios, las farmacias de turno y los teléfonos útiles son
-        gratuitos para toda la comunidad. Los planes Destacado son lo que lo
-        mantiene andando.
+        {barrio.name} es un proyecto independiente hecho por y para los vecinos: la
+        guía de comercios, las farmacias de turno y los teléfonos útiles son gratuitos
+        para toda la comunidad. Los planes Destacado son lo que lo mantiene andando.
       </p>
       <a
         href="/app"

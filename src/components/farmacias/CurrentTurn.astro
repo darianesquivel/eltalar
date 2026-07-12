@@ -13,6 +13,7 @@ const formatUntil = (endsAt: string) =>
     timeZone: ARGENTINA_TZ,
   });
 
+// El barrio del turno viene implícito por la farmacia (join !inner)
 const { data: pharmacies, error } = await supabase
   .from("pharmacy_turns")
   .select(
@@ -28,6 +29,7 @@ const { data: pharmacies, error } = await supabase
     )
   `,
   )
+  .eq("businesses.barrio_id", Astro.locals.barrio.id)
   .lte("starts_at", now)
   .gt("ends_at", now);
 

@@ -136,47 +136,47 @@ export default function HoursEditor({
           horario de apertura. Guardá para aplicar el cambio.
         </p>
       ) : (
-      <div className="space-y-2">
-        {DAYS.map((label, i) => {
-          const d = days[i];
-          return (
-            <div
-              key={label}
-              className="flex flex-wrap items-center gap-3 rounded-xl border border-gray-100 bg-gray-50 px-4 py-2"
-            >
-              <span className="w-24 text-sm font-semibold">{label}</span>
-
-              <select
-                value={d.mode}
-                onChange={(e) => update(i, { mode: e.target.value as any })}
-                className="field select-field w-auto py-1.5"
+        <div className="space-y-2">
+          {DAYS.map((label, i) => {
+            const d = days[i];
+            return (
+              <div
+                key={label}
+                className="flex flex-wrap items-center gap-3 rounded-xl border border-gray-100 bg-gray-50 px-4 py-2"
               >
-                <option value="closed">Cerrado</option>
-                <option value="open">Abierto</option>
-                <option value="open_24">Abierto 24hs</option>
-              </select>
+                <span className="w-24 text-sm font-semibold">{label}</span>
 
-              {d.mode === "open" && (
-                <span className="flex items-center gap-2 text-sm">
-                  <input
-                    type="time"
-                    value={d.open}
-                    onChange={(e) => update(i, { open: e.target.value })}
-                    className="field w-auto px-2 py-1.5"
-                  />
-                  a
-                  <input
-                    type="time"
-                    value={d.close}
-                    onChange={(e) => update(i, { close: e.target.value })}
-                    className="field w-auto px-2 py-1.5"
-                  />
-                </span>
-              )}
-            </div>
-          );
-        })}
-      </div>
+                <select
+                  value={d.mode}
+                  onChange={(e) => update(i, { mode: e.target.value as any })}
+                  className="field select-field w-auto py-1.5"
+                >
+                  <option value="closed">Cerrado</option>
+                  <option value="open">Abierto</option>
+                  <option value="open_24">Abierto 24hs</option>
+                </select>
+
+                {d.mode === "open" && (
+                  <span className="flex items-center gap-2 text-sm">
+                    <input
+                      type="time"
+                      value={d.open}
+                      onChange={(e) => update(i, { open: e.target.value })}
+                      className="field w-auto px-2 py-1.5"
+                    />
+                    a
+                    <input
+                      type="time"
+                      value={d.close}
+                      onChange={(e) => update(i, { close: e.target.value })}
+                      className="field w-auto px-2 py-1.5"
+                    />
+                  </span>
+                )}
+              </div>
+            );
+          })}
+        </div>
       )}
 
       {error && (
@@ -193,11 +193,7 @@ export default function HoursEditor({
         disabled={saving}
         className="rounded-xl bg-primary px-6 py-2.5 text-sm font-semibold text-white transition hover:bg-green-700 disabled:opacity-60"
       >
-        {saving
-          ? "Guardando…"
-          : byAppointment
-            ? "Guardar"
-            : "Guardar horarios"}
+        {saving ? "Guardando…" : byAppointment ? "Guardar" : "Guardar horarios"}
       </button>
     </div>
   );

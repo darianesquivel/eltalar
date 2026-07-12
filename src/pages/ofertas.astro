@@ -5,9 +5,10 @@ import { supabase } from "../lib/supabase";
 import { todayInArgentina } from "../lib/hours";
 import { optimizedImage } from "../lib/images";
 
+const { barrio } = Astro.locals;
 const today = todayInArgentina();
 
-// Ofertas vigentes de negocios publicados, con los datos para la card
+// Ofertas vigentes de negocios publicados del barrio, con los datos de la card
 const { data } = await supabase
   .from("business_offers")
   .select(
@@ -20,6 +21,7 @@ const { data } = await supabase
   `,
   )
   .gte("expires_at", today)
+  .eq("businesses.barrio_id", barrio.id)
   .eq("businesses.is_active", true)
   .order("expires_at");
 
@@ -49,8 +51,8 @@ const fmtDate = (iso: string) =>
 ---
 
 <Layout
-  title="Ofertas en El Talar 🔥"
-  description="Promos y ofertas vigentes de los comercios de El Talar: descuentos, 2x1 y más, actualizadas por los propios negocios del barrio."
+  title={`Ofertas en ${barrio.name} 🔥`}
+  description={`Promos y ofertas vigentes de los comercios de ${barrio.name}: descuentos, 2x1 y más, actualizadas por los propios negocios del barrio.`}
 >
   <!-- HERO -->
   <section
@@ -75,7 +77,7 @@ const fmtDate = (iso: string) =>
         style="animation-delay: 0.12s"
       >
         Ofertas en{" "}
-        <span class="text-orange-500">El Talar</span>
+        <span class="text-orange-500">{barrio.name}</span>
       </h1>
 
       <p
@@ -169,7 +171,7 @@ const fmtDate = (iso: string) =>
     offers.length > 0 && (
       <section class="mx-auto max-w-3xl px-4 text-center">
         <p class="text-sm text-gray-500">
-          ¿Tenés un comercio en El Talar?{" "}
+          ¿Tenés un comercio en {barrio.name}?{" "}
           <a
             href="/anunciate"
             class="font-semibold text-primary hover:underline"

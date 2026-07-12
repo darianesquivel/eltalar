@@ -8,15 +8,18 @@ import Contact from "../components/home/Contact.astro";
 import { getBusinesses } from "../lib/repositories/business.repository";
 import { supabase } from "../lib/supabase";
 
+const { barrio } = Astro.locals;
+
 // Un solo round-trip: avisos y destacados en paralelo (antes eran en serie,
 // cada componente esperando al anterior).
 const [{ data: alerts }, featured] = await Promise.all([
   supabase
     .from("site_alerts")
     .select("id, title, description")
+    .eq("barrio_id", barrio.id)
     .eq("is_active", true)
     .order("created_at", { ascending: false }),
-  getBusinesses({ featured: true, limit: 6 }),
+  getBusinesses({ barrioId: barrio.id, featured: true, limit: 6 }),
 ]);
 ---
 

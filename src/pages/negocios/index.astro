@@ -17,6 +17,7 @@ const buscar = Astro.url.searchParams.get("buscar");
 
 const [page, { data: categories }] = await Promise.all([
   getBusinessesPage({
+    barrioId: Astro.locals.barrio.id,
     limit: PAGE_SIZE,
     categorySlug: categoria,
     search: buscar,
@@ -26,8 +27,8 @@ const [page, { data: categories }] = await Promise.all([
 ---
 
 <Layout
-  title="Negocios y Servicios en El Talar"
-  description="Guía de comercios y servicios de El Talar: horarios, teléfonos, WhatsApp y ubicación de los negocios del barrio."
+  title={`Negocios y Servicios en ${Astro.locals.barrio.name}`}
+  description={`Guía de comercios y servicios de ${Astro.locals.barrio.name}: horarios, teléfonos, WhatsApp y ubicación de los negocios del barrio.`}
 >
   <Hero />
   <CategoryFilter categories={categories ?? []} client:load />
