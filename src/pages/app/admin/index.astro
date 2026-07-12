@@ -25,6 +25,8 @@ const [
   conDueno,
   destacados,
   eventosVigentes,
+  destacadosPagos,
+  susActivas,
 ] = await Promise.all([
   count(
     supabase
@@ -98,6 +100,28 @@ const [
       .eq("is_active", true)
       .or(`end_date.gte.${today},and(end_date.is.null,date.gte.${today})`),
   ),
+  // Destacados PAGOS: tienen featured_until (lo pone el webhook al cobrar);
+  // los manuales del admin quedan sin fecha y no vencen
+  count(
+    supabase
+      .from("businesses")
+      .select("id", { count: "exact", head: true })
+      .eq("barrio_id", barrio.id)
+      .eq("is_featured", true)
+      .not("featured_until", "is", null),
+  ),
+  // Suscripciones cobrándose ahora (una cancelada en período pagado sigue
+  // destacada pero ya no cuenta acá)
+  count(
+    supabase
+      .from("subscriptions")
+      .select("id, businesses!inner(barrio_id)", {
+        count: "exact",
+        head: true,
+      })
+      .eq("businesses.barrio_id", barrio.id)
+      .eq("status", "active"),
+  ),
 ]);
 
 // Uso vs límites del plan Free de Supabase (RPC admin_usage_stats).
@@ -159,10 +183,16 @@ const CARDS = [
     accent: "text-blue-600",
   },
   {
-    label: "Destacados ⭐",
+    label: `Destacados ⭐ (${destacadosPagos} pagando · ${destacados - destacadosPagos} manuales)`,
     value: destacados,
     href: "/app/admin/negocios",
     accent: destacados > 0 ? "text-amber-500" : "text-gray-400",
+  },
+  {
+    label: "Suscripciones activas",
+    value: susActivas,
+    href: "/app/admin/negocios",
+    accent: susActivas > 0 ? "text-green-600" : "text-gray-400",
   },
   {
     label: "Reclamos pendientes",
