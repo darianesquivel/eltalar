@@ -601,6 +601,10 @@ export type Database = {
         Args: { p_approve: boolean; p_claim_id: string };
         Returns: undefined;
       };
+      admin_set_business_active: {
+        Args: { p_business_id: string; p_active: boolean };
+        Returns: undefined;
+      };
       admin_set_business_status: {
         Args: { p_business_id: string; p_status: string };
         Returns: undefined;

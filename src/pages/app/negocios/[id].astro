@@ -7,6 +7,7 @@ import FeaturedCard from "../../../components/app/FeaturedCard";
 import StatsCard from "../../../components/app/StatsCard";
 import OffersManager from "../../../components/app/OffersManager";
 import DeleteBusiness from "../../../components/app/DeleteBusiness";
+import { ArrowLeft } from "@lucide/astro";
 import { createSupabaseServer } from "../../../lib/supabase/server";
 
 const { id } = Astro.params;
@@ -52,8 +53,11 @@ const statusInfo = STATUS_INFO[business.status] ?? STATUS_INFO.pending;
 
 <Layout title={`Editar ${business.name} | El Talar`}>
   <section class="mx-auto w-full max-w-2xl space-y-6 py-8">
-    <a href="/app" class="text-sm text-primary hover:underline">
-      ← Volver al panel
+    <a
+      href="/app"
+      class="inline-flex items-center gap-1.5 rounded-full border border-gray-200 bg-white px-4 py-2 text-sm font-semibold text-gray-700 shadow-sm transition hover:border-gray-300 hover:bg-gray-50"
+    >
+      <ArrowLeft size={16} /> Volver al panel
     </a>
 
     {
@@ -135,8 +139,10 @@ const statusInfo = STATUS_INFO[business.status] ?? STATUS_INFO.pending;
       />
     </div>
 
-    {/* Envueltos en div: el <astro-island> no genera caja y el space-y del
-        contenedor no separaba estas secciones de las anteriores */}
+    {
+      /* Envueltos en div: el <astro-island> no genera caja y el space-y del
+        contenedor no separaba estas secciones de las anteriores */
+    }
     <div>
       <FeaturedCard
         businessId={business.id}

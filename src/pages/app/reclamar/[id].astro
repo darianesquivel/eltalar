@@ -1,6 +1,7 @@
 ---
 import Layout from "../../../layouts/Layout.astro";
 import ClaimForm from "../../../components/app/ClaimForm";
+import { ArrowLeft } from "@lucide/astro";
 import { createSupabaseServer } from "../../../lib/supabase/server";
 
 // Middleware ya exige sesión para /app/*
@@ -21,8 +22,11 @@ if (!business || business.owner_id) {
 
 <Layout title={`Reclamar ${business.name} | El Talar`}>
   <section class="mx-auto w-full max-w-xl space-y-6 py-10">
-    <a href={`/negocios`} class="text-sm text-primary hover:underline">
-      ← Volver a negocios
+    <a
+      href={`/negocios`}
+      class="inline-flex items-center gap-1.5 rounded-full border border-gray-200 bg-white px-4 py-2 text-sm font-semibold text-gray-700 shadow-sm transition hover:border-gray-300 hover:bg-gray-50"
+    >
+      <ArrowLeft size={16} /> Volver a negocios
     </a>
 
     <div class="rounded-2xl bg-white p-8 shadow-sm space-y-5">

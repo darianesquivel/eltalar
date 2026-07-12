@@ -5,6 +5,8 @@ import {
   Star,
   Pencil,
   Eye,
+  EyeOff,
+  ExternalLink,
   Trash2,
   X,
   Search,
@@ -28,19 +30,50 @@ type AdminBusiness = {
 
 type CategoryOption = { id: string; name: string };
 
-const SELECT = "id, name, slug, address, status, is_active, is_featured, owner_id";
+const SELECT =
+  "id, name, slug, address, status, is_active, is_featured, owner_id";
 const PAGE_SIZE = 30;
+
+// Estados que separa la tabla principal. "Oculto" = aprobado pero fuera del
+// sitio (is_active = false), p.ej. dado de baja por el chequeo de vigencia.
+type StatusTab = "published" | "hidden" | "rejected" | "all";
+
+const TABS: { key: StatusTab; label: string }[] = [
+  { key: "published", label: "Publicados" },
+  { key: "hidden", label: "Ocultos" },
+  { key: "rejected", label: "Rechazados" },
+  { key: "all", label: "Todos" },
+];
+
+function applyTabFilter<T extends { eq: any; not: any }>(
+  request: T,
+  tab: StatusTab,
+): T {
+  if (tab === "published")
+    return request.eq("status", "approved").eq("is_active", true);
+  if (tab === "hidden")
+    return request.eq("status", "approved").not("is_active", "is", true);
+  if (tab === "rejected") return request.eq("status", "rejected");
+  return request;
+}
 
 // La lista se filtra y pagina EN LA BASE (Supabase corta cualquier select en
 // 1000 filas: con 1700 negocios, "traer todo" mostraba una lista incompleta).
 export default function AdminBusinesses() {
-  // Filtros (aplican a la tabla "Todos")
+  // Filtros (aplican a la tabla principal)
   const [query, setQuery] = useState("");
   const [debounced, setDebounced] = useState("");
   const [categoryId, setCategoryId] = useState("");
   const [categories, setCategories] = useState<CategoryOption[]>([]);
 
-  // Tabla izquierda: todos los negocios, paginados
+  // Tabla izquierda: negocios del estado elegido, paginados
+  const [tab, setTab] = useState<StatusTab>("published");
+  const [counts, setCounts] = useState<Record<StatusTab, number>>({
+    published: 0,
+    hidden: 0,
+    rejected: 0,
+    all: 0,
+  });
   const [items, setItems] = useState<AdminBusiness[]>([]);
   const [total, setTotal] = useState(0);
   const [page, setPage] = useState(0);
@@ -60,7 +93,12 @@ export default function AdminBusinesses() {
   // Descarta respuestas viejas si cambió el filtro mientras cargaba
   const seq = useRef(0);
 
-  const loadAll = async (pageArg: number, q: string, catId: string) => {
+  const loadAll = async (
+    pageArg: number,
+    q: string,
+    catId: string,
+    tabArg: StatusTab,
+  ) => {
     const mySeq = ++seq.current;
     setLoading(true);
 
@@ -71,6 +109,7 @@ export default function AdminBusinesses() {
         { count: "exact" },
       );
 
+    request = applyTabFilter(request, tabArg);
     if (catId) request = request.eq("business_categories.category_id", catId);
 
     const clean = q.replace(/[,()%\\]/g, " ").trim();
@@ -92,6 +131,26 @@ export default function AdminBusinesses() {
       setTotal(count ?? 0);
     }
     setLoading(false);
+  };
+
+  // Contadores de las pestañas (consultas head: solo el count, sin filas)
+  const loadCounts = async () => {
+    const base = () =>
+      supabaseBrowser.from("businesses").select("id", {
+        count: "exact",
+        head: true,
+      });
+
+    const results = await Promise.all(
+      TABS.map((t) => applyTabFilter(base(), t.key)),
+    );
+
+    setCounts({
+      published: results[0].count ?? 0,
+      hidden: results[1].count ?? 0,
+      rejected: results[2].count ?? 0,
+      all: results[3].count ?? 0,
+    });
   };
 
   const loadPending = async () => {
@@ -116,6 +175,7 @@ export default function AdminBusinesses() {
       .order("name")
       .then(({ data }) => setCategories((data as CategoryOption[]) ?? []));
     loadPending();
+    loadCounts();
   }, []);
 
   useEffect(() => {
@@ -125,12 +185,20 @@ export default function AdminBusinesses() {
 
   useEffect(() => {
     setPage(0);
-    loadAll(0, debounced, categoryId);
-  }, [debounced, categoryId]);
+    loadAll(0, debounced, categoryId, tab);
+  }, [debounced, categoryId, tab]);
 
   const goToPage = (p: number) => {
     setPage(p);
-    loadAll(p, debounced, categoryId);
+    loadAll(p, debounced, categoryId, tab);
+  };
+
+  // Después de un cambio de estado el negocio puede saltar de pestaña:
+  // se re-consulta todo (lista, pendientes y contadores)
+  const refresh = () => {
+    loadAll(page, debounced, categoryId, tab);
+    loadPending();
+    loadCounts();
   };
 
   // Refleja un cambio de estado en ambas tablas sin re-consultar todo
@@ -150,11 +218,27 @@ export default function AdminBusinesses() {
       p_status: status,
     });
     if (!error) {
-      patchLocal(id, { status, is_active: status === "approved" });
-      setPendingTotal((n) => Math.max(0, status === "pending" ? n : n - 1));
+      refresh();
     } else {
       console.error(error);
       alert("Error actualizando el estado");
+    }
+    setBusy(null);
+  };
+
+  // Saca/vuelve a poner en el sitio un negocio aprobado, sin tocar su estado
+  // de moderación (RPC admin_set_business_active)
+  const toggleActive = async (id: string, active: boolean) => {
+    setBusy(id);
+    const { error } = await supabaseBrowser.rpc("admin_set_business_active", {
+      p_business_id: id,
+      p_active: active,
+    });
+    if (!error) {
+      refresh();
+    } else {
+      console.error(error);
+      alert("Error cambiando la visibilidad");
     }
     setBusy(null);
   };
@@ -222,6 +306,7 @@ export default function AdminBusinesses() {
       setItems((prev) => prev.filter((b) => b.id !== id));
       setPending((prev) => prev.filter((b) => b.id !== id));
       setTotal((n) => Math.max(0, n - 1));
+      loadCounts();
     } catch (err) {
       console.error(err);
       alert("Error borrando el negocio");
@@ -266,7 +351,11 @@ export default function AdminBusinesses() {
         >
           <Check size={13} />
         </IconButton>
-        <IconButton small label="Cancelar" onClick={() => setConfirmDelete(null)}>
+        <IconButton
+          small
+          label="Cancelar"
+          onClick={() => setConfirmDelete(null)}
+        >
           <X size={13} />
         </IconButton>
       </>
@@ -297,6 +386,21 @@ export default function AdminBusinesses() {
         {b.status === "approved" && (
           <IconButton
             small
+            label={
+              b.is_active
+                ? "Ocultar del sitio (queda aprobado)"
+                : "Volver a mostrar en el sitio"
+            }
+            variant={b.is_active ? "default" : "success"}
+            disabled={busy === b.id}
+            onClick={() => toggleActive(b.id, !b.is_active)}
+          >
+            {b.is_active ? <EyeOff size={13} /> : <Eye size={13} />}
+          </IconButton>
+        )}
+        {b.status === "approved" && (
+          <IconButton
+            small
             label={b.is_featured ? "Quitar destacado" : "Destacar"}
             variant="warning"
             active={b.is_featured === true}
@@ -307,8 +411,12 @@ export default function AdminBusinesses() {
           </IconButton>
         )}
         {b.is_active && (
-          <IconButton small label="Ver ficha pública" href={`/negocios/${b.slug}`}>
-            <Eye size={13} />
+          <IconButton
+            small
+            label="Ver ficha pública"
+            href={`/negocios/${b.slug}`}
+          >
+            <ExternalLink size={13} />
           </IconButton>
         )}
         <IconButton small label="Editar" href={`/app/negocios/${b.id}`}>
@@ -337,10 +445,14 @@ export default function AdminBusinesses() {
       </>
     );
 
-  const statusLabel = (s: string) =>
-    s === "approved" ? (
-      <span className="text-green-600">publicado</span>
-    ) : s === "rejected" ? (
+  const statusLabel = (b: AdminBusiness) =>
+    b.status === "approved" ? (
+      b.is_active ? (
+        <span className="text-green-600">publicado</span>
+      ) : (
+        <span className="text-gray-500">oculto</span>
+      )
+    ) : b.status === "rejected" ? (
       <span className="text-red-500">rechazado</span>
     ) : (
       <span className="text-yellow-600">pendiente</span>
@@ -360,7 +472,7 @@ export default function AdminBusinesses() {
           className="truncate text-[10px] text-gray-400"
           title={b.address ?? ""}
         >
-          {statusLabel(b.status)}
+          {statusLabel(b)}
           {!b.owner_id && " · sin dueño"}
           {b.address && ` · ${b.address}`}
         </p>
@@ -407,14 +519,33 @@ export default function AdminBusinesses() {
 
       {/* Dos tablas lado a lado: todos | pendientes */}
       <div className="grid min-h-0 flex-1 gap-4 lg:grid-cols-2">
-        {/* TODOS */}
+        {/* NEGOCIOS POR ESTADO */}
         <div className="flex min-h-0 flex-col gap-2">
-          <h2 className="shrink-0 text-sm font-semibold text-gray-500">
-            Todos los negocios{" "}
-            <span className="ml-1 rounded-full bg-gray-200 px-2.5 py-0.5 text-xs text-gray-600">
-              {total}
-            </span>
-          </h2>
+          <div className="flex shrink-0 flex-wrap gap-1 self-start rounded-xl bg-gray-200/70 p-1">
+            {TABS.map((t) => (
+              <button
+                key={t.key}
+                type="button"
+                onClick={() => setTab(t.key)}
+                className={`inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-semibold transition ${
+                  tab === t.key
+                    ? "bg-white text-gray-900 shadow-sm"
+                    : "text-gray-500 hover:text-gray-700"
+                }`}
+              >
+                {t.label}
+                <span
+                  className={`rounded-full px-1.5 py-0.5 text-[10px] tabular-nums ${
+                    tab === t.key
+                      ? "bg-gray-100 text-gray-600"
+                      : "bg-gray-300/60 text-gray-600"
+                  }`}
+                >
+                  {counts[t.key]}
+                </span>
+              </button>
+            ))}
+          </div>
 
           <div className="min-h-0 flex-1 overflow-y-auto rounded-xl bg-white shadow-sm">
             <table className="w-full table-fixed">

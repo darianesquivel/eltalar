@@ -9,7 +9,7 @@ import {
   ClipboardList,
   Check,
 } from "@lucide/astro";
-import CategoryPlaceholder from "./CategoryPlaceholder";
+import CategoryPlaceholder, { categoryColor } from "./CategoryPlaceholder";
 import ReportBusiness from "./ReportBusiness";
 import InstagramIcon from "../icons/InstagramIcon";
 import MapPreview from "../MapPreview.astro";
@@ -53,9 +53,9 @@ const shareUrl = new URL(
 >
   <a
     href="/negocios"
-    class="inline-flex items-center gap-2 text-sm text-primary hover:underline"
+    class="inline-flex items-center gap-1.5 rounded-full border border-gray-200 bg-white px-4 py-2 text-sm font-semibold text-gray-700 shadow-sm transition hover:border-gray-300 hover:bg-gray-50"
   >
-    <ArrowLeft size={18} /> Volver a negocios
+    <ArrowLeft size={16} /> Volver a negocios
   </a>
 
   <div class="relative overflow-hidden rounded-3xl shadow">
@@ -100,7 +100,10 @@ const shareUrl = new URL(
         }
         {
           business.categories.map((category) => (
-            <span class="text-xs px-2 bg-primary border border-white/30 text-white rounded-full">
+            <span
+              class="inline-flex items-center rounded-full border border-white/40 px-2.5 py-1 text-xs leading-none text-white shadow-sm"
+              style={`background-color: ${categoryColor(category.slug)}`}
+            >
               {category.name}
             </span>
           ))
@@ -261,46 +264,48 @@ const shareUrl = new URL(
           )
         }
 
-        {!business.by_appointment && (
-        <ul class="space-y-2 text-sm">
-          {
-            hours.map((day) => (
-              <li class="flex justify-between items-start gap-4">
-                <span class={day.isToday ? "font-semibold text-green-600" : ""}>
-                  {day.label}
-                  {day.isToday && (
-                    <span class="ml-1 rounded bg-green-100 px-2 text-xs">
-                      HOY
-                    </span>
-                  )}
-                </span>
-
-                <div
-                  class={
-                    day.status === "closed"
-                      ? "text-red-500 text-right"
-                      : day.status === "not_loaded"
-                        ? "text-gray-400 text-right"
-                        : "text-gray-700 text-right"
-                  }
-                >
-                  {day.status === "open_24" && <span>Abierto 24hs</span>}
-
-                  {day.status === "open" &&
-                    day.ranges?.map((r) => (
-                      <span class="block">
-                        {r.open} – {r.close}
+        {
+          !business.by_appointment && (
+            <ul class="space-y-2 text-sm">
+              {hours.map((day) => (
+                <li class="flex justify-between items-start gap-4">
+                  <span
+                    class={day.isToday ? "font-semibold text-green-600" : ""}
+                  >
+                    {day.label}
+                    {day.isToday && (
+                      <span class="ml-1 rounded bg-green-100 px-2 text-xs">
+                        HOY
                       </span>
-                    ))}
+                    )}
+                  </span>
 
-                  {day.status === "closed" && <span>Cerrado</span>}
-                  {day.status === "not_loaded" && <span>—</span>}
-                </div>
-              </li>
-            ))
-          }
-        </ul>
-        )}
+                  <div
+                    class={
+                      day.status === "closed"
+                        ? "text-red-500 text-right"
+                        : day.status === "not_loaded"
+                          ? "text-gray-400 text-right"
+                          : "text-gray-700 text-right"
+                    }
+                  >
+                    {day.status === "open_24" && <span>Abierto 24hs</span>}
+
+                    {day.status === "open" &&
+                      day.ranges?.map((r) => (
+                        <span class="block">
+                          {r.open} – {r.close}
+                        </span>
+                      ))}
+
+                    {day.status === "closed" && <span>Cerrado</span>}
+                    {day.status === "not_loaded" && <span>—</span>}
+                  </div>
+                </li>
+              ))}
+            </ul>
+          )
+        }
       </div>
 
       <!-- COMPARTIR -->

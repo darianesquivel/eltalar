@@ -1,6 +1,6 @@
 import { navigate } from "astro:transitions/client";
 import { BadgeCheck, PhoneCall } from "lucide-react";
-import CategoryPlaceholder from "./CategoryPlaceholder";
+import CategoryPlaceholder, { categoryColor } from "./CategoryPlaceholder";
 import InstagramIcon from "../icons/InstagramIcon";
 import { getTodayStatus } from "../../lib/hours";
 import { instagramUrl } from "../../lib/links";
@@ -43,7 +43,8 @@ export default function BusinessCard({ business }: BusinessCardProps) {
           {business.categories.map((category) => (
             <span
               key={category.id}
-              className="text-[10px] px-2 bg-primary text-white rounded-full border border-white/30"
+              className="inline-flex items-center rounded-full border border-white/40 px-2 py-1 text-[10px] leading-none text-white shadow-sm"
+              style={{ backgroundColor: categoryColor(category.slug) }}
             >
               {category.name}
             </span>
