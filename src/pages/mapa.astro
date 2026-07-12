@@ -6,7 +6,8 @@ import { supabase } from "../lib/supabase";
 // después de que Leaflet midiera el layout → mapa roto hasta recargar.
 import "leaflet/dist/leaflet.css";
 
-// Negocios activos con coordenadas, con su categoría principal.
+// Negocios activos con coordenadas, con sus categorías (todas: sirven para
+// el filtro; la primera se muestra en el popup).
 // En páginas de a 1000: Supabase corta cualquier consulta en 1000 filas,
 // y ya hay ~1700 negocios — una sola consulta dejaba medio mapa vacío.
 const PAGE = 1000;
@@ -15,7 +16,7 @@ for (let from = 0; ; from += PAGE) {
   const { data } = await supabase
     .from("businesses")
     .select(
-      "id, name, slug, address, lat, lng, is_featured, business_categories ( categories ( name ) )",
+      "id, name, slug, address, lat, lng, is_featured, business_categories ( categories ( name, slug ) )",
     )
     .eq("is_active", true)
     .not("lat", "is", null)
@@ -36,7 +37,16 @@ const markers = rows.map((b) => ({
   lng: Math.round(b.lng * 1e5) / 1e5,
   featured: b.is_featured === true,
   category: b.business_categories?.[0]?.categories?.name ?? null,
+  cats: (b.business_categories ?? [])
+    .map((bc: any) => bc.categories?.slug)
+    .filter(Boolean),
 }));
+
+const { data: categories } = await supabase
+  .from("categories")
+  .select("name, slug")
+  .eq("is_active", true)
+  .order("name");
 ---
 
 <Layout
@@ -47,8 +57,27 @@ const markers = rows.map((b) => ({
     <div class="text-center space-y-2">
       <h1 class="text-3xl font-bold">Mapa del barrio</h1>
       <p class="text-gray-600">
-        {markers.length} negocios en el mapa · tocá un punto para ver la ficha
+        <span id="map-count">{markers.length}</span> negocios en el mapa · tocá
+        un punto para ver la ficha
       </p>
+    </div>
+
+    <!-- Filtros: mismos controles que /negocios, filtran los puntos en vivo -->
+    <div class="mx-auto flex w-full max-w-2xl flex-col gap-3 sm:flex-row">
+      <input
+        type="text"
+        id="map-search"
+        placeholder="Buscar comercio..."
+        class="field flex-1"
+      />
+      <select id="map-category" class="field select-field sm:w-64">
+        <option value="">Todas las categorías</option>
+        {
+          (categories ?? []).map((c) => (
+            <option value={c.slug}>{c.name}</option>
+          ))
+        }
+      </select>
     </div>
 
     <div
@@ -71,7 +100,14 @@ const markers = rows.map((b) => ({
     lng: number;
     featured: boolean;
     category: string | null;
+    cats: string[];
   };
+
+  const normalize = (s: string) =>
+    s
+      .toLowerCase()
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "");
 
   const setupMap = () => {
     const el = document.getElementById("map");
@@ -93,10 +129,10 @@ const markers = rows.map((b) => ({
         '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
     }).addTo(map);
 
-    const bounds: L.LatLngTuple[] = [];
+    const allBounds: L.LatLngTuple[] = [];
 
-    markers.forEach((m) => {
-      // circleMarker: no depende de assets de íconos
+    // Un circleMarker por negocio; el filtro los agrega/saca del mapa
+    const entries = markers.map((m) => {
       const marker = L.circleMarker([m.lat, m.lng], {
         radius: m.featured ? 10 : 7,
         color: "#ffffff",
@@ -114,20 +150,67 @@ const markers = rows.map((b) => ({
         </div>`,
       );
 
-      bounds.push([m.lat, m.lng]);
+      allBounds.push([m.lat, m.lng]);
+      // texto pre-normalizado: buscar mientras se tipea no recalcula 1700 veces
+      const haystack = normalize(`${m.name} ${m.address ?? ""}`);
+      return { marker, m, haystack };
     });
 
-    if (bounds.length > 0) {
-      map.fitBounds(bounds, { padding: [40, 40], maxZoom: 15 });
+    if (allBounds.length > 0) {
+      map.fitBounds(allBounds, { padding: [40, 40], maxZoom: 15 });
     }
+
+    // ---------- Filtros ----------
+    const searchInput = document.getElementById(
+      "map-search",
+    ) as HTMLInputElement | null;
+    const categorySelect = document.getElementById(
+      "map-category",
+    ) as HTMLSelectElement | null;
+    const countEl = document.getElementById("map-count");
+
+    const applyFilters = (refit: boolean) => {
+      const q = normalize(searchInput?.value.trim() ?? "");
+      const cat = categorySelect?.value ?? "";
+
+      const visibleBounds: L.LatLngTuple[] = [];
+      let visible = 0;
+
+      for (const { marker, m, haystack } of entries) {
+        const show =
+          (!cat || m.cats.includes(cat)) && (!q || haystack.includes(q));
+
+        if (show) {
+          if (!map.hasLayer(marker)) marker.addTo(map);
+          visibleBounds.push([m.lat, m.lng]);
+          visible++;
+        } else if (map.hasLayer(marker)) {
+          map.removeLayer(marker);
+        }
+      }
+
+      if (countEl) countEl.textContent = String(visible);
+
+      // Al elegir categoría, encuadrar los puntos que quedaron
+      if (refit && visibleBounds.length > 0) {
+        map.fitBounds(visibleBounds, { padding: [40, 40], maxZoom: 16 });
+      }
+    };
+
+    let debounce: ReturnType<typeof setTimeout>;
+    searchInput?.addEventListener("input", () => {
+      clearTimeout(debounce);
+      debounce = setTimeout(() => applyFilters(false), 300);
+    });
+    categorySelect?.addEventListener("change", () => applyFilters(true));
 
     // Blindaje contra la carrera con las view transitions: si Leaflet midió
     // el contenedor durante la animación del swap, el tamaño queda mal y se
     // ven tiles grises/cortadas. Recalcular un par de veces lo corrige.
     const refit = () => {
       map.invalidateSize();
-      if (bounds.length > 0) {
-        map.fitBounds(bounds, { padding: [40, 40], maxZoom: 15 });
+      if (allBounds.length > 0) {
+        map.fitBounds(allBounds, { padding: [40, 40], maxZoom: 15 });
       }
     };
     setTimeout(refit, 250);
