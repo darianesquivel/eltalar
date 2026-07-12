@@ -36,5 +36,19 @@ export default defineConfig({
 
   vite: {
     plugins: [tailwindcss()],
+    // Pre-compilar SIEMPRE las deps que usan las islas del cliente: sin esto,
+    // el dev server las descubre a demanda y, si quedó corriendo a través de
+    // muchos cambios, su cache queda viejo y las páginas con React mueren con
+    // "504 Outdated Optimize Dep" / errores de hidratación hasta reiniciar.
+    optimizeDeps: {
+      include: [
+        "react",
+        "react-dom/client",
+        "@supabase/ssr",
+        "@supabase/supabase-js",
+        "lucide-react",
+        "leaflet",
+      ],
+    },
   },
 });
