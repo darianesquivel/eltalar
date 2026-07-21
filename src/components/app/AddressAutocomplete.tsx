@@ -21,7 +21,7 @@ export default function AddressAutocomplete({
   value,
   onChange,
   onSelect,
-  placeholder = "Calle y altura (ej: Perú 749)",
+  placeholder = "Calle y altura (ej: H. Yrigoyen 1234)",
 }: Props) {
   const [suggestions, setSuggestions] = useState<Suggestion[]>([]);
   const [open, setOpen] = useState(false);
