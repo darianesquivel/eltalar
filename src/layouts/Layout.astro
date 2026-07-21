@@ -56,11 +56,11 @@ const canonical = new URL(Astro.url.pathname, barrio.url);
     <ClientRouter />
   </head>
 
-  <body class="bg-gray-100">
+  <body class="flex min-h-screen flex-col bg-gray-100">
     <NavLoader />
     <TiltEffect />
     <Header />
-    <main class="flex flex-col gap-20 sm:mx-20 sm:my-10 mx-4 my-5">
+    <main class="flex flex-1 flex-col gap-20 sm:mx-20 sm:my-10 mx-4 my-5">
       <slot />
     </main>
     <Footer />
