@@ -1,4 +1,5 @@
 import { useState } from "react";
+import imageCompression from "browser-image-compression";
 import { supabaseBrowser } from "../../lib/supabase/browser";
 import type { BusinessPhoto } from "../../lib/repositories/business.repository";
 
@@ -9,7 +10,15 @@ type Props = {
   isFeatured?: boolean;
 };
 
-const MAX_SIZE_MB = 2;
+const MAX_SIZE_MB = 10;
+
+// Opciones de compresión en el navegador antes de subir: las fotos de celular
+// pesan varios MB, las bajamos a ~1MB y máx 1600px sin que el dueño note nada.
+const COMPRESSION_OPTIONS = {
+  maxSizeMB: 1,
+  maxWidthOrHeight: 1600,
+  useWebWorker: true,
+};
 
 export default function PhotoManager({
   businessId,
@@ -46,6 +55,15 @@ export default function PhotoManager({
     setError(null);
 
     try {
+      // Comprimimos en el navegador antes de subir. Si algo falla, subimos el
+      // original (ya validado a máx 10MB).
+      let toUpload = file;
+      try {
+        toUpload = await imageCompression(file, COMPRESSION_OPTIONS);
+      } catch (compressErr) {
+        console.error("Compresión falló, subo original:", compressErr);
+      }
+
       // Path con carpeta del negocio: la política de Storage exige que la
       // carpeta raíz sea el ID de un negocio propio.
       const ext = file.name.split(".").pop()?.toLowerCase() ?? "jpg";
@@ -53,7 +71,7 @@ export default function PhotoManager({
 
       const { error: upError } = await supabaseBrowser.storage
         .from("business-photos")
-        .upload(path, file, { contentType: file.type });
+        .upload(path, toUpload, { contentType: toUpload.type });
       if (upError) throw upError;
 
       const {
@@ -173,8 +191,8 @@ export default function PhotoManager({
 
       <p className="text-xs text-gray-400">
         {photos.length}/{maxPhotos} foto{maxPhotos === 1 ? "" : "s"} · JPG, PNG
-        o WebP de hasta {MAX_SIZE_MB}MB. La portada es la que se ve en el
-        listado.
+        o WebP de hasta {MAX_SIZE_MB}MB (las optimizamos automáticamente al
+        subirlas). La portada es la que se ve en el listado.
       </p>
     </div>
   );
