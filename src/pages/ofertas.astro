@@ -3,7 +3,6 @@ import { Flame, ArrowRight, Store } from "@lucide/astro";
 import Layout from "../layouts/Layout.astro";
 import { supabase } from "../lib/supabase";
 import { todayInArgentina } from "../lib/hours";
-import { optimizedImage } from "../lib/images";
 
 const { barrio } = Astro.locals;
 const today = todayInArgentina();
@@ -104,7 +103,7 @@ const fmtDate = (iso: string) =>
               <div class="relative">
                 {cover(offer) ? (
                   <img
-                    src={optimizedImage(cover(offer)!, 640)}
+                    src={cover(offer)!}
                     alt={offer.businesses.name}
                     width={400}
                     height={160}

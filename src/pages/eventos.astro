@@ -1,7 +1,6 @@
 ---
 import Layout from "../layouts/Layout.astro";
 import Hero from "../components/eventos/Hero.astro";
-import { Image } from "astro:assets";
 import { CalendarDays, Clock, MapPin } from "@lucide/astro";
 import { getUpcomingEvents } from "../lib/repositories/event.repository";
 
@@ -78,13 +77,13 @@ function rangoFechas(e: (typeof events)[number]) {
               <article class="flex flex-col overflow-hidden rounded-2xl bg-white shadow-lg">
                 <div class="relative">
                   {e.image_url ? (
-                    <Image
+                    <img
                       src={e.image_url}
                       alt={e.title}
                       width={640}
                       height={320}
-                      widths={[480, 640]}
-                      sizes="(max-width: 640px) 100vw, 50vw"
+                      loading="lazy"
+                      decoding="async"
                       class="h-48 w-full object-cover"
                     />
                   ) : (

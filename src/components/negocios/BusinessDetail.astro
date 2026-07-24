@@ -1,5 +1,4 @@
 ---
-import { Image } from "astro:assets";
 import {
   Info,
   PhoneCall,
@@ -61,15 +60,14 @@ const shareUrl = new URL(
   <div class="relative overflow-hidden rounded-3xl shadow">
     {
       business.coverPhoto?.url ? (
-        <Image
+        <img
           transition:name={`img-${business.slug}`}
           src={business.coverPhoto.url}
           alt={business.name}
           width={1280}
           height={540}
-          widths={[480, 800, 1280]}
-          sizes="100vw"
           loading="eager"
+          decoding="async"
           class="h-[260px] w-full object-cover md:h-[540px]"
         />
       ) : (
@@ -210,12 +208,13 @@ const shareUrl = new URL(
                 rel="noopener noreferrer"
                 class="block overflow-hidden rounded-xl shadow-sm transition-transform hover:scale-[1.02]"
               >
-                <Image
+                <img
                   src={photo.url}
                   alt={`Foto de ${business.name}`}
                   width={480}
                   height={320}
                   loading="lazy"
+                  decoding="async"
                   class="h-32 w-full object-cover md:h-40"
                 />
               </a>

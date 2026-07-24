@@ -13,11 +13,14 @@ type Props = {
 const MAX_SIZE_MB = 10;
 
 // Opciones de compresión en el navegador antes de subir: las fotos de celular
-// pesan varios MB, las bajamos a ~1MB y máx 1600px sin que el dueño note nada.
+// pesan varios MB, las bajamos a ~0.4MB, máx 1280px y las convertimos a WebP
+// sin que el dueño note nada. Al quedar chicas y en WebP, las servimos crudas
+// (sin el optimizador de Vercel) y no gastamos cuota de Image Transformations.
 const COMPRESSION_OPTIONS = {
-  maxSizeMB: 1,
-  maxWidthOrHeight: 1600,
+  maxSizeMB: 0.4,
+  maxWidthOrHeight: 1280,
   useWebWorker: true,
+  fileType: "image/webp",
 };
 
 export default function PhotoManager({
@@ -65,8 +68,13 @@ export default function PhotoManager({
       }
 
       // Path con carpeta del negocio: la política de Storage exige que la
-      // carpeta raíz sea el ID de un negocio propio.
-      const ext = file.name.split(".").pop()?.toLowerCase() ?? "jpg";
+      // carpeta raíz sea el ID de un negocio propio. La extensión sale del
+      // archivo realmente subido (webp si la compresión funcionó; si falló,
+      // la del original) para que coincida con su contentType.
+      const ext =
+        toUpload.type.split("/").pop() ||
+        file.name.split(".").pop()?.toLowerCase() ||
+        "jpg";
       const path = `${businessId}/${Date.now()}.${ext}`;
 
       const { error: upError } = await supabaseBrowser.storage

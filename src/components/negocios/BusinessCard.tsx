@@ -5,7 +5,6 @@ import InstagramIcon from "../icons/InstagramIcon";
 import { getTodayStatus } from "../../lib/hours";
 import { instagramUrl } from "../../lib/links";
 import { track } from "../../lib/track";
-import { optimizedImage } from "../../lib/images";
 import type { BusinessSummary } from "../../lib/repositories/business.repository";
 
 type BusinessCardProps = {
@@ -53,7 +52,7 @@ export default function BusinessCard({ business }: BusinessCardProps) {
 
         {business.coverPhoto?.url ? (
           <img
-            src={optimizedImage(business.coverPhoto.url, 480)}
+            src={business.coverPhoto.url}
             alt={business.name}
             width={400}
             height={112}
