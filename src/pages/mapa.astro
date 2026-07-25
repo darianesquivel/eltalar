@@ -1,6 +1,9 @@
 ---
+import { Plus, Minus, LocateFixed, Search, X } from "@lucide/astro";
 import Layout from "../layouts/Layout.astro";
 import { supabase } from "../lib/supabase";
+import { todayInArgentina } from "../lib/hours";
+import { categoryStyle } from "../lib/categories";
 // El CSS de Leaflet va en el frontmatter: así queda como <link> de la página
 // y el ClientRouter lo espera ANTES del swap. Dentro del script podía llegar
 // después de que Leaflet midiera el layout → mapa roto hasta recargar.
@@ -13,85 +16,285 @@ const { barrio } = Astro.locals;
 // En páginas de a 1000: Supabase corta cualquier consulta en 1000 filas,
 // y ya hay ~1700 negocios — una sola consulta dejaba medio mapa vacío.
 const PAGE = 1000;
-const rows: any[] = [];
-for (let from = 0; ; from += PAGE) {
-  const { data } = await supabase
-    .from("businesses")
-    .select(
-      "id, name, slug, address, lat, lng, is_featured, business_categories ( categories ( name, slug ) )",
-    )
-    .eq("barrio_id", barrio.id)
-    .eq("is_active", true)
-    .not("lat", "is", null)
-    .not("lng", "is", null)
-    .order("id")
-    .range(from, from + PAGE - 1);
 
-  rows.push(...(data ?? []));
-  if (!data || data.length < PAGE) break;
+async function fetchAll<T>(
+  query: (from: number) => PromiseLike<{ data: T[] | null }>,
+): Promise<T[]> {
+  const rows: T[] = [];
+  for (let from = 0; ; from += PAGE) {
+    const { data } = await query(from);
+    rows.push(...(data ?? []));
+    if (!data || data.length < PAGE) break;
+  }
+  return rows;
 }
 
-const markers = rows.map((b) => ({
-  name: b.name,
-  slug: b.slug,
-  address: b.address,
-  // 5 decimales ≈ 1 m: suficiente para el mapa y achica el HTML
-  lat: Math.round(b.lat * 1e5) / 1e5,
-  lng: Math.round(b.lng * 1e5) / 1e5,
-  featured: b.is_featured === true,
-  category: b.business_categories?.[0]?.categories?.name ?? null,
-  cats: (b.business_categories ?? [])
-    .map((bc: any) => bc.categories?.slug)
-    .filter(Boolean),
-}));
+// Día de la semana en Argentina (0 domingo): para saber quién está abierto
+// alcanza con los horarios de HOY, no con la semana entera de 1700 negocios.
+const [y, m, d] = todayInArgentina().split("-").map(Number);
+const weekday = new Date(y, m - 1, d).getDay();
+const nowHHMM = new Date().toLocaleTimeString("es-AR", {
+  hour: "2-digit",
+  minute: "2-digit",
+  hour12: false,
+  timeZone: "America/Argentina/Buenos_Aires",
+});
 
-const { data: categories } = await supabase
-  .from("categories")
-  .select("name, slug")
-  .eq("is_active", true)
-  .order("name");
+const [rows, todayHours, offerRows, { data: categories }] = await Promise.all([
+  fetchAll<any>((from) =>
+    supabase
+      .from("businesses")
+      .select(
+        "id, name, slug, address, lat, lng, is_featured, business_categories ( categories ( name, slug ) )",
+      )
+      .eq("barrio_id", barrio.id)
+      .eq("is_active", true)
+      .not("lat", "is", null)
+      .not("lng", "is", null)
+      .order("id")
+      .range(from, from + PAGE - 1),
+  ),
+  fetchAll<any>((from) =>
+    supabase
+      .from("business_hours")
+      .select(
+        "business_id, open_time, close_time, is_closed, is_open_24, businesses!inner(barrio_id)",
+      )
+      .eq("businesses.barrio_id", barrio.id)
+      .eq("day_of_week", weekday)
+      .order("business_id")
+      .range(from, from + PAGE - 1),
+  ),
+  fetchAll<any>((from) =>
+    supabase
+      .from("business_offers")
+      .select("business_id, businesses!inner(barrio_id)")
+      .eq("businesses.barrio_id", barrio.id)
+      .gte("expires_at", todayInArgentina())
+      .order("business_id")
+      .range(from, from + PAGE - 1),
+  ),
+  supabase
+    .from("categories")
+    .select("name, slug")
+    .eq("is_active", true)
+    .order("name"),
+]);
+
+// Abierto ahora, calculado en el servidor con la hora de Argentina: el
+// navegador del vecino puede tener otra zona horaria configurada.
+const openIds = new Set<string>();
+for (const h of todayHours) {
+  if (h.is_closed) continue;
+  if (h.is_open_24) {
+    openIds.add(h.business_id);
+    continue;
+  }
+  if (!h.open_time || !h.close_time) continue;
+  const open = h.open_time.slice(0, 5);
+  const close = h.close_time.slice(0, 5);
+  if (nowHHMM >= open && nowHHMM <= close) openIds.add(h.business_id);
+}
+
+const offerIds = new Set(offerRows.map((o) => o.business_id));
+
+const markers = rows.map((b) => {
+  const cats = (b.business_categories ?? [])
+    .map((bc: any) => bc.categories)
+    .filter(Boolean);
+  const first = cats[0];
+  return {
+    name: b.name,
+    slug: b.slug,
+    address: b.address,
+    // 5 decimales ≈ 1 m: suficiente para el mapa y achica el HTML
+    lat: Math.round(b.lat * 1e5) / 1e5,
+    lng: Math.round(b.lng * 1e5) / 1e5,
+    featured: b.is_featured === true,
+    category: first?.name ?? null,
+    color: categoryStyle(first?.slug).fg,
+    cats: cats.map((c: any) => c.slug),
+    open: openIds.has(b.id),
+    offer: offerIds.has(b.id),
+  };
+});
 ---
 
 <Layout
   title={`Mapa de negocios de ${barrio.name}`}
   description={`Todos los negocios y servicios de ${barrio.name} en un mapa: encontrá el más cercano y entrá a su ficha con horarios y contacto.`}
+  wide
 >
-  <section class="space-y-6">
-    <div class="text-center space-y-2">
-      <h1 class="text-3xl font-bold">Mapa del barrio</h1>
-      <p class="text-gray-600">
-        <span id="map-count">{markers.length}</span> negocios en el mapa · tocá un
-        punto para ver la ficha
-      </p>
-    </div>
+  <div
+    id="map-page"
+    class="grid min-h-[calc(100vh-66px)] grid-rows-[auto_1fr] lg:grid-cols-[400px_1fr] lg:grid-rows-1"
+    data-markers={JSON.stringify(markers)}
+    data-center={JSON.stringify([barrio.lat, barrio.lng])}
+  >
+    <!-- Panel -->
+    <aside class="flex flex-col border-border bg-bg-main lg:border-r">
+      <div class="border-b border-border p-5">
+        <h1 class="mb-3 text-[22px] font-extrabold tracking-[-0.02em] text-text-main">
+          Mapa del barrio
+        </h1>
 
-    <!-- Filtros: mismos controles que /negocios, filtran los puntos en vivo -->
-    <div class="mx-auto flex w-full max-w-2xl flex-col gap-3 sm:flex-row">
-      <input
-        type="text"
-        id="map-search"
-        placeholder="Buscar comercio..."
-        class="field flex-1"
-      />
-      <select id="map-category" class="field select-field sm:w-64">
-        <option value="">Todas las categorías</option>
-        {
-          (categories ?? []).map((c) => (
-            <option value={c.slug}>{c.name}</option>
-          ))
-        }
-      </select>
-    </div>
+        <div class="mb-3 flex items-center rounded-xl bg-bg-card px-3.5 shadow-soft">
+          <Search class="size-[17px] shrink-0 text-primary" aria-hidden="true" />
+          <input
+            id="map-search"
+            type="search"
+            autocomplete="off"
+            aria-label="Buscar en el mapa"
+            placeholder="Buscá un comercio o una dirección"
+            class="w-full bg-transparent px-2.5 py-3 text-[14px] text-text-main outline-none placeholder:text-text-muted"
+          />
+        </div>
 
-    <div
-      id="map"
-      class="h-[70vh] w-full rounded-3xl shadow-sm z-0"
-      data-markers={JSON.stringify(markers)}
-      data-center={JSON.stringify([barrio.lat, barrio.lng])}
-    >
+        <div class="mb-3 flex flex-wrap gap-[7px]">
+          <button
+            type="button"
+            data-filter="todos"
+            class="map-chip is-active"
+            aria-pressed="true">Todos</button
+          >
+          <button type="button" data-filter="abierto" class="map-chip"
+            >Abierto ahora</button
+          >
+          <button type="button" data-filter="ofertas" class="map-chip"
+            >Con ofertas</button
+          >
+          <button type="button" data-filter="destacados" class="map-chip"
+            >Destacados</button
+          >
+        </div>
+
+        <select
+          id="map-category"
+          class="w-full appearance-none rounded-xl border border-border bg-bg-card px-3.5 py-2.5 text-[13px] font-semibold text-text-main"
+        >
+          <option value="">Todos los rubros</option>
+          {
+            (categories ?? []).map((c) => (
+              <option value={c.slug}>{c.name}</option>
+            ))
+          }
+        </select>
+
+        <p id="map-count" class="mt-3 text-[13px] text-text-muted">
+          {markers.length} comercios en el mapa
+        </p>
+      </div>
+
+      <!-- La lista muestra una tanda: con 1700 filas el DOM se arrastra -->
+      <div
+        id="map-list"
+        class="max-h-[380px] flex-1 overflow-y-auto lg:max-h-none"
+      >
+      </div>
+    </aside>
+
+    <!-- Mapa -->
+    <div class="relative min-h-[55vh] lg:min-h-0">
+      <div id="map" class="size-full"></div>
+
+      <div class="absolute right-5 top-5 z-[500] flex flex-col gap-2">
+        <button type="button" id="map-zoom-in" aria-label="Acercar" class="map-ctrl">
+          <Plus class="size-[18px]" aria-hidden="true" />
+        </button>
+        <button type="button" id="map-zoom-out" aria-label="Alejar" class="map-ctrl">
+          <Minus class="size-[18px]" aria-hidden="true" />
+        </button>
+        <button
+          type="button"
+          id="map-locate"
+          aria-label="Centrar en mi ubicación"
+          class="map-ctrl text-primary"
+        >
+          <LocateFixed class="size-[18px]" aria-hidden="true" />
+        </button>
+      </div>
+
+      <!-- Card del negocio seleccionado -->
+      <div
+        id="map-popup"
+        hidden
+        class="absolute bottom-5 left-5 right-5 z-[500] flex gap-3.5 rounded-2xl bg-bg-card p-4 shadow-[0_4px_18px_rgba(0,0,0,.14)] sm:right-auto sm:w-[320px]"
+      >
+        <span
+          id="map-popup-thumb"
+          class="size-14 shrink-0 rounded-xl"
+          aria-hidden="true"></span>
+        <div class="min-w-0 flex-1">
+          <div
+            id="map-popup-name"
+            class="truncate text-[15.5px] font-bold text-text-main"
+          >
+          </div>
+          <div id="map-popup-meta" class="mb-2 mt-0.5 text-[12px] text-text-muted">
+          </div>
+          <div class="flex gap-[7px]">
+            <a
+              id="map-popup-link"
+              href="#"
+              class="flex-1 rounded-[10px] bg-primary p-2.5 text-center text-[12px] font-semibold text-white"
+            >
+              Ver ficha
+            </a>
+            <a
+              id="map-popup-maps"
+              href="#"
+              target="_blank"
+              rel="noopener noreferrer"
+              aria-label="Cómo llegar"
+              class="rounded-[10px] bg-primary-faint px-3 py-2.5 text-[12px] font-semibold text-text-main"
+            >
+              Ir
+            </a>
+          </div>
+        </div>
+        <button
+          type="button"
+          id="map-popup-close"
+          aria-label="Cerrar"
+          class="absolute right-2.5 top-2.5 text-text-faint"
+        >
+          <X class="size-4" aria-hidden="true" />
+        </button>
+      </div>
     </div>
-  </section>
+  </div>
 </Layout>
+
+<style>
+  .map-chip {
+    border-radius: 999px;
+    border: 1px solid var(--color-border);
+    background: var(--color-bg-card);
+    padding: 8px 14px;
+    font-size: 12.5px;
+    font-weight: 500;
+    color: var(--color-text-body);
+    transition: background-color 0.15s;
+  }
+
+  .map-chip.is-active {
+    background: var(--color-secondary);
+    border-color: var(--color-secondary);
+    color: #fff;
+    font-weight: 600;
+  }
+
+  .map-ctrl {
+    display: flex;
+    width: 40px;
+    height: 40px;
+    align-items: center;
+    justify-content: center;
+    border-radius: 12px;
+    background: #fff;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
+  }
+</style>
 
 <script>
   import L from "leaflet";
@@ -104,28 +307,44 @@ const { data: categories } = await supabase
     lng: number;
     featured: boolean;
     category: string | null;
+    color: string;
     cats: string[];
+    open: boolean;
+    offer: boolean;
   };
+
+  const LIST_LIMIT = 60;
+
+  const COMBINING = /[\u0300-\u036f]/g;
 
   const normalize = (s: string) =>
     s
       .toLowerCase()
       .normalize("NFD")
-      .replace(/[\u0300-\u036f]/g, "");
+      .replace(COMBINING, "");
+
+  const distanceLabel = (meters: number) =>
+    meters < 1000
+      ? `a ${Math.round(meters / 10) * 10} m`
+      : `a ${(meters / 1000).toFixed(1)} km`;
 
   const setupMap = () => {
+    const page = document.getElementById("map-page");
     const el = document.getElementById("map");
-    if (!el || el.dataset.initialized) return;
+    if (!page || !el || el.dataset.initialized) return;
     el.dataset.initialized = "true";
 
-    const markers: MarkerData[] = JSON.parse(el.dataset.markers ?? "[]");
+    const markers: MarkerData[] = JSON.parse(page.dataset.markers ?? "[]");
     const center: [number, number] = JSON.parse(
-      el.dataset.center ?? "[-34.4716, -58.655]",
+      page.dataset.center ?? "[-34.4716, -58.655]",
     );
 
     // Centro del barrio (viene del server). preferCanvas: con ~1700
     // marcadores, dibujarlos en canvas es fluido; como SVG se arrastra.
-    const map = L.map(el, { preferCanvas: true }).setView(center, 14);
+    const map = L.map(el, { preferCanvas: true, zoomControl: false }).setView(
+      center,
+      14,
+    );
 
     L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
       maxZoom: 19,
@@ -133,36 +352,106 @@ const { data: categories } = await supabase
         '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
     }).addTo(map);
 
-    const allBounds: L.LatLngTuple[] = [];
+    const popup = document.getElementById("map-popup");
+    const popupName = document.getElementById("map-popup-name");
+    const popupMeta = document.getElementById("map-popup-meta");
+    const popupThumb = document.getElementById("map-popup-thumb");
+    const popupLink = document.getElementById(
+      "map-popup-link",
+    ) as HTMLAnchorElement | null;
+    const popupMaps = document.getElementById(
+      "map-popup-maps",
+    ) as HTMLAnchorElement | null;
 
-    // Un circleMarker por negocio; el filtro los agrega/saca del mapa
+    let userPos: { lat: number; lng: number } | null = null;
+
+    const metersTo = (m: MarkerData) =>
+      userPos
+        ? map.distance([userPos.lat, userPos.lng], [m.lat, m.lng])
+        : null;
+
+    const showPopup = (m: MarkerData) => {
+      if (!popup) return;
+      popup.hidden = false;
+      if (popupName) popupName.textContent = m.featured ? `${m.name} ★` : m.name;
+      if (popupMeta) {
+        const meters = metersTo(m);
+        popupMeta.textContent = [
+          m.address,
+          meters ? distanceLabel(meters) : m.category,
+        ]
+          .filter(Boolean)
+          .join(" · ");
+      }
+      if (popupThumb) popupThumb.style.background = m.color;
+      if (popupLink) popupLink.href = `/negocios/${m.slug}`;
+      if (popupMaps) {
+        popupMaps.href = m.address
+          ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(m.address)}`
+          : `https://www.google.com/maps/search/?api=1&query=${m.lat},${m.lng}`;
+      }
+    };
+
+    document
+      .getElementById("map-popup-close")
+      ?.addEventListener("click", () => {
+        if (popup) popup.hidden = true;
+      });
+
+    // Un circleMarker por negocio; el filtro los agrega/saca del mapa.
+    // Dorado = Destacado (es uno de los beneficios que se venden).
     const entries = markers.map((m) => {
       const marker = L.circleMarker([m.lat, m.lng], {
-        radius: m.featured ? 10 : 7,
+        radius: m.featured ? 9 : 6,
         color: "#ffffff",
         weight: 2,
-        fillColor: m.featured ? "#f59e0b" : "#16a34a",
+        fillColor: m.featured ? "#ffc14d" : "#0e9f52",
         fillOpacity: 0.95,
       }).addTo(map);
 
-      marker.bindPopup(
-        `<div style="min-width:180px">
-          <strong>${m.name}</strong>${m.featured ? " ⭐" : ""}<br/>
-          ${m.category ? `<span style="color:#16a34a;font-size:12px">${m.category}</span><br/>` : ""}
-          ${m.address ? `<span style="color:#666;font-size:12px">${m.address}</span><br/>` : ""}
-          <a href="/negocios/${m.slug}" style="color:#16a34a;font-weight:600">Ver ficha →</a>
-        </div>`,
-      );
+      marker.on("click", () => showPopup(m));
 
-      allBounds.push([m.lat, m.lng]);
-      // texto pre-normalizado: buscar mientras se tipea no recalcula 1700 veces
-      const haystack = normalize(`${m.name} ${m.address ?? ""}`);
-      return { marker, m, haystack };
+      return {
+        marker,
+        m,
+        // texto pre-normalizado: buscar mientras se tipea no recalcula 1700 veces
+        haystack: normalize(`${m.name} ${m.address ?? ""}`),
+      };
     });
 
+    const allBounds: L.LatLngTuple[] = markers.map((m) => [m.lat, m.lng]);
     if (allBounds.length > 0) {
       map.fitBounds(allBounds, { padding: [40, 40], maxZoom: 15 });
     }
+
+    // ---------- Controles propios ----------
+    document
+      .getElementById("map-zoom-in")
+      ?.addEventListener("click", () => map.zoomIn());
+    document
+      .getElementById("map-zoom-out")
+      ?.addEventListener("click", () => map.zoomOut());
+
+    document.getElementById("map-locate")?.addEventListener("click", () => {
+      if (!navigator.geolocation) return;
+      navigator.geolocation.getCurrentPosition(
+        (pos) => {
+          userPos = { lat: pos.coords.latitude, lng: pos.coords.longitude };
+          map.setView([userPos.lat, userPos.lng], 16);
+          L.circleMarker([userPos.lat, userPos.lng], {
+            radius: 7,
+            color: "#ffffff",
+            weight: 3,
+            fillColor: "#2e6595",
+            fillOpacity: 1,
+          }).addTo(map);
+          applyFilters(false);
+        },
+        () => {
+          // Permiso denegado: el mapa sigue centrado en el barrio
+        },
+      );
+    });
 
     // ---------- Filtros ----------
     const searchInput = document.getElementById(
@@ -172,34 +461,119 @@ const { data: categories } = await supabase
       "map-category",
     ) as HTMLSelectElement | null;
     const countEl = document.getElementById("map-count");
+    const listEl = document.getElementById("map-list");
+    const chips = Array.from(
+      document.querySelectorAll<HTMLButtonElement>("[data-filter]"),
+    );
+
+    let activeFilter = "todos";
+
+    const renderList = (visible: typeof entries) => {
+      if (!listEl) return;
+
+      const sorted = userPos
+        ? [...visible].sort(
+            (a, b) => (metersTo(a.m) ?? 0) - (metersTo(b.m) ?? 0),
+          )
+        : visible;
+
+      listEl.innerHTML = "";
+      for (const entry of sorted.slice(0, LIST_LIMIT)) {
+        const { m } = entry;
+        const meters = metersTo(m);
+
+        const row = document.createElement("button");
+        row.type = "button";
+        row.className =
+          "flex w-full items-center gap-3.5 border-b border-[rgba(14,26,18,.07)] p-4 text-left transition-colors hover:bg-primary-faint";
+        row.innerHTML = `
+          <span class="size-11 shrink-0 rounded-xl" style="background:${m.color}"></span>
+          <span class="min-w-0 flex-1">
+            <span class="flex items-center gap-1.5">
+              <span class="truncate text-[15.5px] font-bold text-text-main">${m.name}</span>
+              ${m.featured ? '<span class="text-[12px] text-rating">★</span>' : ""}
+            </span>
+            <span class="mt-0.5 block truncate text-[12.5px] text-text-muted">
+              ${[m.category, meters ? distanceLabel(meters) : m.address].filter(Boolean).join(" · ")}
+            </span>
+          </span>
+          ${m.open ? '<span class="shrink-0 text-[11.5px] font-semibold text-primary-strong">Abierto</span>' : ""}
+        `;
+        row.addEventListener("click", () => {
+          map.setView([m.lat, m.lng], 17);
+          showPopup(m);
+        });
+        listEl.appendChild(row);
+      }
+
+      if (sorted.length > LIST_LIMIT) {
+        const note = document.createElement("p");
+        note.className = "p-4 text-center text-[12.5px] text-text-muted";
+        note.textContent = `Mostrando ${LIST_LIMIT} de ${sorted.length}. Afiná la búsqueda o el rubro para ver más.`;
+        listEl.appendChild(note);
+      }
+
+      if (sorted.length === 0) {
+        const empty = document.createElement("p");
+        empty.className = "p-6 text-center text-[13.5px] text-text-muted";
+        empty.textContent = "Ningún comercio coincide con esos filtros.";
+        listEl.appendChild(empty);
+      }
+    };
 
     const applyFilters = (refit: boolean) => {
       const q = normalize(searchInput?.value.trim() ?? "");
       const cat = categorySelect?.value ?? "";
 
       const visibleBounds: L.LatLngTuple[] = [];
-      let visible = 0;
+      const visible: typeof entries = [];
 
-      for (const { marker, m, haystack } of entries) {
+      for (const entry of entries) {
+        const { marker, m, haystack } = entry;
+        const matchesFilter =
+          activeFilter === "todos" ||
+          (activeFilter === "abierto" && m.open) ||
+          (activeFilter === "ofertas" && m.offer) ||
+          (activeFilter === "destacados" && m.featured);
+
         const show =
-          (!cat || m.cats.includes(cat)) && (!q || haystack.includes(q));
+          matchesFilter &&
+          (!cat || m.cats.includes(cat)) &&
+          (!q || haystack.includes(q));
 
         if (show) {
           if (!map.hasLayer(marker)) marker.addTo(map);
           visibleBounds.push([m.lat, m.lng]);
-          visible++;
+          visible.push(entry);
         } else if (map.hasLayer(marker)) {
           map.removeLayer(marker);
         }
       }
 
-      if (countEl) countEl.textContent = String(visible);
+      if (countEl) {
+        countEl.textContent = `${visible.length} ${visible.length === 1 ? "comercio" : "comercios"}${
+          userPos ? " · ordenados por cercanía" : " en el mapa"
+        }`;
+      }
 
-      // Al elegir categoría, encuadrar los puntos que quedaron
+      renderList(visible);
+
       if (refit && visibleBounds.length > 0) {
         map.fitBounds(visibleBounds, { padding: [40, 40], maxZoom: 16 });
       }
     };
+
+    for (const chip of chips) {
+      chip.addEventListener("click", () => {
+        activeFilter = chip.dataset.filter ?? "todos";
+        for (const other of chips) {
+          const active = other === chip;
+          other.classList.toggle("is-active", active);
+          other.setAttribute("aria-pressed", String(active));
+        }
+        applyFilters(true);
+      });
+    }
 
     let debounce: ReturnType<typeof setTimeout>;
     searchInput?.addEventListener("input", () => {
@@ -207,6 +581,8 @@ const { data: categories } = await supabase
       debounce = setTimeout(() => applyFilters(false), 300);
     });
     categorySelect?.addEventListener("change", () => applyFilters(true));
+
+    applyFilters(false);
 
     // Blindaje contra la carrera con las view transitions: si Leaflet midió
     // el contenedor durante la animación del swap, el tamaño queda mal y se
