@@ -1,184 +1,164 @@
 ---
-import { Flame, ArrowRight, Store } from "@lucide/astro";
+import { Flame, ChevronDown } from "@lucide/astro";
 import Layout from "../layouts/Layout.astro";
-import { supabase } from "../lib/supabase";
-import { todayInArgentina } from "../lib/hours";
+import OfferCard from "../components/ofertas/OfferCard.astro";
+import { getActiveOffers } from "../lib/repositories/offer.repository";
 
 const { barrio } = Astro.locals;
-const today = todayInArgentina();
 
-// Ofertas vigentes de negocios publicados del barrio, con los datos de la card
-const { data } = await supabase
-  .from("business_offers")
-  .select(
-    `
-    id, title, description, expires_at,
-    businesses!inner (
-      id, name, slug, is_active, is_featured,
-      business_photos ( url, is_cover, position )
-    )
-  `,
-  )
-  .gte("expires_at", today)
-  .eq("businesses.barrio_id", barrio.id)
-  .eq("businesses.is_active", true)
-  .order("expires_at");
+const rubro = Astro.url.searchParams.get("rubro");
+const orden = Astro.url.searchParams.get("orden") === "nuevas" ? "nuevas" : "vencen";
 
-type OfferRow = NonNullable<typeof data>[number];
+// Todas las ofertas vigentes del barrio: son pocas (decenas), así que el
+// filtro por rubro y el orden se resuelven acá, sin JavaScript en el cliente.
+const allOffers = await getActiveOffers(barrio.id);
 
-const cover = (o: OfferRow) => {
-  const photos = o.businesses?.business_photos ?? [];
-  const c =
-    photos.find((p) => p.is_cover) ||
-    photos.slice().sort((a, b) => (a.position ?? 0) - (b.position ?? 0))[0];
-  return c?.url ?? null;
+const countsBySlug = new Map<string, { name: string; count: number }>();
+for (const offer of allOffers) {
+  for (const category of offer.business.categories) {
+    const entry = countsBySlug.get(category.slug);
+    if (entry) entry.count += 1;
+    else countsBySlug.set(category.slug, { name: category.name, count: 1 });
+  }
+}
+const categoryChips = [...countsBySlug.entries()]
+  .map(([slug, { name, count }]) => ({ slug, name, count }))
+  .sort((a, b) => b.count - a.count);
+
+const filtered = rubro
+  ? allOffers.filter((o) => o.business.categories.some((c) => c.slug === rubro))
+  : allOffers;
+
+const offers =
+  orden === "nuevas"
+    ? [...filtered].sort((a, b) => b.created_at.localeCompare(a.created_at))
+    : filtered;
+
+const chipClass = (active: boolean) =>
+  `rounded-full px-4 py-[9px] text-[13.5px] transition-colors ${
+    active
+      ? "bg-secondary font-semibold text-white"
+      : "border border-border bg-bg-card font-medium text-text-main hover:border-[rgba(14,26,18,.2)]"
+  }`;
+
+const hrefWith = (params: Record<string, string | null>) => {
+  const url = new URL(Astro.url);
+  for (const [key, value] of Object.entries(params)) {
+    if (value) url.searchParams.set(key, value);
+    else url.searchParams.delete(key);
+  }
+  return `${url.pathname}${url.search}`;
 };
-
-// Los negocios destacados van primero; después por vencimiento más próximo
-const offers = (data ?? []).sort((a, b) => {
-  const fa = a.businesses?.is_featured ? 0 : 1;
-  const fb = b.businesses?.is_featured ? 0 : 1;
-  if (fa !== fb) return fa - fb;
-  return a.expires_at.localeCompare(b.expires_at);
-});
-
-const fmtDate = (iso: string) =>
-  new Date(`${iso}T12:00:00`).toLocaleDateString("es-AR", {
-    day: "numeric",
-    month: "long",
-  });
 ---
 
 <Layout
-  title={`Ofertas en ${barrio.name} 🔥`}
-  description={`Promos y ofertas vigentes de los comercios de ${barrio.name}: descuentos, 2x1 y más, actualizadas por los propios negocios del barrio.`}
+  title={`Ofertas en ${barrio.name}`}
+  description={`Promos y ofertas vigentes de los comercios de ${barrio.name}: descuentos, 2x1 y más, publicadas por los propios negocios del barrio.`}
 >
-  <!-- HERO -->
-  <section
-    class="relative overflow-hidden flex justify-center items-center py-16 rounded-3xl"
-  >
-    <div
-      class="absolute inset-0 bg-linear-to-tr from-orange-100 via-white to-amber-50"
-    >
-    </div>
-    <div
-      class="relative mx-auto max-w-4xl px-6 text-center flex flex-col gap-5"
-    >
-      <span
-        class="animate-fade-up mx-auto inline-flex items-center gap-2 rounded-full bg-orange-100 px-4 py-1 text-xs font-semibold text-orange-700"
+  <div class="flex flex-col gap-6">
+    <header>
+      <div
+        class="mb-4 inline-flex items-center gap-2 rounded-full bg-offer-soft px-3 py-[7px] text-[12.5px] font-bold uppercase tracking-[0.08em] text-offer"
       >
-        <Flame size={14} />
-        Se actualizan solas: solo ves promos vigentes
-      </span>
+        <Flame class="size-[14px]" aria-hidden="true" />
+        {`${allOffers.length} ${allOffers.length === 1 ? "oferta vigente" : "ofertas vigentes"}`}
+      </div>
 
       <h1
-        class="animate-fade-up text-4xl md:text-5xl font-extrabold tracking-tight text-gray-900"
-        style="animation-delay: 0.12s"
+        class="mb-2 text-[29px] font-extrabold leading-[1.05] tracking-[-0.025em] text-text-main sm:text-[44px]"
       >
-        Ofertas en{" "}
-        <span class="text-orange-500">{barrio.name}</span>
+        Ofertas de los comercios del barrio
       </h1>
-
-      <p
-        class="animate-fade-up mx-auto max-w-2xl text-lg text-gray-600"
-        style="animation-delay: 0.24s"
-      >
-        Las promos que los comercios del barrio publican para sus vecinos. Tocá
-        una y andá directo al negocio.
+      <p class="max-w-[640px] text-[15px] text-text-body sm:text-[16px]">
+        Las publican los propios negocios y se vencen solas. Si ves una acá,
+        está vigente hoy.
       </p>
-    </div>
-  </section>
+    </header>
 
-  <!-- GRILLA DE OFERTAS -->
-  <section class="mx-auto w-full max-w-6xl px-2 sm:px-6">
+    {
+      allOffers.length > 0 && (
+        <div class="flex flex-wrap items-center gap-2 border-b border-border pb-6">
+          <a href={hrefWith({ rubro: null })} class={chipClass(!rubro)}>
+            Todas{" "}
+            <span class={!rubro ? "text-white/55" : "text-text-faint"}>
+              {allOffers.length}
+            </span>
+          </a>
+
+          {categoryChips.map((category) => {
+            const active = rubro === category.slug;
+            return (
+              <a
+                href={hrefWith({ rubro: active ? null : category.slug })}
+                class={chipClass(active)}
+              >
+                {category.name}{" "}
+                <span class={active ? "text-white/55" : "text-text-faint"}>
+                  {category.count}
+                </span>
+              </a>
+            );
+          })}
+
+          <a
+            href={hrefWith({ orden: orden === "vencen" ? "nuevas" : null })}
+            class="ml-auto inline-flex items-center gap-2 rounded-xl border border-border bg-bg-card px-3.5 py-[9px] text-[13px] font-semibold text-text-main"
+          >
+            {orden === "vencen" ? "Vencen primero" : "Más nuevas"}
+            <ChevronDown class="size-[14px]" aria-hidden="true" />
+          </a>
+        </div>
+      )
+    }
+
     {
       offers.length > 0 ? (
-        <div class="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+        <div class="grid gap-[18px] sm:grid-cols-2 lg:grid-cols-3">
           {offers.map((offer) => (
-            <a
-              href={`/negocios/${offer.businesses.slug}`}
-              data-tilt
-              class="group flex flex-col overflow-hidden rounded-2xl bg-white shadow-lg"
-            >
-              <div class="relative">
-                {cover(offer) ? (
-                  <img
-                    src={cover(offer)!}
-                    alt={offer.businesses.name}
-                    width={400}
-                    height={160}
-                    loading="lazy"
-                    decoding="async"
-                    class="h-36 w-full object-cover"
-                  />
-                ) : (
-                  <div class="flex h-36 w-full items-center justify-center bg-orange-50">
-                    <Store size={32} class="text-orange-300" />
-                  </div>
-                )}
-                <span class="absolute right-2 top-2 inline-flex items-center gap-1 rounded-full bg-orange-500 px-2.5 py-0.5 text-xs font-bold text-white shadow">
-                  🔥 Hasta el {fmtDate(offer.expires_at)}
-                </span>
-                {offer.businesses.is_featured && (
-                  <span class="absolute left-2 top-2 rounded-full bg-amber-400/95 px-2.5 py-0.5 text-xs font-semibold text-amber-950">
-                    ⭐ Destacado
-                  </span>
-                )}
-              </div>
-
-              <div class="flex flex-1 flex-col gap-1.5 p-4">
-                <p class="font-bold text-gray-900">{offer.title}</p>
-                {offer.description && (
-                  <p class="text-sm text-gray-600 line-clamp-2">
-                    {offer.description}
-                  </p>
-                )}
-                <p class="mt-auto inline-flex items-center gap-1 pt-2 text-sm font-semibold text-primary">
-                  {offer.businesses.name}
-                  <ArrowRight
-                    size={14}
-                    class="transition-transform group-hover:translate-x-0.5"
-                  />
-                </p>
-              </div>
-            </a>
+            <OfferCard offer={offer} barrioName={barrio.name} />
           ))}
         </div>
       ) : (
-        <div class="flex flex-col items-center gap-4 rounded-3xl bg-white p-14 text-center shadow-sm">
-          <Flame size={36} class="text-orange-300" />
-          <h2 class="text-xl font-bold text-gray-900">
-            No hay ofertas vigentes en este momento
+        <div class="rounded-[20px] bg-bg-card p-10 text-center shadow-soft">
+          <h2 class="mb-2 text-[19px] font-extrabold text-text-main">
+            {rubro
+              ? "No hay ofertas vigentes en ese rubro"
+              : "No hay ofertas vigentes en este momento"}
           </h2>
-          <p class="max-w-md text-sm text-gray-500">
-            Los comercios del barrio publican sus promos acá. Volvé pronto — o
-            si tenés un negocio, ¡publicá la tuya!
+          <p class="mx-auto mb-5 max-w-md text-[14px] text-text-body">
+            Los comercios del barrio publican sus promos acá y se vencen solas.
+            Volvé pronto — o si tenés un negocio, publicá la tuya.
           </p>
           <a
             href="/anunciate"
-            class="rounded-full bg-primary px-6 py-2.5 text-sm font-semibold text-white transition-transform hover:scale-105"
+            class="inline-block rounded-[14px] bg-primary px-6 py-3.5 text-[15px] font-semibold text-white transition-colors hover:bg-primary-hover"
           >
             Publicar mi negocio
           </a>
         </div>
       )
     }
-  </section>
 
-  <!-- CTA para comercios -->
-  {
-    offers.length > 0 && (
-      <section class="mx-auto max-w-3xl px-4 text-center">
-        <p class="text-sm text-gray-500">
-          ¿Tenés un comercio en {barrio.name}?{" "}
+    {
+      offers.length > 0 && (
+        <div class="flex flex-col gap-6 rounded-[20px] bg-bg-card p-7 shadow-soft sm:flex-row sm:items-center sm:justify-between sm:px-8">
+          <div>
+            <div class="mb-1.5 text-[19px] font-extrabold tracking-[-0.015em] text-text-main sm:text-[22px]">
+              ¿Tenés un comercio? Publicá tu promo gratis
+            </div>
+            <p class="text-[14.5px] text-text-body">
+              Las ofertas las cargás desde el panel de tu negocio y se vencen
+              solas en la fecha que elijas.
+            </p>
+          </div>
           <a
-            href="/anunciate"
-            class="font-semibold text-primary hover:underline"
+            href="/app"
+            class="shrink-0 rounded-[14px] bg-primary px-[26px] py-[15px] text-center text-[15px] font-semibold text-white transition-colors hover:bg-primary-hover"
           >
-            Publicá tus ofertas gratis →
+            Publicar una oferta
           </a>
-        </p>
-      </section>
-    )
-  }
+        </div>
+      )
+    }
+  </div>
 </Layout>

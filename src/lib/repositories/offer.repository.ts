@@ -7,6 +7,7 @@ export type ActiveOffer = {
   title: string;
   description: string | null;
   expires_at: string;
+  created_at: string;
   business: {
     id: string;
     name: string;
@@ -14,6 +15,7 @@ export type ActiveOffer = {
     address: string | null;
     whatsapp: string | null;
     is_featured: boolean;
+    categories: { name: string; slug: string }[];
   };
   coverUrl: string | null;
 };
@@ -33,10 +35,11 @@ export async function getActiveOffers(
     .from("business_offers")
     .select(
       `
-      id, title, description, expires_at,
+      id, title, description, expires_at, created_at,
       businesses!inner (
         id, name, slug, address, whatsapp, is_featured,
-        business_photos ( url, is_cover, position )
+        business_photos ( url, is_cover, position ),
+        business_categories ( categories ( name, slug ) )
       )
     `,
     )
@@ -66,6 +69,7 @@ export async function getActiveOffers(
       title: raw.title,
       description: raw.description,
       expires_at: raw.expires_at,
+      created_at: raw.created_at,
       business: {
         id: business.id,
         name: business.name,
@@ -73,6 +77,9 @@ export async function getActiveOffers(
         address: business.address,
         whatsapp: business.whatsapp,
         is_featured: business.is_featured,
+        categories: (business.business_categories ?? [])
+          .map((bc: any) => bc.categories)
+          .filter(Boolean),
       },
       coverUrl: cover?.url ?? null,
     };
