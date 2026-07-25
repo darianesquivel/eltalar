@@ -69,6 +69,29 @@ export async function getCurrentTurns(
   return data.map(toTurn).filter((t): t is PharmacyTurn => t !== null);
 }
 
+/** Turnos que todavía no empezaron, del más próximo en adelante. */
+export async function getNextTurns(
+  barrioId: string,
+  limit = 6,
+): Promise<PharmacyTurn[]> {
+  const now = new Date().toISOString();
+
+  const { data, error } = await supabase
+    .from("pharmacy_turns")
+    .select(TURN_SELECT)
+    .eq("businesses.barrio_id", barrioId)
+    .gt("starts_at", now)
+    .order("starts_at", { ascending: true })
+    .limit(limit);
+
+  if (error || !data) {
+    console.error("Error getNextTurns:", error);
+    return [];
+  }
+
+  return data.map(toTurn).filter((t): t is PharmacyTurn => t !== null);
+}
+
 /** La primera farmacia de turno (la card de la home muestra una sola). */
 export async function getCurrentTurn(
   barrioId: string,
