@@ -51,6 +51,14 @@ const canonical = new URL(Astro.url.pathname, barrio.url);
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <!-- El sitio es claro y punto. Sin esto, Chrome en Android y Samsung
+         Internet "auto-oscurecen" las páginas que no declaran su esquema
+         cuando el teléfono está en modo oscuro, y se veía la primera
+         pantalla en negro. theme-color pinta la barra del navegador del
+         mismo color que el fondo del sitio. -->
+    <meta name="color-scheme" content="light" />
+    <meta name="theme-color" content="#fbfaf6" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
 
     <title>{title}</title>

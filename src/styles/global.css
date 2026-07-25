@@ -48,12 +48,16 @@
   font-display: swap;
 }
 
-body {
-  font-family: "Stack Sans", sans-serif;
-}
-
 html {
   scroll-behavior: smooth;
+  /* Acompaña al <meta name="color-scheme">: le dice al navegador que los
+     controles nativos (scrollbars, inputs, selects) también van en claro. */
+  color-scheme: light;
+  background-color: var(--color-bg-main);
+}
+
+body {
+  font-family: "Stack Sans", sans-serif;
 }
 
 /* ============ Design tokens — "El Talar Vivo" ============

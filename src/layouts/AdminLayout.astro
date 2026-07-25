@@ -76,6 +76,10 @@ const isActive = (item: (typeof NAV)[number]) =>
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <!-- Mismo motivo que en el layout público: sin esto el navegador del
+         celular auto-oscurece el panel. -->
+    <meta name="color-scheme" content="light" />
+    <meta name="theme-color" content="#f9fafb" />
     <meta name="robots" content="noindex" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <title>{title} · Admin {adminBarrio.name}</title>
