@@ -5,6 +5,7 @@ import MobileTabBar from "../components/header/MobileTabBar.astro";
 import NavLoader from "../components/NavLoader.astro";
 import { ClientRouter } from "astro:transitions";
 import { DEFAULT_BARRIO } from "../lib/barrio";
+import heroBg from "../images/hero-bg.jpg";
 
 import "../styles/global.css";
 
@@ -42,8 +43,19 @@ const mainClass = wide
   ? "flex flex-1 flex-col"
   : "mx-auto flex w-full max-w-[1200px] flex-1 flex-col gap-12 px-[18px] py-6 sm:px-10 sm:py-10";
 
-// Canónica sobre el dominio del barrio (un deploy sirve varios dominios)
+// Canónica sobre el dominio del barrio (un deploy sirve varios dominios).
+// Los filtros indexables (rubro de la guía / de avisos y ofertas) se
+// conservan: son las landing de SEO local. Antes se recortaba TODO el query
+// string y las páginas filtradas le decían a Google que se descartaran.
 const canonical = new URL(Astro.url.pathname, barrio.url);
+for (const param of ["categoria", "rubro"]) {
+  const value = Astro.url.searchParams.get(param);
+  if (value) canonical.searchParams.set(param, value);
+}
+
+// Fallback para compartir en WhatsApp/redes: sin og:image, la home y los
+// listados se compartían sin preview.
+const ogImage = image ?? new URL(heroBg.src, barrio.url).toString();
 ---
 
 <!doctype html>
@@ -61,6 +73,23 @@ const canonical = new URL(Astro.url.pathname, barrio.url);
     <meta name="theme-color" content="#fbfaf6" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
 
+    <!-- Los dos pesos que se ven arriba del pliegue en todas las páginas
+         (cuerpo y títulos): precargarlos evita el flash de fuente. -->
+    <link
+      rel="preload"
+      href="/fonts/StackSansText-Regular.woff2"
+      as="font"
+      type="font/woff2"
+      crossorigin
+    />
+    <link
+      rel="preload"
+      href="/fonts/StackSansText-Bold.woff2"
+      as="font"
+      type="font/woff2"
+      crossorigin
+    />
+
     <title>{title}</title>
     <meta name="description" content={description} />
     <link rel="canonical" href={canonical} />
@@ -72,12 +101,9 @@ const canonical = new URL(Astro.url.pathname, barrio.url);
     <meta property="og:title" content={title} />
     <meta property="og:description" content={description} />
     <meta property="og:url" content={canonical} />
-    {image && <meta property="og:image" content={image} />}
+    <meta property="og:image" content={ogImage} />
 
-    <meta
-      name="twitter:card"
-      content={image ? "summary_large_image" : "summary"}
-    />
+    <meta name="twitter:card" content="summary_large_image" />
 
     <ClientRouter />
   </head>

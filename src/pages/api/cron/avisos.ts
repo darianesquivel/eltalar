@@ -42,37 +42,62 @@ export const GET: APIRoute = async ({ request }) => {
   const now = new Date();
   const limite = new Date(now.getTime() - GRACE_DAYS * 86_400_000);
 
-  // 1. Vencidos: salen del listado público (que igual filtra por fecha) y
-  //    el vecino los ve como "vencido" en Mis avisos, con botón de renovar.
-  const { data: vencidos } = await admin
-    .from("classifieds")
-    .update({ status: "expired" })
-    .eq("status", "published")
-    .lte("expires_at", now.toISOString())
-    .select("id");
+  // 1. BORRAR primero, VENCER después. Al revés, si el cron se salteaba
+  //    más de una semana, un aviso podía marcarse vencido y borrarse en la
+  //    MISMA corrida (los dos pasos miran expires_at): el vecino se quedaba
+  //    sin su semana de gracia para renovar. En este orden, un aviso recién
+  //    marcado como vencido siempre sobrevive hasta la corrida siguiente.
+  //
+  //    Se borran: vencidos con la gracia cumplida, y rechazados con más de
+  //    una semana (su expires_at es created_at+30, no significa nada — el
+  //    spam rechazado no tiene por qué vivir 37 días en la base).
+  const [{ data: expirados }, { data: rechazados }] = await Promise.all([
+    admin
+      .from("classifieds")
+      .select("id, photo_url")
+      .eq("status", "expired")
+      .lt("expires_at", limite.toISOString()),
+    admin
+      .from("classifieds")
+      .select("id, photo_url")
+      .eq("status", "rejected")
+      .lt("created_at", limite.toISOString()),
+  ]);
 
-  // 2. Los que ya pasaron la semana de gracia: primero la foto, después la
-  //    fila (si falla el borrado de la fila, la foto ya no está, pero un
-  //    aviso sin foto molesta menos que un archivo huérfano para siempre).
-  const { data: aBorrar } = await admin
-    .from("classifieds")
-    .select("id, photo_url")
-    .lt("expires_at", limite.toISOString())
-    .in("status", ["expired", "rejected"]);
+  const aBorrar = [...(expirados ?? []), ...(rechazados ?? [])];
 
-  const paths = (aBorrar ?? [])
+  // La URL pública viene percent-encodeada: sin decodificar, Storage no
+  // encuentra el objeto y la foto queda huérfana para siempre.
+  const paths = aBorrar
     .map((a) => a.photo_url?.split("/classified-photos/")[1])
-    .filter((p): p is string => Boolean(p));
+    .filter((p): p is string => Boolean(p))
+    .map((p) => {
+      try {
+        return decodeURIComponent(p);
+      } catch {
+        return p;
+      }
+    });
 
-  if (paths.length > 0) {
+  // En tandas: un remove() con demasiados objetos falla entero y los deja
+  // todos huérfanos. Si una tanda falla, se sigue igual — las filas
+  // correspondientes se borran y se loguea; mejor eso que reintentar
+  // borrar filas cuyo estado ya no conocemos.
+  let fotosBorradas = 0;
+  for (let i = 0; i < paths.length; i += 100) {
+    const batch = paths.slice(i, i + 100);
     const { error } = await admin.storage
       .from("classified-photos")
-      .remove(paths);
-    if (error) console.error("Error borrando fotos de avisos:", error);
+      .remove(batch);
+    if (error) {
+      console.error("Error borrando fotos de avisos:", error);
+    } else {
+      fotosBorradas += batch.length;
+    }
   }
 
   let borrados = 0;
-  if (aBorrar && aBorrar.length > 0) {
+  if (aBorrar.length > 0) {
     const { error } = await admin
       .from("classifieds")
       .delete()
@@ -88,11 +113,26 @@ export const GET: APIRoute = async ({ request }) => {
     borrados = aBorrar.length;
   }
 
+  // 2. Vencidos: salen del listado público (que igual filtra por fecha) y
+  //    el vecino los ve como "vencido" en Mis avisos, con botón de renovar.
+  const { data: vencidos, error: expireError } = await admin
+    .from("classifieds")
+    .update({ status: "expired" })
+    .eq("status", "published")
+    .lte("expires_at", now.toISOString())
+    .select("id");
+
+  if (expireError) {
+    // Con error real el cron tiene que fallar (500), no reportar "0 vencidos"
+    console.error("Error venciendo avisos:", expireError);
+    return json({ error: "No se pudieron vencer los avisos" }, 500);
+  }
+
   return json(
     {
       vencidos: vencidos?.length ?? 0,
       borrados,
-      fotosBorradas: paths.length,
+      fotosBorradas,
     },
     200,
   );

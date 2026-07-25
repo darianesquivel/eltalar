@@ -15,9 +15,17 @@ if (!business) {
   return Astro.rewrite("/404");
 }
 
-const description =
-  business.description?.slice(0, 160) ||
-  `${business.name} en ${barrio.name}: horarios, teléfono, WhatsApp y ubicación.`;
+// Cortada en palabra y con puntos suspensivos: el .slice() seco partía
+// una palabra al medio en el resultado de Google.
+const truncate = (text: string, max: number) => {
+  if (text.length <= max) return text;
+  const cut = text.slice(0, max - 1);
+  return `${cut.slice(0, Math.max(cut.lastIndexOf(" "), max - 20))}…`;
+};
+
+const description = business.description?.trim()
+  ? truncate(business.description.trim(), 160)
+  : `${business.name} en ${barrio.name}: horarios, teléfono, WhatsApp y ubicación.`;
 
 // Datos estructurados schema.org: le dicen a Google que esto es un negocio
 // local con dirección y horarios (mejora el SEO local y los rich results).
@@ -72,6 +80,17 @@ const jsonLd = {
     }),
   ...(business.instagram && { sameAs: [instagramUrl(business.instagram)] }),
   ...(openingHours.length > 0 && { openingHoursSpecification: openingHours }),
+  // Rich result de estrellas en Google: gratis, los datos ya están
+  ...(business.rating_count > 0 &&
+    business.rating_avg != null && {
+      aggregateRating: {
+        "@type": "AggregateRating",
+        ratingValue: business.rating_avg,
+        reviewCount: business.rating_count,
+        bestRating: 5,
+        worstRating: 1,
+      },
+    }),
 };
 ---
 

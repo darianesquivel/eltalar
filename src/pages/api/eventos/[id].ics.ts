@@ -11,9 +11,15 @@ import { getEventById } from "../../../lib/repositories/event.repository";
 
 const AR_OFFSET = "-03:00";
 
-const toUtcStamp = (date: string, time: string | null) => {
+const toUtcStamp = (date: string, time: string | null, addHours = 0) => {
   const iso = `${date}T${(time ?? "00:00:00").slice(0, 8)}${AR_OFFSET}`;
-  return `${new Date(iso).toISOString().replace(/[-:]/g, "").split(".")[0]}Z`;
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) {
+    // Hora malformada en la base: mejor un .ics sin hora exacta que un 500
+    throw new Error(`Fecha/hora inválida: ${date} ${time}`);
+  }
+  d.setUTCHours(d.getUTCHours() + addHours);
+  return `${d.toISOString().replace(/[-:]/g, "").split(".")[0]}Z`;
 };
 
 /** Fecha suelta (evento de día completo): el DTEND es exclusivo, va +1 día. */
@@ -40,15 +46,29 @@ export const GET: APIRoute = async ({ params, locals, url }) => {
 
   const endDate = event.end_date ?? event.date;
 
-  const timing = event.start_time
-    ? [
-        `DTSTART:${toUtcStamp(event.date, event.start_time)}`,
-        `DTEND:${toUtcStamp(endDate, event.end_time ?? event.start_time)}`,
-      ]
-    : [
-        `DTSTART;VALUE=DATE:${toDateStamp(event.date)}`,
-        `DTEND;VALUE=DATE:${toDateStamp(endDate, 1)}`,
-      ];
+  // Sin hora de cierre, el evento dura 1 hora: DTEND igual a DTSTART crea
+  // una entrada de duración cero que algunos calendarios muestran mal.
+  let timing: string[];
+  try {
+    timing = event.start_time
+      ? [
+          `DTSTART:${toUtcStamp(event.date, event.start_time)}`,
+          event.end_time
+            ? `DTEND:${toUtcStamp(endDate, event.end_time)}`
+            : `DTEND:${toUtcStamp(endDate, event.start_time, 1)}`,
+        ]
+      : [
+          `DTSTART;VALUE=DATE:${toDateStamp(event.date)}`,
+          `DTEND;VALUE=DATE:${toDateStamp(endDate, 1)}`,
+        ];
+  } catch (err) {
+    // Hora malformada: se cae al evento de día completo en vez de un 500
+    console.error("ICS con horario inválido:", err);
+    timing = [
+      `DTSTART;VALUE=DATE:${toDateStamp(event.date)}`,
+      `DTEND;VALUE=DATE:${toDateStamp(endDate, 1)}`,
+    ];
+  }
 
   const lines = [
     "BEGIN:VCALENDAR",

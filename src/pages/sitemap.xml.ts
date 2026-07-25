@@ -16,6 +16,8 @@ export const GET: APIRoute = async ({ locals }) => {
     "/anunciate",
     "/ofertas",
     "/eventos",
+    "/avisos",
+    "/contacto",
   ];
 
   // En páginas de a 1000: Supabase corta cualquier consulta en 1000 filas y
