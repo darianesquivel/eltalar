@@ -1,9 +1,7 @@
 ---
-import { supabase } from "../../lib/supabase";
 import { ARGENTINA_TZ } from "../../lib/hours";
+import { getCurrentTurns } from "../../lib/repositories/pharmacy.repository";
 import PharmacyCard from "./PharmacyCard.astro";
-
-const now = new Date().toISOString();
 
 const formatUntil = (endsAt: string) =>
   new Date(endsAt).toLocaleString("es-AR", {
@@ -13,31 +11,9 @@ const formatUntil = (endsAt: string) =>
     timeZone: ARGENTINA_TZ,
   });
 
-// El barrio del turno viene implícito por la farmacia (join !inner)
-const { data: pharmacies, error } = await supabase
-  .from("pharmacy_turns")
-  .select(
-    `
-    starts_at,
-    ends_at,
-    businesses!inner (
-      id,
-      name,
-      address,
-      phone,
-      whatsapp
-    )
-  `,
-  )
-  .eq("businesses.barrio_id", Astro.locals.barrio.id)
-  .lte("starts_at", now)
-  .gt("ends_at", now);
-
-if (error) {
-  console.error("Error farmacias de turno:", error);
-}
-
-const hasTurns = pharmacies && pharmacies.length > 0;
+// La consulta vive en el repositorio: la home muestra la misma farmacia
+const pharmacies = await getCurrentTurns(Astro.locals.barrio.id);
+const hasTurns = pharmacies.length > 0;
 ---
 
 <section>
@@ -48,23 +24,17 @@ const hasTurns = pharmacies && pharmacies.length > 0;
   <div class="grid gap-6 md:grid-cols-3">
     {
       hasTurns ? (
-        pharmacies.map((turn) => {
-          const business = Array.isArray(turn.businesses)
-            ? turn.businesses[0]
-            : turn.businesses;
-
-          return (
-            <PharmacyCard
-              name={business.name}
-              address={business.address}
-              badge="🟢 De turno ahora"
-              subtitle={`Hasta el ${formatUntil(turn.ends_at)} hs`}
-              phone={business.phone}
-              whatsapp={business.whatsapp}
-              highlight
-            />
-          );
-        })
+        pharmacies.map((turn) => (
+          <PharmacyCard
+            name={turn.name}
+            address={turn.address ?? undefined}
+            badge="🟢 De turno ahora"
+            subtitle={`Hasta el ${formatUntil(turn.ends_at)} hs`}
+            phone={turn.phone}
+            whatsapp={turn.whatsapp}
+            highlight
+          />
+        ))
       ) : (
         <div class="rounded-2xl bg-gray-50 p-6 text-center text-gray-500">
           No hay farmacias de turno en este momento.

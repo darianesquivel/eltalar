@@ -1,0 +1,69 @@
+---
+import * as icons from "@lucide/astro";
+import { ArrowRight } from "@lucide/astro";
+import { categoryStyle } from "../../lib/categories";
+
+interface Props {
+  categories: { id: string; name: string; slug: string; count: number }[];
+  /** Cantidad total de rubros con negocios cargados (para el link). */
+  totalCategories: number;
+}
+
+const { categories, totalCategories } = Astro.props;
+
+// El ícono viaja como nombre de Lucide: se resuelve acá, en el servidor,
+// así la grilla no manda ningún JavaScript al navegador.
+const iconFor = (name: string) =>
+  (icons as Record<string, any>)[name] ?? icons.Store;
+---
+
+<section class="pb-11">
+  <div class="mb-[18px] flex items-baseline justify-between gap-4">
+    <h2
+      class="text-[19px] font-extrabold tracking-[-0.015em] text-text-main sm:text-[26px]"
+    >
+      Buscá por rubro
+    </h2>
+    <a
+      href="/negocios"
+      class="inline-flex shrink-0 items-center gap-1.5 text-[13px] font-semibold text-primary-strong sm:text-sm"
+    >
+      Ver los {totalCategories} rubros
+      <ArrowRight class="size-4" aria-hidden="true" />
+    </a>
+  </div>
+
+  <div class="grid grid-cols-2 gap-2.5 sm:gap-3.5 lg:grid-cols-4">
+    {
+      categories.map((category) => {
+        const style = categoryStyle(category.slug);
+        const Icon = iconFor(style.icon);
+        return (
+          <a
+            href={`/negocios?categoria=${category.slug}`}
+            class="flex items-center gap-3 rounded-[18px] bg-bg-card p-3.5 shadow-soft transition-colors hover:bg-white sm:gap-3.5 sm:p-5"
+          >
+            <div
+              class="flex size-[38px] shrink-0 items-center justify-center rounded-xl sm:size-12 sm:rounded-[14px]"
+              style={`background:${style.soft}`}
+            >
+              <Icon
+                class="size-[18px] sm:size-[22px]"
+                style={`color:${style.fg}`}
+                aria-hidden="true"
+              />
+            </div>
+            <div>
+              <div class="text-[14px] font-bold leading-tight text-text-main sm:text-[16px]">
+                {category.name}
+              </div>
+              <div class="text-[11.5px] text-text-muted sm:text-[13px]">
+                {category.count} comercios
+              </div>
+            </div>
+          </a>
+        );
+      })
+    }
+  </div>
+</section>

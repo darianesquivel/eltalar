@@ -1,99 +1,250 @@
 ---
-import { Image } from "astro:assets";
-import { MapPin, Cross } from "@lucide/astro";
-import heroBg from "../../images/hero-bg.jpg";
+import { Search, Pill, Phone, MapPin, Flame, Megaphone } from "@lucide/astro";
+import { ARGENTINA_TZ } from "../../lib/hours";
+import type { PharmacyTurn } from "../../lib/repositories/pharmacy.repository";
+import type { ActiveOffer } from "../../lib/repositories/offer.repository";
+import type { EventRow } from "../../lib/repositories/event.repository";
 
-const { barrio } = Astro.locals;
+interface Props {
+  barrioName: string;
+  /** Comercios activos del barrio (dato real de la base, no estimado). */
+  total: number;
+  populares: string[];
+  pharmacy: PharmacyTurn | null;
+  offer: ActiveOffer | null;
+  event: EventRow | null;
+  alert: { title: string; description: string } | null;
+}
+
+const { barrioName, total, populares, pharmacy, offer, event, alert } =
+  Astro.props;
+
+const untilLabel = (endsAt: string) =>
+  new Date(endsAt)
+    .toLocaleString("es-AR", {
+      weekday: "long",
+      hour: "2-digit",
+      minute: "2-digit",
+      hour12: false,
+      timeZone: ARGENTINA_TZ,
+    })
+    .replace(",", "");
+
+const dayPart = (iso: string, opts: Intl.DateTimeFormatOptions) =>
+  new Date(`${iso}T12:00:00`).toLocaleDateString("es-AR", opts);
+
+const offerUntil = offer
+  ? dayPart(offer.expires_at, { day: "numeric", month: "long" })
+  : null;
+
+const mapsUrl = pharmacy?.address
+  ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(pharmacy.address)}`
+  : null;
+
+const eventMeta = event
+  ? [event.location, event.start_time?.slice(0, 5)].filter(Boolean).join(" · ")
+  : null;
+
+const cardClass =
+  "flex items-start gap-3.5 rounded-[18px] bg-bg-card p-[18px] shadow-soft";
+const iconBoxClass =
+  "flex size-11 shrink-0 items-center justify-center rounded-xl";
+const labelClass =
+  "mb-1 text-[12px] font-bold uppercase leading-none tracking-[0.06em]";
 ---
 
-<section
-  class="relative overflow-hidden flex justify-center items-center py-24 rounded-3xl"
->
-  <!-- Fondo con zoom lento (ken burns) -->
-  <Image
-    src={heroBg}
-    alt={barrio.name}
-    widths={[768, 1536]}
-    sizes="100vw"
-    loading="eager"
-    fetchpriority="high"
-    class="absolute inset-0 h-full w-full object-cover animate-ken-burns"
-  />
-
-  <div
-    class="absolute inset-0 bg-linear-to-b from-black/70 via-black/45 to-black/75"
-  >
-  </div>
-
-  <!-- Manchas de color flotando detrás del contenido -->
-  <div
-    class="pointer-events-none absolute -left-24 top-8 h-72 w-72 rounded-full bg-primary/40 blur-3xl animate-blob"
-  >
-  </div>
-  <div
-    class="pointer-events-none absolute -right-16 -bottom-10 h-80 w-80 rounded-full bg-emerald-400/25 blur-3xl animate-blob"
-    style="animation-delay: -7s"
-  >
-  </div>
-
-  <div
-    class="relative z-10 flex flex-col items-center justify-center px-6 text-center text-white gap-5"
-  >
-    <span
-      class="animate-fade-up inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/10 px-4 py-1.5 text-xs font-semibold uppercase tracking-widest backdrop-blur"
+<section class="grid gap-9 py-8 sm:py-[52px] lg:grid-cols-[1fr_372px] lg:gap-12">
+  <!-- Buscador -->
+  <div>
+    <div
+      class="mb-5 inline-flex items-center gap-2 rounded-full bg-primary-soft px-3.5 py-[7px] text-[12.5px] font-semibold text-primary-strong"
     >
-      <span class="relative flex h-2 w-2">
-        <span
-          class="absolute inline-flex h-full w-full animate-ping rounded-full bg-green-400 opacity-75"
-        ></span>
-        <span class="relative inline-flex h-2 w-2 rounded-full bg-green-400"
-        ></span>
-      </span>
-      Tu comunidad online
-    </span>
+      <span class="size-[7px] rounded-full bg-primary"></span>
+      {total} comercios en {barrioName}
+    </div>
 
     <h1
-      class="animate-fade-up mt-4 max-w-3xl text-4xl font-extrabold leading-tight md:text-5xl lg:text-6xl"
-      style="animation-delay: 0.12s"
+      class="mb-4 text-[34px] font-extrabold leading-[1.02] tracking-[-0.025em] text-text-main text-balance sm:text-[62px]"
     >
-      Conectando a los vecinos de{" "}
-      <span
-        class="bg-linear-to-r from-green-300 via-emerald-300 to-primary bg-clip-text text-transparent"
-      >
-        {barrio.name}
-      </span>
+      Todo el barrio,<br />a una búsqueda.
     </h1>
 
     <p
-      class="animate-fade-up mt-2 max-w-2xl text-lg text-white/85"
-      style="animation-delay: 0.24s"
+      class="mb-6 max-w-[520px] text-[15px] leading-relaxed text-text-body sm:text-[18px]"
     >
-      Comercios, servicios, farmacias de turno y teléfonos útiles. Todo lo que
-      necesitás del barrio, en un solo lugar.
+      Comercios, farmacias de turno, ofertas y eventos de {barrioName}. Escribí
+      lo que necesitás y aparece.
     </p>
 
-    <div
-      class="animate-fade-up mt-2 flex flex-col gap-4 sm:flex-row"
-      style="animation-delay: 0.36s"
+    <form
+      action="/negocios"
+      method="get"
+      role="search"
+      class="flex max-w-[600px] items-center rounded-[18px] bg-bg-card p-2 pl-4 shadow-search sm:pl-5"
     >
-      <a
-        href="/mapa"
-        class="group inline-flex items-center justify-center gap-2 rounded-full bg-primary px-7 py-3.5 text-sm font-semibold text-white shadow-lg shadow-primary/40 transition-all duration-300 hover:scale-105 hover:shadow-xl hover:shadow-primary/50"
+      <Search class="size-[22px] shrink-0 text-primary" aria-hidden="true" />
+      <input
+        type="search"
+        name="buscar"
+        autocomplete="off"
+        aria-label="Buscar en el barrio"
+        placeholder="¿Qué buscás? Ej: cerrajero, pizza, pediatra…"
+        class="w-full bg-transparent px-3 py-3 text-[15px] text-text-main outline-none placeholder:text-text-muted sm:py-4 sm:text-[17px]"
+      />
+      <button
+        type="submit"
+        class="shrink-0 rounded-xl bg-primary px-5 py-[15px] text-[15px] font-semibold text-white transition-colors hover:bg-primary-hover sm:px-[26px]"
       >
-        <MapPin
-          size={18}
-          class="transition-transform duration-300 group-hover:-translate-y-0.5 group-hover:scale-110"
-        />
-        Explorar el barrio
-      </a>
+        Buscar
+      </button>
+    </form>
 
-      <a
-        href="/farmacias"
-        class="inline-flex items-center justify-center gap-2 rounded-full border border-white/25 bg-white/10 px-7 py-3.5 text-sm font-semibold text-white backdrop-blur transition-all duration-300 hover:scale-105 hover:bg-white/20"
-      >
-        <Cross size={18} />
-        Farmacias de turno
-      </a>
+    <div class="mt-4 flex flex-wrap items-center gap-2">
+      <span class="text-[13px] text-text-muted">Lo más buscado:</span>
+      {
+        populares.map((term) => (
+          <a
+            href={`/negocios?buscar=${encodeURIComponent(term)}`}
+            class="rounded-full border border-border bg-bg-card px-3.5 py-[7px] text-[13px] font-medium text-text-main transition-colors hover:border-[rgba(14,26,18,.2)]"
+          >
+            {term}
+          </a>
+        ))
+      }
     </div>
   </div>
+
+  <!-- El barrio ahora -->
+  <aside class="flex flex-col gap-3.5">
+    <div class="flex items-center gap-2 pl-0.5">
+      <span class="size-2 rounded-full bg-offer"></span>
+      <span
+        class="text-[12.5px] font-bold uppercase tracking-[0.1em] text-text-body"
+      >
+        El barrio ahora
+      </span>
+    </div>
+
+    {
+      pharmacy ? (
+        <div class="rounded-[22px] bg-primary-deep p-6 text-white">
+          <div class="mb-3 flex items-center gap-2 text-[12.5px] font-semibold text-primary-mint">
+            <Pill class="size-[15px]" aria-hidden="true" />
+            Farmacia de turno
+          </div>
+          <a
+            href={`/negocios/${pharmacy.slug}`}
+            class="text-[27px] font-extrabold leading-[1.1] tracking-[-0.01em] text-white"
+          >
+            {pharmacy.name}
+          </a>
+          <div class="mb-[18px] mt-[7px] text-[14px] leading-normal text-white/70">
+            {pharmacy.address}
+            <br />
+            De turno hasta {untilLabel(pharmacy.ends_at)} hs
+          </div>
+          <div class="flex gap-2">
+            {pharmacy.phone && (
+              <a
+                href={`tel:${pharmacy.phone}`}
+                class="flex flex-1 items-center justify-center gap-[7px] rounded-xl bg-primary p-[13px] text-[14px] font-semibold text-white transition-colors hover:bg-primary-hover"
+              >
+                <Phone class="size-[15px]" aria-hidden="true" />
+                Llamar
+              </a>
+            )}
+            {mapsUrl && (
+              <a
+                href={mapsUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                class="flex flex-1 items-center justify-center gap-[7px] rounded-xl bg-white/12 p-[13px] text-[14px] font-semibold text-white transition-colors hover:bg-white/20"
+              >
+                <MapPin class="size-[15px]" aria-hidden="true" />
+                Cómo llegar
+              </a>
+            )}
+          </div>
+        </div>
+      ) : (
+        <div class="rounded-[22px] bg-primary-deep p-6 text-white">
+          <div class="mb-3 flex items-center gap-2 text-[12.5px] font-semibold text-primary-mint">
+            <Pill class="size-[15px]" aria-hidden="true" />
+            Farmacias de turno
+          </div>
+          <p class="text-[15px] leading-normal text-white/70">
+            No hay una farmacia de turno cargada en este momento.
+          </p>
+          <a
+            href="/farmacias"
+            class="mt-4 inline-flex rounded-xl bg-white/12 px-4 py-3 text-[14px] font-semibold text-white"
+          >
+            Ver el calendario
+          </a>
+        </div>
+      )
+    }
+
+    {
+      offer && (
+        <a href="/ofertas" class={`${cardClass} transition-colors hover:bg-white`}>
+          <div class={`${iconBoxClass} bg-offer-soft text-offer`}>
+            <Flame class="size-5" aria-hidden="true" />
+          </div>
+          <div>
+            <div class={`${labelClass} text-offer`}>Oferta vigente</div>
+            <div class="text-[15.5px] font-bold leading-tight text-text-main">
+              {offer.title}
+            </div>
+            <div class="mt-[3px] text-[13px] text-text-muted">
+              {offer.business.name} · hasta el {offerUntil}
+            </div>
+          </div>
+        </a>
+      )
+    }
+
+    {
+      event && (
+        <a href="/eventos" class={`${cardClass} transition-colors hover:bg-white`}>
+          <div class={`${iconBoxClass} flex-col leading-none bg-primary-faint`}>
+            <span class="text-[16px] font-extrabold text-text-main">
+              {dayPart(event.date, { day: "numeric" })}
+            </span>
+            <span class="text-[9.5px] font-bold uppercase tracking-[0.06em] text-text-body">
+              {dayPart(event.date, { month: "short" }).replace(".", "")}
+            </span>
+          </div>
+          <div>
+            <div class={`${labelClass} text-primary-strong`}>Próximo evento</div>
+            <div class="text-[15.5px] font-bold leading-tight text-text-main">
+              {event.title}
+            </div>
+            {eventMeta && (
+              <div class="mt-[3px] text-[13px] text-text-muted">{eventMeta}</div>
+            )}
+          </div>
+        </a>
+      )
+    }
+
+    {
+      alert && (
+        <div class={cardClass}>
+          <div class={`${iconBoxClass} bg-[#eaf1fa] text-info`}>
+            <Megaphone class="size-5" aria-hidden="true" />
+          </div>
+          <div>
+            <div class={`${labelClass} text-info`}>Aviso del barrio</div>
+            <div class="text-[15.5px] font-bold leading-tight text-text-main">
+              {alert.title}
+            </div>
+            <div class="mt-[3px] line-clamp-2 text-[13px] text-text-muted">
+              {alert.description}
+            </div>
+          </div>
+        </div>
+      )
+    }
+  </aside>
 </section>

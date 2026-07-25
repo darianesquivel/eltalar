@@ -1,0 +1,120 @@
+---
+import { ArrowRight, ChevronRight, Megaphone } from "@lucide/astro";
+import type { EventRow } from "../../lib/repositories/event.repository";
+
+type Alert = { id: string; title: string; description: string | null };
+
+interface Props {
+  events: EventRow[];
+  alerts: Alert[];
+}
+
+const { events, alerts } = Astro.props;
+
+const datePart = (iso: string, opts: Intl.DateTimeFormatOptions) =>
+  new Date(`${iso}T12:00:00`).toLocaleDateString("es-AR", opts);
+
+const meta = (event: EventRow) =>
+  [event.location, event.start_time?.slice(0, 5)].filter(Boolean).join(" · ");
+---
+
+<section class="grid gap-9 pb-11 lg:grid-cols-2 lg:gap-11">
+  <!-- Eventos -->
+  <div>
+    <div class="mb-4 flex items-baseline justify-between gap-4">
+      <h2
+        class="text-[19px] font-extrabold tracking-[-0.015em] text-text-main sm:text-[26px]"
+      >
+        Qué pasa en el barrio
+      </h2>
+      <a
+        href="/eventos"
+        class="inline-flex shrink-0 items-center gap-1.5 text-[13px] font-semibold text-primary-strong sm:text-sm"
+      >
+        Agenda completa
+        <ArrowRight class="size-4" aria-hidden="true" />
+      </a>
+    </div>
+
+    {
+      events.length > 0 ? (
+        <div class="flex flex-col gap-3">
+          {events.map((event) => (
+            <a
+              href="/eventos"
+              class="flex items-center gap-4 rounded-2xl bg-bg-card p-4 shadow-soft transition-colors hover:bg-white"
+            >
+              <div class="flex size-[52px] shrink-0 flex-col items-center justify-center rounded-[14px] bg-primary-faint leading-[1.1]">
+                <span class="text-[19px] font-extrabold text-text-main">
+                  {datePart(event.date, { day: "numeric" })}
+                </span>
+                <span class="text-[10px] font-bold uppercase tracking-[0.06em] text-text-body">
+                  {datePart(event.date, { month: "short" }).replace(".", "")}
+                </span>
+              </div>
+              <div class="flex-1">
+                <div class="text-[15px] font-bold leading-tight text-text-main sm:text-[16px]">
+                  {event.title}
+                </div>
+                {meta(event) && (
+                  <div class="mt-[3px] text-[13px] text-text-muted">
+                    {meta(event)}
+                  </div>
+                )}
+              </div>
+              <ChevronRight class="size-[18px] text-text-faint" aria-hidden="true" />
+            </a>
+          ))}
+        </div>
+      ) : (
+        <p class="rounded-2xl bg-bg-card p-5 text-[14px] text-text-muted shadow-soft">
+          No hay eventos cargados por ahora.
+        </p>
+      )
+    }
+  </div>
+
+  <!-- Avisos -->
+  <div>
+    <div class="mb-4 flex items-baseline justify-between gap-4">
+      <div>
+        <h2
+          class="text-[19px] font-extrabold tracking-[-0.015em] text-text-main sm:text-[26px]"
+        >
+          Avisos del barrio
+        </h2>
+        <p class="mt-1 text-[13px] text-text-muted sm:text-sm">
+          Cortes, obras y novedades que conviene saber.
+        </p>
+      </div>
+    </div>
+
+    {
+      alerts.length > 0 ? (
+        <div class="flex flex-col gap-3">
+          {alerts.map((alert) => (
+            <div class="flex items-start gap-3.5 rounded-2xl bg-bg-card p-4 shadow-soft">
+              <div class="flex size-11 shrink-0 items-center justify-center rounded-xl bg-[#eaf1fa] text-info">
+                <Megaphone class="size-5" aria-hidden="true" />
+              </div>
+              <div>
+                <div class="text-[15px] font-bold leading-tight text-text-main">
+                  {alert.title}
+                </div>
+                {alert.description && (
+                  <p class="mt-1 text-[13px] leading-normal text-text-body">
+                    {alert.description}
+                  </p>
+                )}
+              </div>
+            </div>
+          ))}
+        </div>
+      ) : (
+        <p class="rounded-2xl bg-bg-card p-5 text-[14px] text-text-muted shadow-soft">
+          No hay avisos importantes en este momento.
+        </p>
+      )
+    }
+  </div>
+</section>

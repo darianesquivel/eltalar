@@ -1,0 +1,92 @@
+---
+import { Flame } from "@lucide/astro";
+import type { ActiveOffer } from "../../lib/repositories/offer.repository";
+
+interface Props {
+  offers: ActiveOffer[];
+  /** Ofertas vigentes en total (el botón dice el número real). */
+  total: number;
+}
+
+const { offers, total } = Astro.props;
+
+const untilLabel = (iso: string) =>
+  new Date(`${iso}T12:00:00`).toLocaleDateString("es-AR", {
+    day: "numeric",
+    month: "short",
+  });
+---
+
+{
+  offers.length > 0 && (
+    <section class="bg-primary-deep">
+      <div class="mx-auto max-w-[1200px] px-[18px] py-9 sm:px-10 sm:py-12">
+        <div class="mb-[22px] flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+          <div>
+            <div class="mb-3 inline-flex items-center gap-[7px] rounded-full bg-offer px-3 py-1.5 text-[12px] font-bold uppercase tracking-[0.08em] text-white">
+              <Flame class="size-[13px]" aria-hidden="true" />
+              Ofertas vigentes
+            </div>
+            <h2 class="text-[22px] font-extrabold tracking-[-0.02em] text-white sm:text-[34px]">
+              Promos de esta semana
+            </h2>
+            <p class="mt-1.5 text-[14px] text-white/65 sm:text-[15px]">
+              Se vencen solas: nunca ves una promo que ya no existe.
+            </p>
+          </div>
+          <a
+            href="/ofertas"
+            class="shrink-0 self-start rounded-full bg-white/12 px-[22px] py-3 text-sm font-semibold text-white transition-colors hover:bg-white/20"
+          >
+            Ver {total === 1 ? "la oferta" : `las ${total} ofertas`}
+          </a>
+        </div>
+
+        <div class="grid gap-[18px] sm:grid-cols-2 lg:grid-cols-3">
+          {offers.map((offer) => (
+            <a
+              href={`/negocios/${offer.business.slug}`}
+              class="flex flex-col overflow-hidden rounded-[20px] bg-bg-card"
+            >
+              <div class="relative flex h-[118px] items-start justify-end p-3">
+                {offer.coverUrl ? (
+                  <img
+                    src={offer.coverUrl}
+                    alt=""
+                    loading="lazy"
+                    decoding="async"
+                    class="absolute inset-0 size-full object-cover"
+                  />
+                ) : (
+                  <div class="img-placeholder absolute inset-0" />
+                )}
+                <span class="relative rounded-xl bg-offer px-3 py-1.5 text-[13px] font-bold text-white">
+                  Oferta
+                </span>
+              </div>
+
+              <div class="flex flex-1 flex-col gap-[7px] p-[18px]">
+                <div class="text-[17px] font-bold leading-tight text-text-main sm:text-[18px]">
+                  {offer.title}
+                </div>
+                {offer.description && (
+                  <p class="line-clamp-2 text-[13.5px] leading-normal text-text-body">
+                    {offer.description}
+                  </p>
+                )}
+                <div class="mt-auto flex items-center justify-between gap-3 border-t border-border pt-3">
+                  <span class="line-clamp-1 text-[13.5px] font-bold text-primary-strong">
+                    {offer.business.name}
+                  </span>
+                  <span class="shrink-0 text-[12.5px] font-semibold text-offer">
+                    Hasta {untilLabel(offer.expires_at)}
+                  </span>
+                </div>
+              </div>
+            </a>
+          ))}
+        </div>
+      </div>
+    </section>
+  )
+}
