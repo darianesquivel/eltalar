@@ -31,12 +31,14 @@ export const NAV_ITEMS: NavItem[] = [
   { href: "/eventos", label: "Eventos" },
   { href: "/avisos", label: "Avisos" },
   { href: "/telefonos", label: "Teléfonos" },
+  // El comerciante también necesita su puerta desde cualquier página: el
+  // header ya no tiene botón de "Cargá tu negocio".
+  { href: "/anunciate", label: "Anunciate" },
 ];
 
 /** Secciones secundarias: nunca están en la barra inferior. */
 export const MENU_EXTRA_ITEMS: NavItem[] = [
   { href: "/mapa", label: "Mapa" },
-  { href: "/anunciate", label: "Anunciate" },
   { href: "/contacto", label: "Contacto" },
 ];
 
