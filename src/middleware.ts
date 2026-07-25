@@ -93,8 +93,16 @@ export const onRequest = defineMiddleware(async (context, next) => {
 
   context.locals.user = user;
 
-  if (!user && !PUBLIC_APP_PATHS.includes(pathname)) {
-    return context.redirect("/app/login");
+  if (!user) {
+    // `sesion=vencida` le avisa a la página de ingreso que la cookie que
+    // tiene el navegador ya no sirve: si no, ella redirige de vuelta al
+    // panel por ver esa cookie y quedan rebotando. `next` devuelve al
+    // vecino a donde quería entrar.
+    const params = new URLSearchParams({ next: pathname });
+    if ((context.request.headers.get("cookie") ?? "").includes("-auth-token")) {
+      params.set("sesion", "vencida");
+    }
+    return context.redirect(`/app/login?${params}`);
   }
 
   if (user) {

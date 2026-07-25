@@ -8,14 +8,35 @@ const next = rawNext?.startsWith("/") && !rawNext.startsWith("//")
   ? rawNext
   : "/app";
 
-// Al que ya tiene sesión lo manda a destino el script de abajo, mirando la
-// cookie: esta página no consulta a Supabase para dibujarse, así abre
-// siempre, incluso si la red hacia Supabase está lenta.
+// Al que ya tiene sesión se lo redirige ACÁ, en el servidor: hacerlo en el
+// navegador mostraba el formulario un instante antes del salto.
+// Se mira la cookie y no se consulta a Supabase, así esta página abre
+// siempre, aunque la red hacia Supabase esté lenta o caída.
+//
+// `sesion=vencida` lo pone el middleware cuando la cookie existe pero ya no
+// sirve. Sin esa marca habría un loop: login manda al panel, el panel ve la
+// sesión inválida y manda de vuelta a login.
+const sesionVencida = Astro.url.searchParams.get("sesion") === "vencida";
+const tieneCookie = (Astro.request.headers.get("cookie") ?? "").includes(
+  "-auth-token",
+);
+
+if (tieneCookie && !sesionVencida) {
+  return Astro.redirect(next);
+}
 ---
 
 <Layout title={`Ingresar | ${Astro.locals.barrio.name}`}>
   <section class="mx-auto w-full max-w-md py-16">
     <div class="rounded-2xl bg-white p-8 shadow-sm space-y-6">
+      {
+        sesionVencida && (
+          <p class="rounded-xl bg-amber-50 p-4 text-center text-sm text-amber-700">
+            Tu sesión venció. Entrá de nuevo para seguir.
+          </p>
+        )
+      }
+
       <div class="space-y-2 text-center">
         <h1 class="text-2xl font-bold">Panel de comercios</h1>
         <p class="text-sm text-gray-600">
@@ -71,11 +92,6 @@ const next = rawNext?.startsWith("/") && !rawNext.startsWith("//")
     ) as HTMLButtonElement | null;
     const errorBox = document.getElementById("login-error");
 
-    // Ya tiene sesión: derecho a destino, sin pasar por el botón
-    if (googleBtn && document.cookie.includes("-auth-token")) {
-      window.location.replace(googleBtn.dataset.next ?? "/app");
-      return;
-    }
 
     // No estamos en la página de login (o ya se inicializó este DOM)
     if (!googleBtn || !errorBox || googleBtn.dataset.ready) {
