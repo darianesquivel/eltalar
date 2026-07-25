@@ -15,7 +15,9 @@ const next = rawNext?.startsWith("/") && !rawNext.startsWith("//")
 //
 // `sesion=vencida` lo pone el middleware cuando la cookie existe pero ya no
 // sirve. Sin esa marca habría un loop: login manda al panel, el panel ve la
-// sesión inválida y manda de vuelta a login.
+// sesión inválida y manda de vuelta a login. No se muestra ningún cartel:
+// el vecino solo tiene que volver a entrar, y avisarle de una sesión que
+// venció sola confunde más de lo que ayuda.
 const sesionVencida = Astro.url.searchParams.get("sesion") === "vencida";
 const tieneCookie = (Astro.request.headers.get("cookie") ?? "").includes(
   "-auth-token",
@@ -29,14 +31,6 @@ if (tieneCookie && !sesionVencida) {
 <Layout title={`Ingresar | ${Astro.locals.barrio.name}`}>
   <section class="mx-auto w-full max-w-md py-16">
     <div class="rounded-2xl bg-white p-8 shadow-sm space-y-6">
-      {
-        sesionVencida && (
-          <p class="rounded-xl bg-amber-50 p-4 text-center text-sm text-amber-700">
-            Tu sesión venció. Entrá de nuevo para seguir.
-          </p>
-        )
-      }
-
       <div class="space-y-2 text-center">
         <h1 class="text-2xl font-bold">Panel de comercios</h1>
         <p class="text-sm text-gray-600">
