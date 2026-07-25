@@ -66,13 +66,26 @@ const chipClass = (active: boolean) =>
         </p>
       </div>
 
-      <a
-        href="/avisos/nuevo"
-        class="inline-flex shrink-0 items-center gap-2 rounded-[13px] bg-secondary px-6 py-3.5 text-[14.5px] font-semibold text-white"
-      >
-        <Plus class="size-4" aria-hidden="true" />
-        Publicar un aviso
-      </a>
+      <div class="flex shrink-0 flex-wrap items-center gap-2.5">
+        <!-- Esta página la cachea el CDN, así que no puede depender de la
+             sesión: el link aparece en el navegador si hay cookie, igual
+             que el CTA del header. -->
+        <a
+          href="/avisos/mios"
+          data-solo-con-sesion
+          hidden
+          class="rounded-[13px] bg-primary-faint px-5 py-3.5 text-[14.5px] font-semibold text-text-main transition-colors hover:bg-primary-soft"
+        >
+          Mis avisos
+        </a>
+        <a
+          href="/avisos/nuevo"
+          class="inline-flex items-center gap-2 rounded-[13px] bg-secondary px-6 py-3.5 text-[14.5px] font-semibold text-white"
+        >
+          <Plus class="size-4" aria-hidden="true" />
+          Publicar un aviso
+        </a>
+      </div>
     </header>
 
     <div class="flex flex-wrap gap-2 border-b border-border pb-6">
@@ -227,3 +240,15 @@ const chipClass = (active: boolean) =>
     </div>
   </div>
 </Layout>
+
+<script>
+  const revelarMisAvisos = () => {
+    if (!document.cookie.includes("-auth-token")) return;
+    document
+      .querySelectorAll<HTMLElement>("[data-solo-con-sesion]")
+      .forEach((el) => el.removeAttribute("hidden"));
+  };
+
+  revelarMisAvisos();
+  document.addEventListener("astro:page-load", revelarMisAvisos);
+</script>

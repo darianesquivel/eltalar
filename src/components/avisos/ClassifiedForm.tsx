@@ -7,11 +7,24 @@ import {
   formatPriceText,
 } from "../../lib/repositories/classified.repository";
 
+type Existing = {
+  id: string;
+  category: string;
+  title: string;
+  description: string | null;
+  price_text: string | null;
+  whatsapp: string | null;
+  author_name: string;
+  photo_url: string | null;
+};
+
 type Props = {
   /** Nombre de la cuenta de Google, editable por el vecino. */
   defaultName?: string;
   /** Id del usuario: la foto se sube a una carpeta con su nombre. */
   userId: string;
+  /** Si viene, el formulario edita ese aviso en vez de crear uno nuevo. */
+  existing?: Existing;
 };
 
 const MAX_SIZE_MB = 10;
@@ -27,19 +40,29 @@ const COMPRESSION_OPTIONS = {
 };
 
 /**
- * Formulario para publicar un aviso. Hace falta estar logueado (la página
- * ya lo verifica); el endpoint guarda el aviso como pendiente hasta que un
- * admin lo aprueba. El campo "company" es el honeypot.
+ * Formulario de aviso, para crear o editar. Hace falta estar logueado (la
+ * página ya lo verifica). Crear va por /api/avisos; editar escribe directo
+ * con el cliente de sesión, porque la RLS ya limita al dueño. En los dos
+ * casos el aviso queda pendiente de moderación. "company" es el honeypot.
  */
-export default function ClassifiedForm({ defaultName = "", userId }: Props) {
-  const [category, setCategory] = useState("venta");
-  const [title, setTitle] = useState("");
-  const [priceText, setPriceText] = useState("");
-  const [description, setDescription] = useState("");
-  const [authorName, setAuthorName] = useState(defaultName);
-  const [whatsapp, setWhatsapp] = useState("");
+export default function ClassifiedForm({
+  defaultName = "",
+  userId,
+  existing,
+}: Props) {
+  const isEdit = Boolean(existing);
+  const [category, setCategory] = useState(existing?.category ?? "venta");
+  const [title, setTitle] = useState(existing?.title ?? "");
+  const [priceText, setPriceText] = useState(existing?.price_text ?? "");
+  const [description, setDescription] = useState(existing?.description ?? "");
+  const [authorName, setAuthorName] = useState(
+    existing?.author_name ?? defaultName,
+  );
+  const [whatsapp, setWhatsapp] = useState(existing?.whatsapp ?? "");
   const [company, setCompany] = useState("");
-  const [photoUrl, setPhotoUrl] = useState<string | null>(null);
+  const [photoUrl, setPhotoUrl] = useState<string | null>(
+    existing?.photo_url ?? null,
+  );
   const [uploading, setUploading] = useState(false);
   const [sending, setSending] = useState(false);
   const [done, setDone] = useState(false);
@@ -105,24 +128,49 @@ export default function ClassifiedForm({ defaultName = "", userId }: Props) {
     setError(null);
 
     try {
-      const res = await fetch("/api/avisos", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          category,
-          title,
-          priceText,
-          description,
-          authorName,
-          whatsapp,
-          photoUrl,
-          company,
-        }),
-      });
+      if (existing) {
+        // Editar: la RLS ya limita al dueño y obliga a que vuelva a quedar
+        // pendiente, así que se escribe directo, sin endpoint.
+        const { data, error: updateError } = await supabaseBrowser
+          .from("classifieds")
+          .update({
+            category,
+            title: title.trim(),
+            description: description.trim() || null,
+            price_text: formatPriceText(priceText),
+            whatsapp: whatsapp.replace(/[^\d]/g, ""),
+            author_name: authorName.trim(),
+            photo_url: photoUrl,
+            status: "pending",
+            published_at: null,
+          })
+          .eq("id", existing.id)
+          .select("id");
 
-      if (!res.ok) {
-        const body = await res.json().catch(() => null);
-        throw new Error(body?.message || body?.error);
+        if (updateError) throw new Error(updateError.message);
+        if (!data || data.length === 0) {
+          throw new Error("No pudimos guardar los cambios.");
+        }
+      } else {
+        const res = await fetch("/api/avisos", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            category,
+            title,
+            priceText,
+            description,
+            authorName,
+            whatsapp,
+            photoUrl,
+            company,
+          }),
+        });
+
+        if (!res.ok) {
+          const body = await res.json().catch(() => null);
+          throw new Error(body?.message || body?.error);
+        }
       }
 
       setDone(true);
@@ -140,17 +188,20 @@ export default function ClassifiedForm({ defaultName = "", userId }: Props) {
     return (
       <div className="rounded-[20px] bg-bg-card p-8 text-center shadow-soft">
         <h2 className="mb-2 text-[19px] font-extrabold text-text-main">
-          ¡Listo! Tu aviso está en revisión
+          {isEdit
+            ? "Guardamos los cambios"
+            : "¡Listo! Tu aviso está en revisión"}
         </h2>
         <p className="mx-auto mb-5 max-w-md text-[14px] text-text-body">
-          Lo miramos para que no se cuele spam y queda publicado en el barrio
-          durante 30 días.
+          {isEdit
+            ? "Como cambió, vuelve a pasar por la revisión rápida antes de verse en el barrio."
+            : "Lo miramos para que no se cuele spam y queda publicado en el barrio durante 30 días."}
         </p>
         <a
-          href="/avisos"
+          href="/avisos/mios"
           className="inline-block rounded-[14px] bg-primary px-6 py-3.5 text-[15px] font-semibold text-white"
         >
-          Ver los avisos
+          Ver mis avisos
         </a>
       </div>
     );
@@ -350,7 +401,11 @@ export default function ClassifiedForm({ defaultName = "", userId }: Props) {
         disabled={sending}
         className="rounded-[14px] bg-primary p-4 text-[15px] font-semibold text-white transition-colors hover:bg-primary-hover disabled:opacity-50"
       >
-        {sending ? "Publicando…" : "Publicar aviso"}
+        {sending
+          ? "Guardando…"
+          : isEdit
+            ? "Guardar cambios"
+            : "Publicar aviso"}
       </button>
     </form>
   );

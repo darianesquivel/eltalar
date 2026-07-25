@@ -1,0 +1,58 @@
+---
+import { ArrowLeft } from "@lucide/astro";
+import Layout from "../../../layouts/Layout.astro";
+import ClassifiedForm from "../../../components/avisos/ClassifiedForm";
+import { createSupabaseServer } from "../../../lib/supabase/server";
+
+const { barrio } = Astro.locals;
+const { id } = Astro.params;
+
+const supabase = createSupabaseServer(Astro);
+const {
+  data: { user },
+} = await supabase.auth.getUser();
+
+if (!user) {
+  return Astro.redirect(`/app/login?next=/avisos/mios/${id}`);
+}
+
+// La RLS solo deja ver los propios: si el aviso es de otro, no viene nada
+const { data: aviso } = await supabase
+  .from("classifieds")
+  .select(
+    "id, category, title, description, price_text, whatsapp, author_name, photo_url",
+  )
+  .eq("id", id!)
+  .eq("owner_id", user.id)
+  .maybeSingle();
+
+if (!aviso) {
+  return Astro.redirect("/avisos/mios");
+}
+---
+
+<Layout title={`Editar aviso | ${barrio.name}`}>
+  <div class="mx-auto flex w-full max-w-[680px] flex-col gap-5">
+    <a
+      href="/avisos/mios"
+      class="inline-flex items-center gap-1.5 text-[13px] font-semibold text-primary-strong"
+    >
+      <ArrowLeft class="size-[15px]" aria-hidden="true" />
+      Volver a mis avisos
+    </a>
+
+    <header>
+      <h1
+        class="mb-2 text-[27px] font-extrabold leading-[1.05] tracking-[-0.025em] text-text-main sm:text-[36px]"
+      >
+        Editar aviso
+      </h1>
+      <p class="text-[15px] text-text-body">
+        Al guardar, el aviso vuelve a la revisión rápida antes de mostrarse en
+        el barrio.
+      </p>
+    </header>
+
+    <ClassifiedForm userId={user.id} existing={aviso} client:load />
+  </div>
+</Layout>
