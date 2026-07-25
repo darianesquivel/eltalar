@@ -1,0 +1,157 @@
+---
+import { ArrowRight, ChevronRight } from "@lucide/astro";
+import { classifiedCategory } from "../../lib/repositories/classified.repository";
+import type { EventRow } from "../../lib/repositories/event.repository";
+import type { Classified } from "../../lib/repositories/classified.repository";
+
+interface Props {
+  events: EventRow[];
+  classifieds: Classified[];
+}
+
+const { events, classifieds } = Astro.props;
+
+const datePart = (iso: string, opts: Intl.DateTimeFormatOptions) =>
+  new Date(`${iso}T12:00:00`).toLocaleDateString("es-AR", opts);
+
+const meta = (event: EventRow) =>
+  [event.location, event.start_time?.slice(0, 5)].filter(Boolean).join(" · ");
+
+const sinceLabel = (iso: string | null) => {
+  if (!iso) return "";
+  const hours = Math.floor((Date.now() - new Date(iso).getTime()) / 3_600_000);
+  if (hours < 1) return "recién";
+  if (hours < 24) return `hace ${hours} h`;
+  const days = Math.floor(hours / 24);
+  return days === 1 ? "ayer" : `hace ${days} días`;
+};
+---
+
+<section class="grid gap-9 pb-11 lg:grid-cols-2 lg:gap-11">
+  <!-- Eventos -->
+  <div>
+    <div class="mb-4 flex items-baseline justify-between gap-4">
+      <h2
+        class="text-[19px] font-extrabold tracking-[-0.015em] text-text-main sm:text-[26px]"
+      >
+        Qué pasa en el barrio
+      </h2>
+      <a
+        href="/eventos"
+        class="inline-flex shrink-0 items-center gap-1.5 text-[13px] font-semibold text-primary-strong sm:text-sm"
+      >
+        Agenda completa
+        <ArrowRight class="size-4" aria-hidden="true" />
+      </a>
+    </div>
+
+    {
+      events.length > 0 ? (
+        <div class="flex flex-col gap-3">
+          {events.map((event) => (
+            <a
+              href="/eventos"
+              class="flex items-center gap-4 rounded-2xl bg-bg-card p-4 shadow-soft transition-colors hover:bg-white"
+            >
+              <div class="flex size-[52px] shrink-0 flex-col items-center justify-center rounded-[14px] bg-primary-faint leading-[1.1]">
+                <span class="text-[19px] font-extrabold text-text-main">
+                  {datePart(event.date, { day: "numeric" })}
+                </span>
+                <span class="text-[10px] font-bold uppercase tracking-[0.06em] text-text-body">
+                  {datePart(event.date, { month: "short" }).replace(".", "")}
+                </span>
+              </div>
+              <div class="flex-1">
+                <div class="text-[15px] font-bold leading-tight text-text-main sm:text-[16px]">
+                  {event.title}
+                </div>
+                {meta(event) && (
+                  <div class="mt-[3px] text-[13px] text-text-muted">
+                    {meta(event)}
+                  </div>
+                )}
+              </div>
+              <ChevronRight
+                class="size-[18px] text-text-faint"
+                aria-hidden="true"
+              />
+            </a>
+          ))}
+        </div>
+      ) : (
+        <p class="rounded-2xl bg-bg-card p-5 text-[14px] text-text-muted shadow-soft">
+          No hay eventos cargados por ahora.
+        </p>
+      )
+    }
+  </div>
+
+  <!-- Avisos de vecinos -->
+  <div>
+    <div class="mb-4 flex flex-wrap items-baseline justify-between gap-3">
+      <div>
+        <h2
+          class="text-[19px] font-extrabold tracking-[-0.015em] text-text-main sm:text-[26px]"
+        >
+          Avisos de vecinos
+        </h2>
+        <p class="mt-1 text-[13px] text-text-muted sm:text-sm">
+          Compra, venta y servicios entre gente del barrio.
+        </p>
+      </div>
+      <a
+        href="/avisos/nuevo"
+        class="shrink-0 rounded-full bg-secondary px-[18px] py-2.5 text-[13.5px] font-semibold text-white"
+      >
+        Publicar
+      </a>
+    </div>
+
+    {
+      classifieds.length > 0 ? (
+        <div class="grid gap-3 sm:grid-cols-2">
+          {classifieds.map((aviso) => {
+            const category = classifiedCategory(aviso.category);
+            return (
+              <a
+                href="/avisos"
+                class="flex flex-col gap-1.5 rounded-2xl bg-bg-card p-4 shadow-soft transition-colors hover:bg-white"
+              >
+                <span
+                  class="w-fit rounded-full px-2 py-[3px] text-[10.5px] font-bold"
+                  style={`background:${category.bg};color:${category.fg}`}
+                >
+                  {category.label}
+                </span>
+                <div class="text-[14.5px] font-bold leading-tight text-text-main">
+                  {aviso.title}
+                </div>
+                {aviso.price_text && (
+                  <div class="text-[15px] font-extrabold text-primary-strong">
+                    {aviso.price_text}
+                  </div>
+                )}
+                <div class="text-[12px] text-text-muted">
+                  {aviso.author_name} · {sinceLabel(aviso.published_at)}
+                </div>
+              </a>
+            );
+          })}
+        </div>
+      ) : (
+        <div class="rounded-2xl bg-bg-card p-5 shadow-soft">
+          <p class="mb-3 text-[14px] text-text-body">
+            Todavía no hay avisos publicados. Si tenés algo para vender,
+            ofrecer o pedir, sos el primero.
+          </p>
+          <a
+            href="/avisos/nuevo"
+            class="inline-block rounded-xl bg-primary px-5 py-3 text-[14px] font-semibold text-white"
+          >
+            Publicar un aviso
+          </a>
+        </div>
+      )
+    }
+  </div>
+</section>

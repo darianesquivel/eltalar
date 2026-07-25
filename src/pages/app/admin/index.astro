@@ -28,6 +28,7 @@ const [
   destacadosPagos,
   susActivas,
   resenasPendientes,
+  avisosPendientes,
 ] = await Promise.all([
   count(
     supabase
@@ -134,6 +135,13 @@ const [
       .eq("businesses.barrio_id", barrio.id)
       .eq("status", "pending"),
   ),
+  count(
+    supabase
+      .from("classifieds")
+      .select("id", { count: "exact", head: true })
+      .eq("barrio_id", barrio.id)
+      .eq("status", "pending"),
+  ),
 ]);
 
 // Uso vs límites del plan Free de Supabase (RPC admin_usage_stats).
@@ -205,6 +213,13 @@ const CARDS = [
     value: susActivas,
     href: "/app/admin/negocios",
     accent: susActivas > 0 ? "text-green-600" : "text-gray-400",
+  },
+  {
+    label: "Avisos de vecinos pendientes",
+    value: avisosPendientes,
+    href: "/app/admin/avisos-vecinos",
+    accent: avisosPendientes > 0 ? "text-blue-600" : "text-gray-400",
+    attention: avisosPendientes > 0,
   },
   {
     label: "Reseñas pendientes",

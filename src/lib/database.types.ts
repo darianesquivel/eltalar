@@ -410,6 +410,65 @@ export type Database = {
         };
         Relationships: [];
       };
+      classifieds: {
+        Row: {
+          author_name: string;
+          barrio_id: string;
+          category: string;
+          created_at: string;
+          description: string | null;
+          expires_at: string;
+          id: string;
+          owner_id: string | null;
+          photo_url: string | null;
+          price_text: string | null;
+          published_at: string | null;
+          status: string;
+          title: string;
+          whatsapp: string | null;
+        };
+        Insert: {
+          author_name: string;
+          barrio_id: string;
+          category: string;
+          created_at?: string;
+          description?: string | null;
+          expires_at?: string;
+          id?: string;
+          owner_id?: string | null;
+          photo_url?: string | null;
+          price_text?: string | null;
+          published_at?: string | null;
+          status?: string;
+          title: string;
+          whatsapp?: string | null;
+        };
+        Update: {
+          author_name?: string;
+          barrio_id?: string;
+          category?: string;
+          created_at?: string;
+          description?: string | null;
+          expires_at?: string;
+          id?: string;
+          owner_id?: string | null;
+          photo_url?: string | null;
+          price_text?: string | null;
+          published_at?: string | null;
+          status?: string;
+          title?: string;
+          whatsapp?: string | null;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "classifieds_barrio_id_fkey";
+            columns: ["barrio_id"];
+            isOneToOne: false;
+            referencedRelation: "barrios";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
       contact_messages: {
         Row: {
           barrio_id: string;
@@ -736,6 +795,7 @@ export type Database = {
           previous_total: number;
         }[];
       };
+      expirar_avisos: { Args: never; Returns: undefined };
       is_admin: { Args: never; Returns: boolean };
       refresh_business_rating: { Args: { p_business_id: string }; Returns: undefined };
       today_ar: { Args: never; Returns: string };

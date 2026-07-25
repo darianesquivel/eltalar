@@ -4,7 +4,7 @@ import Hero from "../components/home/Hero.astro";
 import CategoryGrid from "../components/home/CategoryGrid.astro";
 import OpenNow from "../components/home/OpenNow.astro";
 import OffersBand from "../components/home/OffersBand.astro";
-import EventsAndAlerts from "../components/home/EventsAndAlerts.astro";
+import EventsAndClassifieds from "../components/home/EventsAndClassifieds.astro";
 import ForBusinesses from "../components/home/ForBusinesses.astro";
 import {
   getBusinesses,
@@ -13,6 +13,7 @@ import {
 import { getCurrentTurn } from "../lib/repositories/pharmacy.repository";
 import { getActiveOffers } from "../lib/repositories/offer.repository";
 import { getUpcomingEvents } from "../lib/repositories/event.repository";
+import { getPublishedClassifieds } from "../lib/repositories/classified.repository";
 import { getTodayStatus } from "../lib/hours";
 import { supabase } from "../lib/supabase";
 
@@ -32,6 +33,7 @@ const [
   pharmacy,
   offers,
   events,
+  classifieds,
 ] = await Promise.all([
   supabase
     .from("site_alerts")
@@ -46,6 +48,7 @@ const [
   getCurrentTurn(barrio.id),
   getActiveOffers(barrio.id),
   getUpcomingEvents(barrio.id),
+  getPublishedClassifieds(barrio.id, { limit: 4 }),
 ]);
 
 const counts = await getCategoryCounts(
@@ -87,7 +90,7 @@ const openNow = candidates
   <OffersBand offers={offers.slice(0, 3)} total={offers.length} />
 
   <div class="mx-auto w-full max-w-[1200px] px-[18px] pt-11 sm:px-10">
-    <EventsAndAlerts events={events.slice(0, 4)} alerts={(alerts ?? []).slice(0, 3)} />
+    <EventsAndClassifieds events={events.slice(0, 4)} classifieds={classifieds} />
     <ForBusinesses price={price} />
   </div>
 </Layout>

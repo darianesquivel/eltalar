@@ -1,0 +1,227 @@
+---
+import { Plus } from "@lucide/astro";
+import Layout from "../../layouts/Layout.astro";
+import {
+  CLASSIFIED_CATEGORIES,
+  classifiedCategory,
+  getClassifiedCounts,
+  getPublishedClassifieds,
+} from "../../lib/repositories/classified.repository";
+
+const { barrio } = Astro.locals;
+const whatsappLogo = "/images/whatsapp-icon.svg";
+
+const categoria = Astro.url.searchParams.get("rubro");
+
+const [avisos, counts] = await Promise.all([
+  getPublishedClassifieds(barrio.id, { category: categoria }),
+  getClassifiedCounts(barrio.id),
+]);
+
+const REGLAS = [
+  `Solo vecinos de ${barrio.name}: no es un clasificado nacional.`,
+  "Si sos comercio, tu lugar es la guía de negocios — y es gratis.",
+  "Los avisos vencen a los 30 días.",
+  "Nada de armas, medicamentos ni reventa de entradas.",
+];
+
+const sinceLabel = (iso: string | null) => {
+  if (!iso) return "";
+  const hours = Math.floor((Date.now() - new Date(iso).getTime()) / 3_600_000);
+  if (hours < 1) return "recién";
+  if (hours < 24) return `hace ${hours} h`;
+  const days = Math.floor(hours / 24);
+  return days === 1 ? "ayer" : `hace ${days} días`;
+};
+
+const whatsappUrl = (aviso: (typeof avisos)[number]) =>
+  `https://wa.me/${aviso.whatsapp}?text=${encodeURIComponent(
+    `¡Hola! Vi tu aviso "${aviso.title}" en ${barrio.name}.`,
+  )}`;
+
+const chipClass = (active: boolean) =>
+  `rounded-full px-4 py-[9px] text-[13.5px] transition-colors ${
+    active
+      ? "bg-secondary font-semibold text-white"
+      : "border border-border bg-bg-card font-medium text-text-main hover:border-[rgba(14,26,18,.2)]"
+  }`;
+---
+
+<Layout
+  title={`Avisos de vecinos en ${barrio.name}`}
+  description={`Compra, venta, servicios y pedidos entre vecinos de ${barrio.name}. Publicar es gratis y toma 40 segundos.`}
+>
+  <div class="flex flex-col gap-6">
+    <header class="flex flex-wrap items-end justify-between gap-4">
+      <div>
+        <h1
+          class="mb-2 text-[29px] font-extrabold leading-[1.05] tracking-[-0.025em] text-text-main sm:text-[44px]"
+        >
+          Avisos de vecinos
+        </h1>
+        <p class="max-w-[620px] text-[15px] text-text-body sm:text-[16px]">
+          Compra, venta, servicios y pedidos entre gente del barrio. Publicar
+          es gratis y toma 40 segundos.
+        </p>
+      </div>
+
+      <a
+        href="/avisos/nuevo"
+        class="inline-flex shrink-0 items-center gap-2 rounded-[13px] bg-secondary px-6 py-3.5 text-[14.5px] font-semibold text-white"
+      >
+        <Plus class="size-4" aria-hidden="true" />
+        Publicar un aviso
+      </a>
+    </header>
+
+    <div class="flex flex-wrap gap-2 border-b border-border pb-6">
+      <a href="/avisos" class={chipClass(!categoria)}>
+        Todos{" "}
+        <span class={!categoria ? "text-white/55" : "text-text-faint"}>
+          {counts.total}
+        </span>
+      </a>
+      {
+        CLASSIFIED_CATEGORIES.map((category) => {
+          const active = categoria === category.slug;
+          return (
+            <a
+              href={active ? "/avisos" : `/avisos?rubro=${category.slug}`}
+              class={chipClass(active)}
+            >
+              {category.label}{" "}
+              <span class={active ? "text-white/55" : "text-text-faint"}>
+                {counts.byCategory[category.slug] ?? 0}
+              </span>
+            </a>
+          );
+        })
+      }
+    </div>
+
+    {
+      avisos.length > 0 ? (
+        <div class="grid gap-[18px] sm:grid-cols-2 lg:grid-cols-3">
+          {avisos.map((aviso) => {
+            const category = classifiedCategory(aviso.category);
+            return (
+              <article class="flex flex-col overflow-hidden rounded-[18px] bg-bg-card shadow-soft">
+                <div class="relative h-[132px]">
+                  {aviso.photo_url ? (
+                    <img
+                      src={aviso.photo_url}
+                      alt={aviso.title}
+                      width={400}
+                      height={132}
+                      loading="lazy"
+                      decoding="async"
+                      class="absolute inset-0 size-full object-cover"
+                    />
+                  ) : (
+                    <div class="img-placeholder absolute inset-0" />
+                  )}
+                  <span
+                    class="absolute left-3 top-3 rounded-full px-2.5 py-1.5 text-[11.5px] font-bold"
+                    style={`background:${category.bg};color:${category.fg}`}
+                  >
+                    {category.label}
+                  </span>
+                </div>
+
+                <div class="flex flex-1 flex-col gap-1.5 p-4 sm:px-[18px]">
+                  <h2 class="text-[16px] font-bold leading-tight text-text-main sm:text-[16.5px]">
+                    {aviso.title}
+                  </h2>
+
+                  {aviso.price_text && (
+                    <div class="text-[17px] font-extrabold text-primary-strong sm:text-[18px]">
+                      {aviso.price_text}
+                    </div>
+                  )}
+
+                  {aviso.description && (
+                    <p class="line-clamp-2 text-[13.5px] leading-normal text-text-body">
+                      {aviso.description}
+                    </p>
+                  )}
+
+                  <div class="text-[12px] text-text-muted">
+                    {aviso.author_name} · {sinceLabel(aviso.published_at)}
+                  </div>
+
+                  <a
+                    href={whatsappUrl(aviso)}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    class="mt-auto flex items-center justify-center gap-[7px] rounded-xl bg-primary p-3 text-[13px] font-semibold text-white transition-colors hover:bg-primary-hover"
+                  >
+                    <img
+                      src={whatsappLogo}
+                      width="15"
+                      height="15"
+                      alt=""
+                      class="brightness-0 invert"
+                    />
+                    Contactar
+                  </a>
+                </div>
+              </article>
+            );
+          })}
+        </div>
+      ) : (
+        <div class="rounded-[20px] bg-bg-card p-10 text-center shadow-soft">
+          <h2 class="mb-2 text-[19px] font-extrabold text-text-main">
+            {categoria
+              ? "No hay avisos en ese rubro"
+              : "Todavía no hay avisos publicados"}
+          </h2>
+          <p class="mx-auto mb-5 max-w-md text-[14px] text-text-body">
+            Esta sección la hacen los vecinos. Si tenés algo para vender,
+            ofrecer o pedir, publicalo — es gratis.
+          </p>
+          <a
+            href="/avisos/nuevo"
+            class="inline-block rounded-[14px] bg-primary px-6 py-3.5 text-[15px] font-semibold text-white"
+          >
+            Publicar el primero
+          </a>
+        </div>
+      )
+    }
+
+    <div class="grid gap-[18px] lg:grid-cols-[1fr_320px]">
+      <div class="rounded-[20px] border border-[rgba(14,159,82,.22)] bg-[#f2fbf5] p-6">
+        <div class="mb-3 text-[17px] font-extrabold text-text-main">
+          Cómo funciona
+        </div>
+        <ul class="flex flex-col gap-2">
+          {
+            REGLAS.map((regla) => (
+              <li class="flex gap-2.5 text-[14px] leading-normal text-text-body">
+                <span class="mt-[7px] size-1.5 shrink-0 rounded-full bg-primary" />
+                {regla}
+              </li>
+            ))
+          }
+        </ul>
+      </div>
+
+      <div class="rounded-[20px] bg-bg-card p-6 shadow-soft">
+        <div class="mb-2 text-[17px] font-extrabold text-text-main">
+          Publicar toma 40 segundos
+        </div>
+        <p class="mb-4 text-[13.5px] leading-relaxed text-text-body">
+          Título, precio y tu WhatsApp. Lo revisamos y queda publicado 30
+          días.
+        </p>
+        <a
+          href="/avisos/nuevo"
+          class="block rounded-xl bg-primary p-3.5 text-center text-[14.5px] font-semibold text-white transition-colors hover:bg-primary-hover"
+        >
+          Publicar un aviso
+        </a>
+      </div>
+    </div>
+  </div>
+</Layout>

@@ -1,0 +1,229 @@
+import { useState } from "react";
+import { CLASSIFIED_CATEGORIES } from "../../lib/repositories/classified.repository";
+
+/**
+ * Formulario público para publicar un aviso. No hace falta cuenta: el
+ * endpoint valida y guarda el aviso como pendiente hasta que un admin lo
+ * aprueba. El campo "company" es el honeypot.
+ */
+export default function ClassifiedForm() {
+  const [category, setCategory] = useState("venta");
+  const [title, setTitle] = useState("");
+  const [priceText, setPriceText] = useState("");
+  const [description, setDescription] = useState("");
+  const [authorName, setAuthorName] = useState("");
+  const [whatsapp, setWhatsapp] = useState("");
+  const [company, setCompany] = useState("");
+  const [sending, setSending] = useState(false);
+  const [done, setDone] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const submit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setSending(true);
+    setError(null);
+
+    try {
+      const res = await fetch("/api/avisos", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          category,
+          title,
+          priceText,
+          description,
+          authorName,
+          whatsapp,
+          company,
+        }),
+      });
+
+      if (!res.ok) {
+        const body = await res.json().catch(() => null);
+        throw new Error(body?.message || body?.error);
+      }
+
+      setDone(true);
+    } catch (err) {
+      setError(
+        (err as Error)?.message ||
+          "No pudimos guardar tu aviso, probá de nuevo.",
+      );
+    } finally {
+      setSending(false);
+    }
+  };
+
+  if (done) {
+    return (
+      <div className="rounded-[20px] bg-bg-card p-8 text-center shadow-soft">
+        <h2 className="mb-2 text-[19px] font-extrabold text-text-main">
+          ¡Listo! Tu aviso está en revisión
+        </h2>
+        <p className="mx-auto mb-5 max-w-md text-[14px] text-text-body">
+          Lo miramos para que no se cuele spam y queda publicado en el barrio
+          durante 30 días.
+        </p>
+        <a
+          href="/avisos"
+          className="inline-block rounded-[14px] bg-primary px-6 py-3.5 text-[15px] font-semibold text-white"
+        >
+          Ver los avisos
+        </a>
+      </div>
+    );
+  }
+
+  return (
+    <form
+      onSubmit={submit}
+      className="flex flex-col gap-5 rounded-[20px] bg-bg-card p-6 shadow-soft sm:p-7"
+    >
+      <div>
+        <label className="mb-2 block text-[13.5px] font-semibold text-text-main">
+          ¿De qué se trata?
+        </label>
+        <div className="flex flex-wrap gap-2">
+          {CLASSIFIED_CATEGORIES.map((option) => {
+            const active = category === option.slug;
+            return (
+              <button
+                key={option.slug}
+                type="button"
+                onClick={() => setCategory(option.slug)}
+                aria-pressed={active}
+                className={`rounded-full px-4 py-[9px] text-[13.5px] transition-colors ${
+                  active
+                    ? "bg-secondary font-semibold text-white"
+                    : "border border-border font-medium text-text-body"
+                }`}
+              >
+                {option.label}
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
+      <div>
+        <label
+          htmlFor="titulo"
+          className="mb-1.5 block text-[13.5px] font-semibold text-text-main"
+        >
+          Título
+        </label>
+        <input
+          id="titulo"
+          required
+          maxLength={120}
+          value={title}
+          onChange={(e) => setTitle(e.target.value)}
+          placeholder="Bicicleta rodado 26 en buen estado"
+          className="field"
+        />
+      </div>
+
+      <div>
+        <label
+          htmlFor="precio"
+          className="mb-1.5 block text-[13.5px] font-semibold text-text-main"
+        >
+          Precio <span className="font-normal text-text-muted">(opcional)</span>
+        </label>
+        <input
+          id="precio"
+          maxLength={40}
+          value={priceText}
+          onChange={(e) => setPriceText(e.target.value)}
+          placeholder="$85.000 · A convenir · Gratis"
+          className="field"
+        />
+      </div>
+
+      <div>
+        <label
+          htmlFor="descripcion"
+          className="mb-1.5 block text-[13.5px] font-semibold text-text-main"
+        >
+          Descripción{" "}
+          <span className="font-normal text-text-muted">(opcional)</span>
+        </label>
+        <textarea
+          id="descripcion"
+          rows={4}
+          maxLength={1500}
+          value={description}
+          onChange={(e) => setDescription(e.target.value)}
+          placeholder="Contá el estado, la zona, cómo coordinar la entrega…"
+          className="field"
+        />
+      </div>
+
+      <div className="grid gap-5 sm:grid-cols-2">
+        <div>
+          <label
+            htmlFor="nombre"
+            className="mb-1.5 block text-[13.5px] font-semibold text-text-main"
+          >
+            Tu nombre
+          </label>
+          <input
+            id="nombre"
+            required
+            maxLength={80}
+            value={authorName}
+            onChange={(e) => setAuthorName(e.target.value)}
+            placeholder="Cómo te van a llamar los vecinos"
+            className="field"
+          />
+        </div>
+
+        <div>
+          <label
+            htmlFor="whatsapp"
+            className="mb-1.5 block text-[13.5px] font-semibold text-text-main"
+          >
+            WhatsApp
+          </label>
+          <input
+            id="whatsapp"
+            required
+            inputMode="tel"
+            maxLength={20}
+            value={whatsapp}
+            onChange={(e) => setWhatsapp(e.target.value)}
+            placeholder="11 5555 5555"
+            className="field"
+          />
+        </div>
+      </div>
+
+      {/* Honeypot: oculto para las personas, irresistible para los bots */}
+      <input
+        type="text"
+        name="company"
+        tabIndex={-1}
+        autoComplete="off"
+        value={company}
+        onChange={(e) => setCompany(e.target.value)}
+        className="hidden"
+        aria-hidden="true"
+      />
+
+      {error && <p className="text-[13px] text-error">{error}</p>}
+
+      <p className="text-[12.5px] text-text-muted">
+        Tu WhatsApp queda visible para que te contacten. Revisamos los avisos
+        antes de publicarlos y vencen a los 30 días.
+      </p>
+
+      <button
+        type="submit"
+        disabled={sending}
+        className="rounded-[14px] bg-primary p-4 text-[15px] font-semibold text-white transition-colors hover:bg-primary-hover disabled:opacity-50"
+      >
+        {sending ? "Publicando…" : "Publicar aviso"}
+      </button>
+    </form>
+  );
+}

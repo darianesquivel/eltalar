@@ -1,15 +1,14 @@
 ---
-import { House, Search, Flame, CalendarDays, Pill } from "@lucide/astro";
+import { House, Search, Flame, Megaphone, Pill } from "@lucide/astro";
 
 // Barra inferior fija: reemplaza al menú desplegable como navegación
-// principal en mobile. El menú hamburguesa queda para lo secundario.
-// El item "Avisos" del diseño entra cuando exista /avisos; hasta entonces
-// ese lugar lo ocupa Eventos.
+// principal en mobile. El menú hamburguesa queda para lo secundario
+// (Eventos, Mapa, Teléfonos, Anunciate, Contacto).
 const ITEMS = [
   { href: "/", label: "Inicio", icon: House },
   { href: "/negocios", label: "Buscar", icon: Search },
   { href: "/ofertas", label: "Ofertas", icon: Flame },
-  { href: "/eventos", label: "Eventos", icon: CalendarDays },
+  { href: "/avisos", label: "Avisos", icon: Megaphone },
   { href: "/farmacias", label: "Farmacias", icon: Pill },
 ];
 

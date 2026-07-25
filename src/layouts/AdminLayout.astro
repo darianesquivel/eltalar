@@ -13,6 +13,7 @@ import {
   LogOut,
   CalendarDays,
   Star,
+  Newspaper,
 } from "@lucide/astro";
 import NavLoader from "../components/NavLoader.astro";
 import {
@@ -48,7 +49,18 @@ const NAV = [
   { href: "/app/admin/eventos", label: "Eventos", icon: CalendarDays },
   { href: "/app/admin/reclamos", label: "Reclamos", icon: UserCheck },
   { href: "/app/admin/resenas", label: "Reseñas", icon: Star },
-  { href: "/app/admin/avisos", label: "Avisos", icon: Megaphone },
+  // exact: si no, /avisos también se marca activo estando en /avisos-vecinos
+  {
+    href: "/app/admin/avisos",
+    label: "Avisos del barrio",
+    icon: Megaphone,
+    exact: true,
+  },
+  {
+    href: "/app/admin/avisos-vecinos",
+    label: "Avisos de vecinos",
+    icon: Newspaper,
+  },
   { href: "/app/admin/telefonos", label: "Teléfonos", icon: Phone },
   { href: "/app/admin/farmacias", label: "Turnos farmacia", icon: Pill },
   { href: "/app/admin/categorias", label: "Categorías", icon: Tags },

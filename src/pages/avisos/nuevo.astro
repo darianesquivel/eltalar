@@ -1,0 +1,38 @@
+---
+import { ArrowLeft } from "@lucide/astro";
+import Layout from "../../layouts/Layout.astro";
+import ClassifiedForm from "../../components/avisos/ClassifiedForm";
+
+const { barrio } = Astro.locals;
+---
+
+<Layout
+  title={`Publicar un aviso en ${barrio.name}`}
+  description={`Publicá gratis tu aviso de compra, venta, servicio o pedido para los vecinos de ${barrio.name}.`}
+>
+  <div class="mx-auto flex w-full max-w-[680px] flex-col gap-5">
+    <a
+      href="/avisos"
+      class="inline-flex items-center gap-1.5 text-[13px] font-semibold text-primary-strong"
+    >
+      <ArrowLeft class="size-[15px]" aria-hidden="true" />
+      Volver a los avisos
+    </a>
+
+    <header>
+      <h1
+        class="mb-2 text-[27px] font-extrabold leading-[1.05] tracking-[-0.025em] text-text-main sm:text-[36px]"
+      >
+        Publicar un aviso
+      </h1>
+      <p class="text-[15px] text-text-body">
+        Gratis, para vecinos de {barrio.name}. Si tenés un comercio, cargalo en
+        la <a href="/anunciate" class="font-semibold text-primary-strong">
+          guía de negocios
+        </a> — también es gratis y se ve mejor.
+      </p>
+    </header>
+
+    <ClassifiedForm client:load />
+  </div>
+</Layout>
