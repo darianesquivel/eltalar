@@ -1,75 +1,167 @@
 ---
-import { supabase } from "../../lib/supabase";
+import { MapPin, Clock, Phone, Navigation, Bell } from "@lucide/astro";
+import MapPreview from "../MapPreview.astro";
 import { ARGENTINA_TZ } from "../../lib/hours";
-import PharmacyCard from "./PharmacyCard.astro";
+import type { PharmacyTurn } from "../../lib/repositories/pharmacy.repository";
 
-const now = new Date().toISOString();
-
-const formatUntil = (endsAt: string) =>
-  new Date(endsAt).toLocaleString("es-AR", {
-    weekday: "long",
-    hour: "2-digit",
-    minute: "2-digit",
-    timeZone: ARGENTINA_TZ,
-  });
-
-// El barrio del turno viene implícito por la farmacia (join !inner)
-const { data: pharmacies, error } = await supabase
-  .from("pharmacy_turns")
-  .select(
-    `
-    starts_at,
-    ends_at,
-    businesses!inner (
-      id,
-      name,
-      address,
-      phone,
-      whatsapp
-    )
-  `,
-  )
-  .eq("businesses.barrio_id", Astro.locals.barrio.id)
-  .lte("starts_at", now)
-  .gt("ends_at", now);
-
-if (error) {
-  console.error("Error farmacias de turno:", error);
+interface Props {
+  turns: PharmacyTurn[];
 }
 
-const hasTurns = pharmacies && pharmacies.length > 0;
+const { turns } = Astro.props;
+const whatsappLogo = "/images/whatsapp-icon.svg";
+
+const untilLabel = (endsAt: string) =>
+  new Date(endsAt)
+    .toLocaleString("es-AR", {
+      weekday: "long",
+      hour: "2-digit",
+      minute: "2-digit",
+      hour12: false,
+      timeZone: ARGENTINA_TZ,
+    })
+    .replace(",", " a las");
+
+const mapsUrl = (address: string | null) =>
+  address
+    ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(address)}`
+    : null;
+
+const darkButton =
+  "inline-flex items-center justify-center gap-2 rounded-[14px] bg-white/12 px-[22px] py-4 text-[15px] font-semibold text-white transition-colors hover:bg-white/20";
 ---
 
-<section>
-  <div class="mb-6 flex items-center justify-between">
-    <h2 id="farmacias-de-turno" class="text-2xl font-bold">De turno</h2>
-  </div>
-
-  <div class="grid gap-6 md:grid-cols-3">
+<section id="farmacias-de-turno" class="grid gap-[22px] lg:grid-cols-[1fr_400px]">
+  <div class="flex flex-col gap-[22px]">
     {
-      hasTurns ? (
-        pharmacies.map((turn) => {
-          const business = Array.isArray(turn.businesses)
-            ? turn.businesses[0]
-            : turn.businesses;
+      turns.length > 0 ? (
+        turns.map((turn) => (
+          <div class="flex flex-col rounded-3xl bg-primary-deep p-6 text-white sm:p-[34px]">
+            <div class="mb-5 inline-flex w-fit items-center gap-2 rounded-full bg-white/13 px-3 py-[7px] text-[12.5px] font-bold uppercase tracking-[0.08em]">
+              <span class="size-[7px] rounded-full bg-primary-mint" />
+              De turno ahora
+            </div>
 
-          return (
-            <PharmacyCard
-              name={business.name}
-              address={business.address}
-              badge="🟢 De turno ahora"
-              subtitle={`Hasta el ${formatUntil(turn.ends_at)} hs`}
-              phone={business.phone}
-              whatsapp={business.whatsapp}
-              highlight
-            />
-          );
-        })
+            <a
+              href={`/negocios/${turn.slug}`}
+              class="mb-3.5 text-[32px] font-extrabold leading-[1.03] tracking-[-0.025em] text-white sm:text-[46px]"
+            >
+              {turn.name}
+            </a>
+
+            <div class="mb-6 flex flex-col gap-2.5 text-[14.5px] text-white/78 sm:text-[15.5px]">
+              {turn.address && (
+                <div class="flex items-center gap-[11px]">
+                  <MapPin
+                    class="size-[18px] shrink-0 text-primary-mint"
+                    aria-hidden="true"
+                  />
+                  {turn.address}
+                </div>
+              )}
+              <div class="flex items-center gap-[11px]">
+                <Clock
+                  class="size-[18px] shrink-0 text-primary-mint"
+                  aria-hidden="true"
+                />
+                De turno hasta el {untilLabel(turn.ends_at)}
+              </div>
+              {turn.phone && (
+                <div class="flex items-center gap-[11px]">
+                  <Phone
+                    class="size-[18px] shrink-0 text-primary-mint"
+                    aria-hidden="true"
+                  />
+                  {turn.phone}
+                </div>
+              )}
+            </div>
+
+            <div class="mt-auto flex flex-wrap gap-2.5">
+              {turn.phone && (
+                <a
+                  href={`tel:${turn.phone}`}
+                  class="inline-flex items-center justify-center gap-2 rounded-[14px] bg-primary px-[26px] py-4 text-[15px] font-semibold text-white transition-colors hover:bg-primary-hover"
+                >
+                  <Phone class="size-[17px]" aria-hidden="true" />
+                  Llamar ahora
+                </a>
+              )}
+              {mapsUrl(turn.address) && (
+                <a
+                  href={mapsUrl(turn.address)}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  class={darkButton}
+                >
+                  <Navigation class="size-[17px]" aria-hidden="true" />
+                  Cómo llegar
+                </a>
+              )}
+              {turn.whatsapp && (
+                <a
+                  href={`https://wa.me/${turn.whatsapp}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  class={darkButton}
+                >
+                  <img
+                    src={whatsappLogo}
+                    width="17"
+                    height="17"
+                    alt=""
+                    class="brightness-0 invert"
+                  />
+                  WhatsApp
+                </a>
+              )}
+            </div>
+          </div>
+        ))
       ) : (
-        <div class="rounded-2xl bg-gray-50 p-6 text-center text-gray-500">
-          No hay farmacias de turno en este momento.
+        <div class="flex flex-col rounded-3xl bg-primary-deep p-6 text-white sm:p-[34px]">
+          <div class="mb-3 text-[24px] font-extrabold leading-tight sm:text-[32px]">
+            No hay una farmacia de turno cargada
+          </div>
+          <p class="text-[15px] leading-normal text-white/70">
+            Puede que el turno de hoy todavía no esté publicado. Mirá los
+            próximos turnos acá abajo o consultá con cualquier farmacia del
+            barrio.
+          </p>
         </div>
       )
     }
   </div>
+
+  <aside class="flex flex-col rounded-3xl bg-bg-card p-6 shadow-soft">
+    <div class="mb-1 text-[17px] font-extrabold text-text-main">
+      Cómo funciona el turno
+    </div>
+    <p class="mb-[18px] text-[13.5px] leading-relaxed text-text-body">
+      Las farmacias del barrio rotan por día. La que está de turno atiende toda
+      la noche, incluso con la persiana baja: hay que timbrar.
+    </p>
+
+    <div class="overflow-hidden rounded-2xl">
+      <MapPreview address={turns[0]?.address ?? undefined} />
+    </div>
+
+    <div
+      class="mt-4 flex items-start gap-[11px] rounded-[14px] border border-[rgba(14,159,82,.25)] bg-[#f2fbf5] p-3.5"
+    >
+      <Bell
+        class="mt-0.5 size-[17px] shrink-0 text-primary-strong"
+        aria-hidden="true"
+      />
+      <div>
+        <div class="text-[13.5px] font-bold text-text-main">
+          El turno cambia a las 8 de la mañana
+        </div>
+        <div class="text-[12.5px] leading-normal text-text-body">
+          Después de esa hora la farmacia de turno es otra: volvé a chequear
+          acá antes de salir.
+        </div>
+      </div>
+    </div>
+  </aside>
 </section>

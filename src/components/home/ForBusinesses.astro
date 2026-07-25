@@ -1,0 +1,69 @@
+---
+import { Star } from "@lucide/astro";
+
+interface Props {
+  /** Precio mensual del plan Destacado (mismo valor que /anunciate). */
+  price: number;
+}
+
+const { price } = Astro.props;
+const priceLabel = `$${price.toLocaleString("es-AR")}`;
+---
+
+<section class="pb-11">
+  <div
+    class="grid gap-8 rounded-3xl bg-bg-card p-6 shadow-card sm:p-9 lg:grid-cols-[1fr_300px] lg:items-center lg:gap-11"
+  >
+    <div>
+      <div
+        class="mb-3.5 inline-flex items-center gap-[7px] rounded-full bg-rating-soft px-3 py-1.5 text-[12px] font-bold uppercase tracking-[0.08em] text-[#a5761a]"
+      >
+        <Star class="size-[13px] fill-current" aria-hidden="true" />
+        Para comercios
+      </div>
+
+      <h2
+        class="mb-2.5 text-[22px] font-extrabold tracking-[-0.02em] text-text-main sm:text-[32px]"
+      >
+        Cargá tu negocio gratis. Destacate si querés más.
+      </h2>
+
+      <p
+        class="mb-5 max-w-[520px] text-[14.5px] leading-relaxed text-text-body sm:text-[15.5px]"
+      >
+        Ficha gratuita con fotos, horarios y WhatsApp. Con el plan Destacado
+        aparecés primero en tu rubro, en la home y con tus ofertas arriba.
+      </p>
+
+      <div class="flex flex-wrap items-center gap-5 sm:gap-[26px]">
+        <a
+          href="/app/negocios/nuevo"
+          class="rounded-[14px] bg-primary px-7 py-[15px] text-[15px] font-semibold text-white transition-colors hover:bg-primary-hover"
+        >
+          Cargar mi negocio
+        </a>
+        <div>
+          <span class="text-[24px] font-extrabold text-text-main sm:text-[28px]">
+            {priceLabel}
+          </span>
+          <span class="text-sm text-text-muted"> / mes el destacado</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Inventario vendible: el banner del anunciante -->
+    <div class="rounded-[18px] border border-dashed border-[rgba(14,26,18,.2)] p-3.5">
+      <div
+        class="mb-2.5 text-[10px] font-bold uppercase tracking-[0.14em] text-text-faint"
+      >
+        Espacio publicitario
+      </div>
+      <a
+        href="/anunciate"
+        class="img-placeholder flex h-[190px] items-center justify-center rounded-xl text-center text-[12px] leading-relaxed text-text-muted"
+      >
+        banner 300×250<br />del anunciante
+      </a>
+    </div>
+  </div>
+</section>

@@ -1,0 +1,13 @@
+---
+import Layout from "../layouts/Layout.astro";
+import Contact from "../components/home/Contact.astro";
+
+const { barrio } = Astro.locals;
+---
+
+<Layout
+  title={`Contacto — ${barrio.name}`}
+  description={`Escribinos si encontrás un error, querés publicar tu negocio o tenés una idea para mejorar la guía de ${barrio.name}.`}
+>
+  <Contact />
+</Layout>

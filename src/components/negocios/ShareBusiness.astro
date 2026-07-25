@@ -1,89 +1,56 @@
 ---
-import { Share, Copy, Check } from "@lucide/astro";
+import { Share2 } from "@lucide/astro";
 
-const { url, title } = Astro.props;
+interface Props {
+  url: string;
+  title: string;
+  /** Clases del botón, para que cada pantalla lo ubique donde quiera. */
+  class?: string;
+}
+
+const { url, title, class: className = "" } = Astro.props;
 ---
 
-<div
-  id="share-box"
-  data-url={url}
-  data-title={title}
-  class="rounded-2xl bg-green-50 p-6 text-center space-y-3"
->
-  <p class="text-sm text-gray-700">
-    ¿Te gusta este lugar?
-    <br />
-    Compartilo con tus vecinos
-  </p>
-
-  <div class="flex justify-center gap-4">
-    <button
-      id="share-btn"
-      class="flex gap-1 items-center justify-center rounded-full px-5 py-2 bg-white shadow transition hover:scale-105 text-xs"
-      aria-label="Compartir negocio"
-      title="Compartir"
-    >
-      <Share size={20} />
-      Compartir!
-    </button>
-
-    <button
-      id="copy-btn"
-      class="flex gap-1 items-center justify-center rounded-full px-5 py-2 bg-white shadow transition hover:scale-105 text-xs"
-      aria-label="Copiar link"
-      title="Copiar link"
-    >
-      <Copy size={20} />
-      Copiar Link!
-    </button>
-  </div>
-
-  <p
-    id="copy-feedback"
-    class="text-xs flex gap-2 items-center justify-center text-green-700 opacity-0 transition-opacity"
+<div class="contents" data-share data-url={url} data-title={title}>
+  <button type="button" data-share-btn class={className}>
+    <Share2 class="size-4" aria-hidden="true" />
+    Compartir
+  </button>
+  <span
+    data-share-feedback
+    class="pointer-events-none fixed inset-x-0 bottom-24 z-50 mx-auto w-fit rounded-full bg-secondary px-4 py-2 text-[13px] font-semibold text-white opacity-0 transition-opacity"
+    role="status"
   >
     Link copiado
-    <Check size={12} />
-  </p>
+  </span>
 </div>
 
 <script is:inline data-astro-rerun>
   // IIFE + datos por data-attributes: al re-ejecutarse tras cada navegación
-  // (data-astro-rerun), los const globales chocarían. define:vars quedaba
-  // fuera del IIFE, por eso los datos viajan en el DOM.
+  // (data-astro-rerun), los const globales chocarían.
   (() => {
-    const box = document.getElementById("share-box");
-    const shareBtn = document.getElementById("share-btn");
-    const copyBtn = document.getElementById("copy-btn");
-    const feedback = document.getElementById("copy-feedback");
-    if (!box || !feedback) return;
+    const box = document.querySelector("[data-share]");
+    if (!box) return;
 
+    const button = box.querySelector("[data-share-btn]");
+    const feedback = box.querySelector("[data-share-feedback]");
     const url = box.dataset.url;
     const title = box.dataset.title;
 
-    function showFeedback() {
-      feedback.classList.remove("opacity-0");
-      setTimeout(() => {
-        feedback.classList.add("opacity-0");
-      }, 2000);
-    }
-
-    shareBtn?.addEventListener("click", async () => {
+    button?.addEventListener("click", async () => {
       if (navigator.share) {
         try {
           await navigator.share({ title, url });
-        } catch (e) {
-          // usuario canceló
+          return;
+        } catch {
+          // el usuario canceló: no hace falta avisar nada
+          return;
         }
-      } else {
-        await navigator.clipboard.writeText(url);
-        showFeedback();
       }
-    });
 
-    copyBtn?.addEventListener("click", async () => {
       await navigator.clipboard.writeText(url);
-      showFeedback();
+      feedback?.classList.remove("opacity-0");
+      setTimeout(() => feedback?.classList.add("opacity-0"), 2000);
     });
   })();
 </script>

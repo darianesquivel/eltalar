@@ -1,76 +1,67 @@
 ---
-import { supabase } from "../../lib/supabase";
+import { ChevronRight } from "@lucide/astro";
 import { ARGENTINA_TZ } from "../../lib/hours";
-import PharmacyCard from "./PharmacyCard.astro";
+import type { PharmacyTurn } from "../../lib/repositories/pharmacy.repository";
 
-const now = new Date().toISOString();
-
-// El barrio del turno viene implícito por la farmacia (join !inner)
-const { data: nextTurns, error } = await supabase
-  .from("pharmacy_turns")
-  .select(
-    `
-    starts_at,
-    businesses!inner (
-      name,
-      address,
-      phone
-    )
-    `,
-  )
-  .eq("businesses.barrio_id", Astro.locals.barrio.id)
-  .gt("starts_at", now)
-  .order("starts_at", { ascending: true })
-  .limit(6);
-
-if (error) {
-  console.error("Error próximos turnos:", error);
+interface Props {
+  turns: PharmacyTurn[];
 }
 
-const formatDay = (date: string) =>
-  new Date(date)
-    .toLocaleDateString("es-AR", { weekday: "long", timeZone: ARGENTINA_TZ })
-    .toUpperCase();
+const { turns } = Astro.props;
 
-const formatDate = (date: string) =>
-  new Date(date).toLocaleDateString("es-AR", {
-    day: "numeric",
+const datePart = (iso: string, opts: Intl.DateTimeFormatOptions) =>
+  new Date(iso).toLocaleDateString("es-AR", {
     timeZone: ARGENTINA_TZ,
+    ...opts,
   });
-
-const hasTurns = nextTurns && nextTurns.length > 0;
 ---
 
-<section>
-  <div class="mb-6 flex items-center justify-between">
-    <h2 id="farmacias-proximos-turnos" class="text-2xl font-bold">
-      Próximos Turnos
+<section id="farmacias-proximos-turnos">
+  <div class="mb-4 flex items-baseline justify-between gap-4">
+    <h2
+      class="text-[19px] font-extrabold tracking-[-0.015em] text-text-main sm:text-[26px]"
+    >
+      Próximos turnos
     </h2>
   </div>
 
   {
-    hasTurns ? (
-      <div class="grid gap-6 md:grid-cols-3">
-        {nextTurns.map((turn) => {
-          const business = Array.isArray(turn.businesses)
-            ? turn.businesses[0]
-            : turn.businesses;
-
-          return (
-            <PharmacyCard
-              name={business.name}
-              address={business.address}
-              badge={`📅 ${formatDay(turn.starts_at)} ${formatDate(
-                turn.starts_at,
-              )}`}
+    turns.length > 0 ? (
+      <div class="grid gap-3.5 sm:grid-cols-2 lg:grid-cols-3">
+        {turns.map((turn) => (
+          <a
+            href={`/negocios/${turn.slug}`}
+            class="flex items-center gap-4 rounded-[18px] bg-bg-card p-4 shadow-soft transition-colors hover:bg-white sm:p-5"
+          >
+            <div class="flex size-14 shrink-0 flex-col items-center justify-center rounded-2xl bg-primary-faint leading-[1.1]">
+              <span class="text-[19px] font-extrabold text-text-main">
+                {datePart(turn.starts_at, { day: "numeric" })}
+              </span>
+              <span class="text-[9.5px] font-bold uppercase tracking-[0.06em] text-text-body">
+                {datePart(turn.starts_at, { weekday: "short" }).replace(".", "")}
+              </span>
+            </div>
+            <div class="flex-1">
+              <div class="text-[15.5px] font-bold leading-tight text-text-main sm:text-[16.5px]">
+                {turn.name}
+              </div>
+              {turn.address && (
+                <div class="mt-[3px] text-[13px] text-text-muted">
+                  {turn.address}
+                </div>
+              )}
+            </div>
+            <ChevronRight
+              class="size-[18px] shrink-0 text-text-faint"
+              aria-hidden="true"
             />
-          );
-        })}
+          </a>
+        ))}
       </div>
     ) : (
-      <div class="rounded-2xl bg-gray-50 p-6 text-center text-gray-500">
+      <p class="rounded-[18px] bg-bg-card p-5 text-[14px] text-text-muted shadow-soft">
         No hay turnos próximos cargados.
-      </div>
+      </p>
     )
   }
 </section>

@@ -1,13 +1,58 @@
 ---
 import Layout from "../../layouts/Layout.astro";
-
-import Hero from "../../components/farmacias/Hero.astro";
 import CurrentTurn from "../../components/farmacias/CurrentTurn.astro";
 import NextTurns from "../../components/farmacias/NextTurns.astro";
+import AllPharmacies from "../../components/farmacias/AllPharmacies.astro";
+import {
+  getCurrentTurns,
+  getNextTurns,
+} from "../../lib/repositories/pharmacy.repository";
+import { getBusinessesPage } from "../../lib/repositories/business.repository";
+import { ARGENTINA_TZ } from "../../lib/hours";
+
+const { barrio } = Astro.locals;
+
+const [current, next, pharmaciesPage] = await Promise.all([
+  getCurrentTurns(barrio.id),
+  getNextTurns(barrio.id, 6),
+  getBusinessesPage({
+    barrioId: barrio.id,
+    categorySlug: "farmacia",
+    limit: 60,
+    order: "nombre",
+  }),
+]);
+
+// "Actualizado hoy, viernes 25 de julio a las 14:20": la hora se calcula en
+// el servidor, en horario de Argentina, y la página es SSR en cada visita.
+const now = new Date();
+const fmt = (opts: Intl.DateTimeFormatOptions) =>
+  now.toLocaleString("es-AR", { timeZone: ARGENTINA_TZ, ...opts });
+
+const updatedAt = `${fmt({ weekday: "long" })} ${fmt({ day: "numeric" })} de ${fmt({ month: "long" })} a las ${fmt({ hour: "2-digit", minute: "2-digit", hour12: false })}`;
 ---
 
-<Layout title={`Farmacias de Turno en ${Astro.locals.barrio.name}`}>
-  <Hero />
-  <CurrentTurn />
-  <NextTurns />
+<Layout
+  title={`Farmacias de turno en ${barrio.name}`}
+  description={`Qué farmacia está de turno ahora en ${barrio.name}: dirección, teléfono y cómo llegar, más los próximos turnos del mes.`}
+>
+  <div class="flex flex-col gap-9">
+    <header>
+      <h1
+        class="mb-2 text-[30px] font-extrabold leading-[1.05] tracking-[-0.025em] text-text-main sm:text-[44px]"
+      >
+        Farmacias de turno en {barrio.name}
+      </h1>
+      <p class="text-[15px] text-text-body sm:text-[16px]">
+        Actualizado hoy, {updatedAt}. El turno cambia a las 8:00 de la mañana.
+      </p>
+    </header>
+
+    <CurrentTurn turns={current} />
+    <NextTurns turns={next} />
+    <AllPharmacies
+      pharmacies={pharmaciesPage.items}
+      onDutyIds={current.map((t) => t.id)}
+    />
+  </div>
 </Layout>

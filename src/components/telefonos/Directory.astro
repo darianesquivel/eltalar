@@ -1,5 +1,5 @@
 ---
-import PhoneCard from "../telefonos/PhoneCard.astro";
+import { Phone } from "@lucide/astro";
 import type { DirectoryEntry } from "../../lib/repositories/directory.repository";
 
 interface Props {
@@ -7,33 +7,87 @@ interface Props {
 }
 
 const { entries } = Astro.props;
+
+// Mismo criterio de color que las cards de emergencia, en versión chip
+const CHIPS: Record<string, { label: string; bg: string; fg: string }> = {
+  emergencia: { label: "Emergencia", bg: "#fdecea", fg: "#c0463a" },
+  seguridad: { label: "Seguridad", bg: "#eaf1fa", fg: "#2e6595" },
+  salud: { label: "Salud", bg: "#e9f6ee", fg: "#0b7a3f" },
+  bomberos: { label: "Bomberos", bg: "#e9f6ee", fg: "#0b7a3f" },
+  servicio: { label: "Servicio", bg: "#f4f5f2", fg: "#4a564d" },
+};
+
+const chipFor = (category: string) => CHIPS[category] ?? CHIPS.servicio;
 ---
 
-<section class="flex flex-col gap-6 w-full px-2 sm:px-12">
-  <h2 id="telefonos" class="text-2xl font-bold">Directorio General</h2>
+<section>
+  <h2
+    id="telefonos"
+    class="mb-4 text-[19px] font-extrabold tracking-[-0.015em] text-text-main sm:text-[26px]"
+  >
+    Directorio general
+  </h2>
 
-  <div class="grid gap-6 md:grid-cols-3">
+  <div class="overflow-hidden rounded-[20px] bg-bg-card shadow-soft">
     {
-      entries.map((entry) => (
-        <PhoneCard
-          title={entry.title}
-          subtitle={entry.subtitle}
-          phone={entry.phone}
-        />
-      ))
+      entries.map((entry) => {
+        const chip = chipFor(entry.category);
+        return (
+          <div
+            data-phone-item
+            data-search={`${entry.title} ${entry.subtitle ?? ""} ${entry.phone} ${chip.label}`.toLowerCase()}
+            class="flex flex-wrap items-center gap-x-5 gap-y-3 border-b border-[rgba(14,26,18,.07)] p-4 sm:px-6"
+          >
+            <span
+              class="shrink-0 rounded-full px-3 py-[5px] text-center text-[11.5px] font-bold uppercase tracking-[0.06em] sm:w-[104px]"
+              style={`background:${chip.bg};color:${chip.fg}`}
+            >
+              {chip.label}
+            </span>
+
+            <div class="min-w-[160px] flex-1">
+              <div class="text-[15px] font-bold text-text-main sm:text-[16px]">
+                {entry.title}
+              </div>
+              {entry.subtitle && (
+                <div class="mt-0.5 text-[13px] text-text-muted">
+                  {entry.subtitle}
+                </div>
+              )}
+            </div>
+
+            <span class="text-[15px] font-bold tracking-[-0.01em] tabular-nums text-text-main">
+              {entry.phone}
+            </span>
+
+            <a
+              href={`tel:${entry.phone}`}
+              class="inline-flex shrink-0 items-center gap-[7px] rounded-xl bg-primary-faint px-4 py-[11px] text-[13px] font-semibold text-text-main transition-colors hover:bg-primary-soft"
+            >
+              <Phone class="size-[15px]" aria-hidden="true" />
+              Llamar
+            </a>
+          </div>
+        );
+      })
     }
 
     <div
-      class="flex flex-col gap-3 justify-between items-center rounded-2xl border border-dashed p-6"
+      class="flex flex-col gap-4 bg-bg-main p-5 sm:flex-row sm:items-center sm:justify-between sm:px-6"
     >
-      <h3 class="text-lg font-bold">¿Falta algún número?</h3>
-      <p class="text-sm text-gray-600">Ayudanos a mejorar el directorio.</p>
-
+      <div>
+        <div class="text-[15.5px] font-bold text-text-main">
+          ¿Falta algún número?
+        </div>
+        <div class="mt-0.5 text-[13.5px] text-text-body">
+          Ayudanos a mejorar el directorio del barrio.
+        </div>
+      </div>
       <a
-        href="/#contact"
-        class="rounded-full w-fit bg-primary py-1 px-5 text-sm font-semibold text-white shadow-lg hover:scale-105 transition-transform"
+        href="/contacto"
+        class="shrink-0 rounded-xl bg-secondary px-5 py-3 text-center text-[13.5px] font-semibold text-white"
       >
-        Sugerir contacto
+        Sugerir un contacto
       </a>
     </div>
   </div>

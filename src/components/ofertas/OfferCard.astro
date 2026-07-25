@@ -1,0 +1,125 @@
+---
+import { todayInArgentina } from "../../lib/hours";
+import type { ActiveOffer } from "../../lib/repositories/offer.repository";
+
+interface Props {
+  offer: ActiveOffer;
+  /** Se usa en el mensaje prellenado de WhatsApp. */
+  barrioName: string;
+}
+
+const { offer, barrioName } = Astro.props;
+const whatsappLogo = "/images/whatsapp-icon.svg";
+
+const category = offer.business.categories[0];
+
+// "Vence hoy" / "7 días": el vencimiento es una fecha, no un instante
+const days = Math.round(
+  (new Date(`${offer.expires_at}T00:00:00`).getTime() -
+    new Date(`${todayInArgentina()}T00:00:00`).getTime()) /
+    86_400_000,
+);
+const leftLabel = days <= 0 ? "Vence hoy" : days === 1 ? "1 día" : `${days} días`;
+
+const whatsappUrl = offer.business.whatsapp
+  ? `https://wa.me/${offer.business.whatsapp}?text=${encodeURIComponent(
+      `¡Hola! Vi la oferta "${offer.title}" en ${barrioName} y quería consultar.`,
+    )}`
+  : null;
+---
+
+<div class="flex flex-col overflow-hidden rounded-[20px] bg-bg-card shadow-card">
+  <div class="relative h-[150px]">
+    {
+      offer.coverUrl ? (
+        <img
+          src={offer.coverUrl}
+          alt={offer.business.name}
+          width={400}
+          height={150}
+          loading="lazy"
+          decoding="async"
+          class="absolute inset-0 size-full object-cover"
+        />
+      ) : (
+        <div class="img-placeholder absolute inset-0" />
+      )
+    }
+
+    <div class="absolute inset-x-0 top-0 flex items-start justify-between p-3">
+      <span class="rounded-xl bg-offer px-3 py-2 text-[15px] font-extrabold text-white">
+        Oferta
+      </span>
+      {
+        category && (
+          <span class="rounded-full bg-white px-2.5 py-1.5 text-[11.5px] font-bold text-text-main shadow-soft">
+            {category.name}
+          </span>
+        )
+      }
+    </div>
+  </div>
+
+  <div class="flex flex-1 flex-col gap-[7px] p-[18px]">
+    <div class="text-[17px] font-bold leading-tight text-text-main sm:text-[18px]">
+      {offer.title}
+    </div>
+
+    {
+      offer.description && (
+        <p class="line-clamp-2 text-[13.5px] leading-normal text-text-body">
+          {offer.description}
+        </p>
+      )
+    }
+
+    <div class="flex flex-wrap items-center gap-x-[7px]">
+      <a
+        href={`/negocios/${offer.business.slug}`}
+        class="text-[13.5px] font-bold text-primary-strong"
+      >
+        {offer.business.name}
+      </a>
+      {
+        offer.business.address && (
+          <span class="line-clamp-1 text-[12.5px] text-text-muted">
+            · {offer.business.address}
+          </span>
+        )
+      }
+    </div>
+
+    <div class="mt-auto flex items-center gap-2 pt-3.5">
+      {
+        whatsappUrl ? (
+          <a
+            href={whatsappUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            class="flex flex-1 items-center justify-center gap-[7px] rounded-xl bg-primary p-3 text-[13px] font-semibold text-white transition-colors hover:bg-primary-hover"
+          >
+            <img
+              src={whatsappLogo}
+              width="15"
+              height="15"
+              alt=""
+              class="brightness-0 invert"
+            />
+            Pedir esta oferta
+          </a>
+        ) : (
+          <a
+            href={`/negocios/${offer.business.slug}`}
+            class="flex flex-1 items-center justify-center rounded-xl bg-primary-faint p-3 text-[13px] font-semibold text-text-main transition-colors hover:bg-primary-soft"
+          >
+            Ver el negocio
+          </a>
+        )
+      }
+
+      <span class="shrink-0 rounded-xl bg-offer-soft px-3 py-3 text-[12px] font-bold text-offer">
+        {leftLabel}
+      </span>
+    </div>
+  </div>
+</div>

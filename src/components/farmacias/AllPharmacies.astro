@@ -1,0 +1,108 @@
+---
+import { Pill, Phone, Navigation } from "@lucide/astro";
+import { getTodayStatus } from "../../lib/hours";
+import type { BusinessSummary } from "../../lib/repositories/business.repository";
+
+interface Props {
+  pharmacies: BusinessSummary[];
+  /** Ids de las farmacias que están de turno en este momento. */
+  onDutyIds: string[];
+}
+
+const { pharmacies, onDutyIds } = Astro.props;
+
+const chipFor = (business: BusinessSummary) => {
+  if (onDutyIds.includes(business.id)) {
+    return { text: "De turno", class: "bg-primary-soft text-primary-strong" };
+  }
+  const status = getTodayStatus(business.business_hours);
+  if (!status) return null;
+  if (status.status === "open") {
+    return { text: status.label, class: "bg-primary-soft text-primary-strong" };
+  }
+  if (status.status === "closed") {
+    return { text: status.label, class: "bg-[#f7eceb] text-error" };
+  }
+  return { text: status.label, class: "bg-bg-muted text-text-body" };
+};
+
+const mapsUrl = (address: string | null) =>
+  address
+    ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(address)}`
+    : null;
+
+const squareButton =
+  "flex items-center rounded-xl bg-primary-faint px-[13px] py-[11px] transition-colors hover:bg-primary-soft";
+---
+
+{
+  pharmacies.length > 0 && (
+    <section>
+      <h2 class="mb-4 text-[19px] font-extrabold tracking-[-0.015em] text-text-main sm:text-[26px]">
+        Todas las farmacias del barrio
+      </h2>
+
+      <div class="overflow-hidden rounded-[20px] bg-bg-card shadow-soft">
+        {pharmacies.map((pharmacy) => {
+          const chip = chipFor(pharmacy);
+          const maps = mapsUrl(pharmacy.address);
+          return (
+            <div class="flex flex-wrap items-center gap-4 border-b border-[rgba(14,26,18,.07)] p-4 last:border-0 sm:gap-5 sm:px-6 sm:py-[18px]">
+              <span class="flex size-11 shrink-0 items-center justify-center rounded-xl bg-[#e4f5ec] text-[#1f8a5d]">
+                <Pill class="size-5" aria-hidden="true" />
+              </span>
+
+              <div class="min-w-[180px] flex-1">
+                <a
+                  href={`/negocios/${pharmacy.slug}`}
+                  class="text-[15.5px] font-bold text-text-main sm:text-[16.5px]"
+                >
+                  {pharmacy.name}
+                </a>
+                {pharmacy.address && (
+                  <div class="mt-0.5 text-[13px] text-text-muted">
+                    {pharmacy.address}
+                  </div>
+                )}
+              </div>
+
+              {chip && (
+                <span
+                  class={`shrink-0 rounded-full px-3 py-[7px] text-[12.5px] font-semibold ${chip.class}`}
+                >
+                  {chip.text}
+                </span>
+              )}
+
+              <div class="flex gap-2">
+                {pharmacy.phone && (
+                  <a
+                    href={`tel:${pharmacy.phone}`}
+                    aria-label={`Llamar a ${pharmacy.name}`}
+                    class={squareButton}
+                  >
+                    <Phone class="size-4 text-text-main" aria-hidden="true" />
+                  </a>
+                )}
+                {maps && (
+                  <a
+                    href={maps}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    aria-label={`Cómo llegar a ${pharmacy.name}`}
+                    class={squareButton}
+                  >
+                    <Navigation
+                      class="size-4 text-text-main"
+                      aria-hidden="true"
+                    />
+                  </a>
+                )}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </section>
+  )
+}

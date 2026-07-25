@@ -49,7 +49,7 @@ export default function ReportBusiness({ slug, businessName }: Props) {
 
   if (done) {
     return (
-      <p className="rounded-2xl bg-gray-50 px-5 py-3 text-center text-sm text-gray-600">
+      <p className="rounded-xl bg-primary-faint px-5 py-3 text-center text-sm text-text-body">
         ¡Gracias por avisar! Vamos a revisar esta ficha.
       </p>
     );
@@ -60,10 +60,10 @@ export default function ReportBusiness({ slug, businessName }: Props) {
       <button
         type="button"
         onClick={() => setOpen(true)}
-        className="mx-auto flex items-center gap-1.5 text-xs text-gray-400 transition hover:text-gray-600"
+        className="inline-flex items-center justify-center gap-[7px] rounded-xl bg-primary-faint px-[18px] py-3 text-[13.5px] font-semibold text-text-main transition-colors hover:bg-primary-soft"
       >
-        <Flag size={13} />
-        ¿Algo está mal en esta ficha? Reportar un error
+        <Flag size={15} />
+        Reportar un error en la ficha
       </button>
     );
   }
@@ -71,9 +71,9 @@ export default function ReportBusiness({ slug, businessName }: Props) {
   return (
     <form
       onSubmit={submit}
-      className="space-y-3 rounded-2xl border border-gray-200 bg-gray-50 p-4"
+      className="w-full space-y-3 rounded-2xl border border-border bg-bg-main p-4"
     >
-      <p className="text-sm font-semibold text-gray-700">
+      <p className="text-sm font-semibold text-text-main">
         Reportar un error en esta ficha
       </p>
 

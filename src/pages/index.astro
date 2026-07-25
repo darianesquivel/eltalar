@@ -1,32 +1,93 @@
 ---
 import Layout from "../layouts/Layout.astro";
 import Hero from "../components/home/Hero.astro";
-import Alerts from "../components/home/Alerts.astro";
-import QuickAccess from "../components/home/QuickAccess.astro";
-import FeaturedBusinesses from "../components/home/FeaturedBusinesses.astro";
-import Contact from "../components/home/Contact.astro";
-import { getBusinesses } from "../lib/repositories/business.repository";
+import CategoryGrid from "../components/home/CategoryGrid.astro";
+import OpenNow from "../components/home/OpenNow.astro";
+import OffersBand from "../components/home/OffersBand.astro";
+import EventsAndAlerts from "../components/home/EventsAndAlerts.astro";
+import ForBusinesses from "../components/home/ForBusinesses.astro";
+import {
+  getBusinesses,
+  getCategoryCounts,
+} from "../lib/repositories/business.repository";
+import { getCurrentTurn } from "../lib/repositories/pharmacy.repository";
+import { getActiveOffers } from "../lib/repositories/offer.repository";
+import { getUpcomingEvents } from "../lib/repositories/event.repository";
+import { getTodayStatus } from "../lib/hours";
 import { supabase } from "../lib/supabase";
 
 const { barrio } = Astro.locals;
+const price = Number(import.meta.env.MP_FEATURED_PRICE ?? 6500);
 
-// Un solo round-trip: avisos y destacados en paralelo (antes eran en serie,
-// cada componente esperando al anterior).
-const [{ data: alerts }, featured] = await Promise.all([
+// Búsquedas sugeridas del hero. Son fijas a propósito: todavía no guardamos
+// qué busca la gente. Cuando exista ese dato, salen de ahí.
+const POPULARES = ["farmacia", "delivery", "plomero", "veterinaria", "pizza"];
+
+// Todo en paralelo: la home es la página más visitada y cada consulta en
+// serie se nota en el primer paint.
+const [
+  { data: alerts },
+  { data: categories },
+  candidates,
+  pharmacy,
+  offers,
+  events,
+] = await Promise.all([
   supabase
     .from("site_alerts")
     .select("id, title, description")
     .eq("barrio_id", barrio.id)
     .eq("is_active", true)
     .order("created_at", { ascending: false }),
-  getBusinesses({ barrioId: barrio.id, featured: true, limit: 6 }),
+  supabase.from("categories").select("id, name, slug").order("name"),
+  // Se piden de más porque "abierto ahora" se resuelve acá: depende de la
+  // hora de Argentina, no de una columna de la base.
+  getBusinesses({ barrioId: barrio.id, limit: 60 }),
+  getCurrentTurn(barrio.id),
+  getActiveOffers(barrio.id),
+  getUpcomingEvents(barrio.id),
 ]);
+
+const counts = await getCategoryCounts(
+  barrio.id,
+  (categories ?? []).map((c) => c.slug),
+);
+
+const topCategories = (categories ?? [])
+  .map((c) => ({ ...c, count: counts.bySlug[c.slug] ?? 0 }))
+  .filter((c) => c.count > 0)
+  .sort((a, b) => b.count - a.count);
+
+const openNow = candidates
+  .filter((b) => getTodayStatus(b.business_hours)?.status === "open")
+  .slice(0, 4)
+  .map(({ photos, ...rest }) => rest);
 ---
 
-<Layout>
-  <Hero />
-  <Alerts alerts={alerts ?? []} />
-  <QuickAccess />
-  <FeaturedBusinesses businesses={featured} />
-  <Contact />
+<Layout wide>
+  <div class="mx-auto w-full max-w-[1200px] px-[18px] sm:px-10">
+    <Hero
+      barrioName={barrio.name}
+      total={counts.total}
+      populares={POPULARES}
+      pharmacy={pharmacy}
+      offer={offers[0] ?? null}
+      event={events[0] ?? null}
+      alert={alerts?.[0] ?? null}
+    />
+
+    <CategoryGrid
+      categories={topCategories.slice(0, 8)}
+      totalCategories={topCategories.length}
+    />
+
+    <OpenNow businesses={openNow} />
+  </div>
+
+  <OffersBand offers={offers.slice(0, 3)} total={offers.length} />
+
+  <div class="mx-auto w-full max-w-[1200px] px-[18px] pt-11 sm:px-10">
+    <EventsAndAlerts events={events.slice(0, 4)} alerts={(alerts ?? []).slice(0, 3)} />
+    <ForBusinesses price={price} />
+  </div>
 </Layout>

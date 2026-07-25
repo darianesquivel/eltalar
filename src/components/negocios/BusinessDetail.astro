@@ -1,19 +1,20 @@
 ---
 import {
-  Info,
-  PhoneCall,
-  Clock,
   ArrowLeft,
-  Flame,
-  ClipboardList,
   Check,
+  Clock,
+  Flame,
+  Images,
+  MapPin,
+  Navigation,
+  Phone,
+  Star,
 } from "@lucide/astro";
-import CategoryPlaceholder, { categoryColor } from "./CategoryPlaceholder";
 import ReportBusiness from "./ReportBusiness";
-import InstagramIcon from "../icons/InstagramIcon";
 import MapPreview from "../MapPreview.astro";
 import ShareBusiness from "./ShareBusiness.astro";
-import { getWeekSchedule } from "../../lib/hours";
+import { getTodayStatus, getWeekSchedule } from "../../lib/hours";
+import { categoryStyle } from "../../lib/categories";
 import { instagramUrl } from "../../lib/links";
 import type { Business } from "../../lib/repositories/business.repository";
 
@@ -22,177 +23,134 @@ interface Props {
 }
 
 const { business } = Astro.props;
+
 const hours = getWeekSchedule(business.business_hours);
+const status = getTodayStatus(business.business_hours);
 
-// Lista de servicios y precios (beneficio Destacado): un item por linea
-const serviceLines = (business.services ?? "")
+// Servicios: un ítem por línea. El formato "Servicio | precio" es opcional,
+// así las fichas viejas (solo texto) siguen funcionando igual.
+const services = (business.services ?? "")
   .split("\n")
-  .map((l) => l.trim())
-  .filter(Boolean);
+  .map((line) => line.trim())
+  .filter(Boolean)
+  .map((line) => {
+    const [name, price] = line.split("|").map((p) => p.trim());
+    return { name, price: price ?? null };
+  });
 
-// Galería: fotos extra además de la portada (las tienen los Destacados,
-// que pueden subir hasta 4). Se muestran debajo de la imagen principal.
+// Galería: fotos extra además de la portada (beneficio del plan Destacado)
 const galleryPhotos = (business.photos ?? []).filter(
   (p) => p.id !== business.coverPhoto?.id,
 );
+const photoCount = (business.photos ?? []).length;
 
 const whatsappLogo = "/images/whatsapp-icon.svg";
+const instagramLogo = "/images/instagram-icon.svg";
+
+const whatsappUrl = business.whatsapp
+  ? `https://wa.me/${business.whatsapp}?text=${encodeURIComponent(business.whatsapp_message ?? "")}`
+  : null;
+
+const mapsUrl = business.address
+  ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(business.address)}`
+  : null;
 
 // URL absoluta para compartir, derivada del dominio configurado en astro.config.
 const shareUrl = new URL(
   `/negocios/${business.slug}`,
   Astro.site ?? Astro.url,
 ).toString();
+
+const mainCategory = business.categories[0];
+
+const statusChip = business.by_appointment
+  ? { text: "Atiende con turno", class: "bg-[#e7f0f8] text-info" }
+  : status?.status === "open"
+    ? { text: status.label, class: "bg-primary-soft text-primary-strong" }
+    : status?.status === "closed"
+      ? { text: status.label, class: "bg-[#f7eceb] text-error" }
+      : status
+        ? { text: status.label, class: "bg-bg-muted text-text-body" }
+        : null;
+
+const cardClass = "rounded-[20px] bg-bg-card p-5 shadow-soft sm:p-[26px]";
+const cardTitleClass =
+  "text-[18px] font-extrabold tracking-[-0.01em] text-text-main sm:text-[20px]";
+const secondaryButtonClass =
+  "inline-flex items-center justify-center gap-[7px] rounded-xl bg-primary-faint px-[18px] py-3 text-[13.5px] font-semibold text-text-main transition-colors hover:bg-primary-soft";
+
+const longDate = (iso: string) =>
+  new Date(`${iso}T12:00:00`).toLocaleDateString("es-AR", {
+    day: "numeric",
+    month: "long",
+  });
 ---
 
 <section
   id="business-detail"
   data-business-id={business.id}
-  class="max-w-6xl mx-auto px-4 space-y-8"
+  class="pb-24 md:pb-0"
 >
-  <a
-    href="/negocios"
-    class="inline-flex items-center gap-1.5 rounded-full border border-gray-200 bg-white px-4 py-2 text-sm font-semibold text-gray-700 shadow-sm transition hover:border-gray-300 hover:bg-gray-50"
+  <!-- Breadcrumb -->
+  <nav
+    class="flex flex-wrap items-center gap-2 pt-1 pb-4 text-[13px] text-text-muted"
+    aria-label="Migas de pan"
   >
-    <ArrowLeft size={16} /> Volver a negocios
-  </a>
-
-  <div class="relative overflow-hidden rounded-3xl shadow">
+    <a
+      href="/negocios"
+      class="inline-flex items-center gap-1.5 font-semibold text-primary-strong"
+    >
+      <ArrowLeft class="size-[15px]" aria-hidden="true" />
+      Negocios
+    </a>
     {
-      business.coverPhoto?.url ? (
-        <img
-          transition:name={`img-${business.slug}`}
-          src={business.coverPhoto.url}
-          alt={business.name}
-          width={1280}
-          height={540}
-          loading="eager"
-          decoding="async"
-          class="h-[260px] w-full object-cover md:h-[540px]"
-        />
-      ) : (
-        <div transition:name={`img-${business.slug}`}>
-          <CategoryPlaceholder
-            categorySlug={business.categories?.[0]?.slug}
-            label={business.name}
-            iconSize={72}
-            className="h-[260px] w-full md:h-[540px]"
-          />
-        </div>
+      mainCategory && (
+        <>
+          <span>/</span>
+          <a href={`/negocios?categoria=${mainCategory.slug}`}>
+            {mainCategory.name}
+          </a>
+        </>
       )
     }
+    <span>/</span>
+    <span class="text-text-main">{business.name}</span>
+  </nav>
 
-    <div
-      class="absolute inset-0 bg-linear-to-t from-black/70 via-black/30 to-transparent"
-    >
-    </div>
-
-    <div class="absolute bottom-6 left-6 text-white space-y-2">
-      <div class="flex flex-wrap gap-2">
+  <div class="grid gap-6 lg:grid-cols-[1fr_372px] lg:items-start lg:gap-8">
+    <!-- Columna principal -->
+    <div class="flex flex-col gap-[22px]">
+      <div class="relative overflow-hidden rounded-3xl">
         {
-          business.is_featured && (
-            <span class="inline-flex items-center gap-1 rounded-full border border-amber-300/60 bg-amber-400/90 px-3 py-0.5 text-xs font-semibold text-amber-950">
-              ⭐ Destacado
-            </span>
-          )
-        }
-        {
-          business.categories.map((category) => (
-            <span
-              class="inline-flex items-center rounded-full border border-white/40 px-2.5 py-1 text-xs leading-none text-white shadow-sm"
-              style={`background-color: ${categoryColor(category.slug)}`}
-            >
-              {category.name}
-            </span>
-          ))
-        }
-      </div>
-
-      <h1 class="text-3xl font-bold md:text-4xl">
-        {business.name}
-      </h1>
-    </div>
-  </div>
-
-  <div class="grid gap-6 md:grid-cols-3">
-    <div class="md:col-span-2 space-y-6">
-      <div class="rounded-2xl bg-white p-6 shadow-sm">
-        <h2 class="mb-3 text-lg font-semibold flex items-center gap-2">
-          <Info size={24} class="text-primary" />
-          Sobre el comercio
-        </h2>
-        <p class="text-gray-600 whitespace-pre-line">
-          {business.description}
-        </p>
-      </div>
-
-      {
-        business.offers.length > 0 && (
-          <div class="space-y-3">
-            {business.offers.map((offer) => (
-              <div class="flex items-start gap-3 rounded-2xl border border-orange-200 bg-linear-to-r from-orange-50 to-amber-50 p-5">
-                <Flame size={22} class="mt-0.5 shrink-0 text-orange-500" />
-                <div>
-                  <p class="font-semibold text-gray-900">{offer.title}</p>
-                  {offer.description && (
-                    <p class="mt-0.5 text-sm text-gray-600">
-                      {offer.description}
-                    </p>
-                  )}
-                  <p class="mt-1 text-xs font-medium text-orange-600">
-                    Válida hasta el{" "}
-                    {new Date(
-                      `${offer.expires_at}T12:00:00`,
-                    ).toLocaleDateString("es-AR", {
-                      day: "numeric",
-                      month: "long",
-                    })}
-                  </p>
-                </div>
-              </div>
-            ))}
-          </div>
-        )
-      }
-
-      <div class="flex gap-2 items-center">
-        {
-          business.whatsapp && (
-            <a
-              href={`https://wa.me/${business.whatsapp}`}
-              target="_blank"
-              rel="noopener noreferrer"
-              data-track="whatsapp"
-              class="flex-1 h-15 text-xs flex items-center gap-1 justify-center transition-transform duration-200 hover:scale-105 bg-primary text-white px-5 py-1 rounded-lg"
-            >
-              <img width={20} src={whatsappLogo} alt="" /> Whatsapp
-            </a>
+          business.coverPhoto?.url ? (
+            <img
+              transition:name={`img-${business.slug}`}
+              src={business.coverPhoto.url}
+              alt={business.name}
+              width={1280}
+              height={540}
+              loading="eager"
+              decoding="async"
+              class="h-[230px] w-full object-cover sm:h-[400px]"
+            />
+          ) : (
+            <div
+              transition:name={`img-${business.slug}`}
+              class="img-placeholder h-[230px] w-full sm:h-[400px]"
+              role="img"
+              aria-label={business.name}
+            />
           )
         }
 
         {
-          business.instagram && (
+          photoCount > 1 && (
             <a
-              href={instagramUrl(business.instagram)}
-              target="_blank"
-              rel="noopener noreferrer"
-              data-track="instagram"
-              class="flex-1 h-15 inline-flex items-center justify-center transition-transform duration-300 hover:scale-105 bg-secondary-soft/10 hover:bg-secondary-soft/30 p-1 rounded-lg"
+              href="#galeria"
+              class="absolute bottom-4 right-4 inline-flex items-center gap-[7px] rounded-full bg-white px-3.5 py-2.5 text-[12.5px] font-semibold text-text-main shadow-soft"
             >
-              <InstagramIcon size={20} className="text-gray-700" />
-            </a>
-          )
-        }
-
-        {
-          business.phone && (
-            <a
-              href={`tel:${business.phone}`}
-              data-track="phone"
-              class="flex-1 h-15 inline-flex items-center justify-center transition-transform duration-200 hover:scale-105 bg-secondary-soft/10 hover:bg-secondary-soft/30 p-1 rounded-lg"
-              aria-label="Llamar por teléfono"
-            >
-              <PhoneCall size={20} class="text-gray-700" />
+              <Images class="size-[15px]" aria-hidden="true" />
+              Ver las {photoCount} fotos
             </a>
           )
         }
@@ -200,22 +158,22 @@ const shareUrl = new URL(
 
       {
         galleryPhotos.length > 0 && (
-          <div class="grid grid-cols-3 gap-3">
-            {galleryPhotos.map((photo) => (
+          <div id="galeria" class="grid grid-cols-4 gap-3">
+            {galleryPhotos.slice(0, 8).map((photo) => (
               <a
                 href={photo.url}
                 target="_blank"
                 rel="noopener noreferrer"
-                class="block overflow-hidden rounded-xl shadow-sm transition-transform hover:scale-[1.02]"
+                class="overflow-hidden rounded-[14px]"
               >
                 <img
                   src={photo.url}
                   alt={`Foto de ${business.name}`}
-                  width={480}
-                  height={320}
+                  width={240}
+                  height={176}
                   loading="lazy"
                   decoding="async"
-                  class="h-32 w-full object-cover md:h-40"
+                  class="h-[72px] w-full object-cover sm:h-[88px]"
                 />
               </a>
             ))}
@@ -224,119 +182,394 @@ const shareUrl = new URL(
       }
 
       {
-        serviceLines.length > 0 && (
-          <div class="rounded-2xl bg-white p-6 shadow-sm">
-            <h2 class="mb-3 text-lg font-semibold flex items-center gap-2">
-              <ClipboardList size={24} class="text-primary" />
-              Servicios y precios
-            </h2>
-            <ul class="grid gap-2 sm:grid-cols-2">
-              {serviceLines.map((line) => (
-                <li class="flex items-start gap-2 text-sm text-gray-700">
-                  <Check size={15} class="mt-0.5 shrink-0 text-primary" />
-                  {line}
-                </li>
-              ))}
-            </ul>
+        business.description && (
+          <div class={cardClass}>
+            <h2 class={`mb-3 ${cardTitleClass}`}>Sobre el comercio</h2>
+            <p class="whitespace-pre-line text-[14.5px] leading-[1.65] text-text-body sm:text-[15px]">
+              {business.description}
+            </p>
           </div>
         )
       }
 
-      <MapPreview address={business.address} />
+      {
+        business.offers.length > 0 && (
+          <div class={cardClass}>
+            <div class="mb-4 flex items-center gap-2.5">
+              <span class="flex size-[34px] items-center justify-center rounded-[10px] bg-offer-soft text-offer">
+                <Flame class="size-[17px]" aria-hidden="true" />
+              </span>
+              <h2 class={cardTitleClass}>Ofertas vigentes</h2>
+            </div>
+
+            <div class="flex flex-col gap-3">
+              {business.offers.map((offer) => (
+                <div class="flex flex-col gap-3 rounded-2xl border border-[rgba(255,92,57,.28)] bg-[#fff8f5] p-4 sm:flex-row sm:items-center sm:gap-4 sm:px-[18px]">
+                  <span class="w-fit shrink-0 rounded-xl bg-offer px-3 py-2.5 text-[15px] font-extrabold text-white">
+                    Oferta
+                  </span>
+                  <div class="flex-1">
+                    <div class="text-[15px] font-bold text-text-main sm:text-[16px]">
+                      {offer.title}
+                    </div>
+                    {offer.description && (
+                      <div class="mt-[3px] text-[13.5px] text-text-body">
+                        {offer.description}
+                      </div>
+                    )}
+                  </div>
+                  <span class="shrink-0 text-[12.5px] font-semibold text-offer">
+                    Hasta el {longDate(offer.expires_at)}
+                  </span>
+                </div>
+              ))}
+            </div>
+          </div>
+        )
+      }
+
+      {
+        services.length > 0 && (
+          <div class={cardClass}>
+            <div class="mb-4 flex flex-wrap items-baseline gap-2.5">
+              <h2 class={cardTitleClass}>Servicios y precios</h2>
+              {business.is_featured && (
+                <span class="rounded-full bg-rating-soft px-2.5 py-[5px] text-[11px] font-bold uppercase tracking-[0.06em] text-[#a5761a]">
+                  Destacado
+                </span>
+              )}
+            </div>
+
+            <div class="grid gap-x-[26px] sm:grid-cols-2">
+              {services.map((service) => (
+                <div class="flex items-start gap-2.5 border-b border-[rgba(14,26,18,.07)] py-[7px] text-[14px] text-text-body">
+                  <Check
+                    class="mt-[3px] size-[15px] shrink-0 text-primary"
+                    aria-hidden="true"
+                  />
+                  <span class="flex-1">{service.name}</span>
+                  {service.price && (
+                    <span class="shrink-0 font-bold text-text-main">
+                      {service.price}
+                    </span>
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
+        )
+      }
+
+      <!-- Reseñas: la tabla todavía no existe (paso 9 del rediseño). Se
+           muestra el bloque vacío, sin inventar puntajes ni comentarios. -->
+      <div class={cardClass}>
+        <h2 class={`mb-2 ${cardTitleClass}`}>Reseñas de vecinos</h2>
+        <p class="text-[14px] leading-normal text-text-body">
+          Todavía no hay reseñas de este comercio. Muy pronto vas a poder
+          contarle al barrio cómo te fue.
+        </p>
+      </div>
+
+      <div class={cardClass}>
+        <h2 class={`mb-4 ${cardTitleClass}`}>Dónde queda</h2>
+        {
+          business.address && (
+            <p class="mb-3 text-[14px] text-text-body">{business.address}</p>
+          )
+        }
+        <div class="overflow-hidden rounded-2xl">
+          <MapPreview address={business.address} />
+        </div>
+        <div class="mt-3.5 flex flex-wrap gap-2.5">
+          {
+            mapsUrl && (
+              <a
+                href={mapsUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                class={secondaryButtonClass}
+              >
+                <Navigation class="size-[15px]" aria-hidden="true" />
+                Cómo llegar
+              </a>
+            )
+          }
+          <ReportBusiness
+            slug={business.slug}
+            businessName={business.name}
+            client:visible
+          />
+        </div>
+      </div>
     </div>
 
-    <div class="space-y-6">
-      <div class="rounded-2xl bg-white p-6 shadow-sm">
-        <h2 class="mb-4 text-lg font-semibold flex items-center gap-2">
-          <Clock size={24} class="text-primary" />
-          {business.by_appointment ? "Atención" : "Horarios"}
-        </h2>
+    <!-- Columna de contacto -->
+    <aside class="flex flex-col gap-3.5 lg:sticky lg:top-5">
+      <div class="rounded-[22px] bg-bg-card p-6 shadow-card">
+        <div class="mb-3 flex flex-wrap gap-[7px]">
+          {
+            business.is_featured && (
+              <span class="inline-flex items-center gap-[5px] rounded-full bg-rating-soft px-[11px] py-[5px] text-[11.5px] font-bold text-[#a5761a]">
+                <Star class="size-3 fill-current" aria-hidden="true" />
+                Destacado
+              </span>
+            )
+          }
+          {
+            business.categories.map((category) => {
+              const style = categoryStyle(category.slug);
+              return (
+                <a
+                  href={`/negocios?categoria=${category.slug}`}
+                  class="rounded-full px-[11px] py-[5px] text-[11.5px] font-semibold"
+                  style={`background:${style.soft};color:${style.fg}`}
+                >
+                  {category.name}
+                </a>
+              );
+            })
+          }
+        </div>
+
+        <h1
+          class="mb-3 text-[27px] font-extrabold leading-[1.1] tracking-[-0.02em] text-text-main sm:text-[32px]"
+        >
+          {business.name}
+        </h1>
 
         {
-          business.by_appointment && (
-            <div class="space-y-1 rounded-xl bg-primary-soft/40 p-4 text-sm">
-              <p class="font-semibold text-gray-800">📅 Atiende con turno</p>
-              <p class="text-gray-600">
-                Escribile o llamalo para coordinar un turno.
-              </p>
+          statusChip && (
+            <div
+              class={`mb-[18px] inline-flex items-center gap-[7px] rounded-full px-3.5 py-2 text-[13px] font-semibold ${statusChip.class}`}
+            >
+              <span class="size-1.5 rounded-full bg-current" />
+              {statusChip.text}
             </div>
           )
         }
 
-        {
-          !business.by_appointment && (
-            <ul class="space-y-2 text-sm">
-              {hours.map((day) => (
-                <li class="flex justify-between items-start gap-4">
-                  <span
-                    class={day.isToday ? "font-semibold text-green-600" : ""}
-                  >
-                    {day.label}
-                    {day.isToday && (
-                      <span class="ml-1 rounded bg-green-100 px-2 text-xs">
-                        HOY
-                      </span>
-                    )}
-                  </span>
+        <div
+          class="flex flex-col gap-[11px] border-b border-border pb-[18px] text-[14px] text-text-body"
+        >
+          {
+            business.address && (
+              <div class="flex items-start gap-[11px]">
+                <MapPin
+                  class="mt-0.5 size-[17px] shrink-0 text-primary"
+                  aria-hidden="true"
+                />
+                {business.address}
+              </div>
+            )
+          }
+          {
+            business.phone && (
+              <a
+                href={`tel:${business.phone}`}
+                data-track="phone"
+                class="flex items-center gap-[11px] text-text-body"
+              >
+                <Phone
+                  class="size-[17px] shrink-0 text-primary"
+                  aria-hidden="true"
+                />
+                {business.phone}
+              </a>
+            )
+          }
+          {
+            business.instagram && (
+              <a
+                href={instagramUrl(business.instagram)}
+                target="_blank"
+                rel="noopener noreferrer"
+                data-track="instagram"
+                class="flex items-center gap-[11px] text-text-body"
+              >
+                <img
+                  src={instagramLogo}
+                  width="17"
+                  height="17"
+                  alt=""
+                  class="shrink-0"
+                />
+                {business.instagram.replace(/^@/, "@")}
+              </a>
+            )
+          }
+        </div>
 
-                  <div
+        <div class="flex flex-col gap-2.5 pt-[18px]">
+          {
+            whatsappUrl && (
+              <a
+                href={whatsappUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                data-track="whatsapp"
+                class="flex items-center justify-center gap-2.5 rounded-xl bg-primary p-[15px] text-[15px] font-semibold text-white transition-colors hover:bg-primary-hover"
+              >
+                <img
+                  src={whatsappLogo}
+                  width="18"
+                  height="18"
+                  alt=""
+                  class="brightness-0 invert"
+                />
+                Escribir por WhatsApp
+              </a>
+            )
+          }
+          <div class="flex gap-2.5">
+            {
+              business.phone && (
+                <a
+                  href={`tel:${business.phone}`}
+                  data-track="phone"
+                  class={`flex-1 ${secondaryButtonClass} py-3.5 text-[14px]`}
+                >
+                  <Phone class="size-4" aria-hidden="true" />
+                  Llamar
+                </a>
+              )
+            }
+            <ShareBusiness
+              url={shareUrl}
+              title={business.name}
+              class={`flex-1 ${secondaryButtonClass} py-3.5 text-[14px]`}
+            />
+          </div>
+        </div>
+      </div>
+
+      <div class="rounded-[22px] bg-bg-card p-6 shadow-soft">
+        <div class="mb-3.5 flex items-center gap-2.5">
+          <Clock class="size-[18px] text-primary" aria-hidden="true" />
+          <h2 class="text-[17px] font-extrabold text-text-main">
+            {business.by_appointment ? "Atención" : "Horarios"}
+          </h2>
+        </div>
+
+        {
+          business.by_appointment ? (
+            <p class="rounded-2xl bg-primary-faint p-4 text-[13.5px] leading-normal text-text-body">
+              Atiende con turno. Escribile o llamalo para coordinar.
+            </p>
+          ) : (
+            <div class="flex flex-col">
+              {hours.map((day) => (
+                <div class="flex items-center justify-between gap-4 border-b border-[rgba(14,26,18,.06)] py-2.5 text-[13.5px] last:border-0">
+                  <span
                     class={
-                      day.status === "closed"
-                        ? "text-red-500 text-right"
-                        : day.status === "not_loaded"
-                          ? "text-gray-400 text-right"
-                          : "text-gray-700 text-right"
+                      day.isToday
+                        ? "font-bold text-primary-strong"
+                        : "text-text-body"
                     }
                   >
-                    {day.status === "open_24" && <span>Abierto 24hs</span>}
-
+                    {day.label}
+                    {day.isToday && " — hoy"}
+                  </span>
+                  <div
+                    class={`text-right ${
+                      day.status === "closed"
+                        ? "text-error"
+                        : day.status === "not_loaded"
+                          ? "text-text-faint"
+                          : "text-text-main"
+                    }`}
+                  >
+                    {day.status === "open_24" && <span>Abierto 24 hs</span>}
                     {day.status === "open" &&
-                      day.ranges?.map((r) => (
+                      day.ranges?.map((range) => (
                         <span class="block">
-                          {r.open} – {r.close}
+                          {range.open} – {range.close}
                         </span>
                       ))}
-
                     {day.status === "closed" && <span>Cerrado</span>}
                     {day.status === "not_loaded" && <span>—</span>}
                   </div>
-                </li>
+                </div>
               ))}
-            </ul>
+            </div>
           )
         }
       </div>
 
-      <!-- COMPARTIR -->
-      <ShareBusiness url={shareUrl} title={business.name} />
-
       {
         !business.owner_id && (
-          <div class="rounded-2xl border border-dashed border-primary/40 bg-primary-soft/40 p-5 text-center space-y-2">
-            <p class="text-sm font-semibold text-gray-800">
+          <div class="rounded-[22px] border border-dashed border-[rgba(14,159,82,.45)] bg-[#f2fbf5] p-[22px] text-center">
+            <div class="mb-1.5 text-[15px] font-bold text-text-main">
               ¿Este negocio es tuyo?
-            </p>
-            <p class="text-xs text-gray-600">
-              Reclamalo y gestioná vos mismo las fotos, horarios y datos de
-              contacto.
+            </div>
+            <p class="mb-3.5 text-[13px] leading-normal text-text-body">
+              Reclamalo y gestioná vos las fotos, horarios y ofertas.
             </p>
             <a
               href={`/app/reclamar/${business.id}`}
-              class="inline-block rounded-full bg-primary px-5 py-2 text-sm font-semibold text-white transition hover:bg-green-700"
+              class="inline-block rounded-xl bg-primary px-5 py-3 text-[13.5px] font-semibold text-white transition-colors hover:bg-primary-hover"
             >
               Reclamar mi negocio
             </a>
           </div>
         )
       }
+    </aside>
+  </div>
 
-      <!-- REPORTAR ERROR: los vecinos ayudan a curar los datos -->
-      <ReportBusiness
-        slug={business.slug}
-        businessName={business.name}
-        client:visible
-      />
-    </div>
+  <!-- Barra de acción fija (mobile): el contacto siempre a mano -->
+  <div
+    class="fixed inset-x-0 bottom-0 z-50 flex gap-2.5 border-t border-border bg-bg-card px-[18px] pt-3 pb-4 shadow-tab md:hidden"
+  >
+    {
+      whatsappUrl && (
+        <a
+          href={whatsappUrl}
+          target="_blank"
+          rel="noopener noreferrer"
+          data-track="whatsapp"
+          class="flex flex-1 items-center justify-center gap-2 rounded-xl bg-primary p-3.5 text-[14.5px] font-semibold text-white"
+        >
+          <img
+            src={whatsappLogo}
+            width="17"
+            height="17"
+            alt=""
+            class="brightness-0 invert"
+          />
+          WhatsApp
+        </a>
+      )
+    }
+    {
+      business.phone && (
+        <a
+          href={`tel:${business.phone}`}
+          data-track="phone"
+          aria-label="Llamar"
+          class={
+            whatsappUrl
+              ? "flex items-center rounded-xl bg-primary-faint px-4 py-3.5"
+              : "flex flex-1 items-center justify-center gap-2 rounded-xl bg-primary p-3.5 text-[14.5px] font-semibold text-white"
+          }
+        >
+          <Phone class="size-[18px]" aria-hidden="true" />
+          {!whatsappUrl && "Llamar"}
+        </a>
+      )
+    }
+    {
+      mapsUrl && (
+        <a
+          href={mapsUrl}
+          target="_blank"
+          rel="noopener noreferrer"
+          aria-label="Cómo llegar"
+          class="flex items-center rounded-xl bg-primary-faint px-4 py-3.5"
+        >
+          <Navigation class="size-[18px]" aria-hidden="true" />
+        </a>
+      )
+    }
   </div>
 </section>
 

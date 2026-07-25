@@ -1,5 +1,5 @@
 ---
-import { Phone } from "@lucide/astro";
+import { Phone, Siren, Shield, Flame, HeartPulse, Wrench } from "@lucide/astro";
 import type { DirectoryEntry } from "../../lib/repositories/directory.repository";
 
 interface Props {
@@ -8,75 +8,129 @@ interface Props {
 
 const { entries } = Astro.props;
 
-// Clases completas (no interpoladas) para que Tailwind las detecte.
+// Un color por tipo de emergencia. Los valores son los del sistema de
+// diseño: rojo para lo médico/urgente, azul para seguridad, verde para
+// bomberos y servicios.
 const STYLES: Record<
   string,
-  { badge: string; card: string; button: string; label: string }
+  { label: string; bg: string; border: string; chip: string; fg: string; icon: any }
 > = {
-  seguridad: {
-    label: "Seguridad",
-    card: "border-blue-100 bg-blue-50",
-    badge: "bg-blue-200 text-blue-700",
-    button: "bg-blue-500",
-  },
   emergencia: {
     label: "Emergencias",
-    card: "border-red-100 bg-red-50",
-    badge: "bg-red-200 text-red-700",
-    button: "bg-red-500",
+    bg: "#fdecea",
+    border: "rgba(192,70,58,.2)",
+    chip: "rgba(192,70,58,.12)",
+    fg: "#c0463a",
+    icon: Siren,
+  },
+  seguridad: {
+    label: "Seguridad",
+    bg: "#eaf1fa",
+    border: "rgba(46,101,149,.2)",
+    chip: "rgba(46,101,149,.12)",
+    fg: "#2e6595",
+    icon: Shield,
   },
   salud: {
     label: "Salud",
-    card: "border-green-100 bg-green-50",
-    badge: "bg-green-200 text-green-700",
-    button: "bg-green-500",
+    bg: "#e9f6ee",
+    border: "rgba(11,122,63,.2)",
+    chip: "rgba(11,122,63,.12)",
+    fg: "#0b7a3f",
+    icon: HeartPulse,
+  },
+  bomberos: {
+    label: "Bomberos",
+    bg: "#e9f6ee",
+    border: "rgba(11,122,63,.2)",
+    chip: "rgba(11,122,63,.12)",
+    fg: "#0b7a3f",
+    icon: Flame,
   },
   servicio: {
     label: "Servicios",
-    card: "border-gray-100 bg-gray-50",
-    badge: "bg-gray-200 text-gray-700",
-    button: "bg-gray-500",
+    bg: "#f4f5f2",
+    border: "rgba(14,26,18,.1)",
+    chip: "rgba(14,26,18,.07)",
+    fg: "#4a564d",
+    icon: Wrench,
   },
 };
 
 const styleFor = (category: string) => STYLES[category] ?? STYLES.servicio;
 
-// Números cortos (911, 107) se muestran en el botón; largos dicen "Llamar ahora".
-const callLabel = (phone: string) =>
-  phone.length <= 4 ? `Llamar ${phone}` : "Llamar ahora";
+// El número es el protagonista, pero "911" y "+541147402222" no pueden ir
+// al mismo cuerpo: los largos se achican para no desbordar la card.
+const phoneSize = (phone: string) =>
+  phone.length <= 5
+    ? "text-[38px] sm:text-[44px]"
+    : phone.length <= 11
+      ? "text-[26px] sm:text-[30px]"
+      : "text-[22px] sm:text-[26px]";
 ---
 
-<section id="emergencias" class="flex flex-col gap-6 w-full px-2 sm:px-12">
-  <h2 class="text-2xl font-bold">Emergencias Prioritarias</h2>
+{
+  entries.length > 0 && (
+    <section id="emergencias">
+      <h2 class="mb-4 text-[19px] font-extrabold tracking-[-0.015em] text-text-main sm:text-[26px]">
+        Emergencias
+      </h2>
 
-  <div class="grid gap-6 md:grid-cols-3">
-    {
-      entries.map((entry) => {
-        const style = styleFor(entry.category);
-        return (
-          <div
-            class={`flex flex-col gap-3 justify-between rounded-2xl border p-6 ${style.card}`}
-          >
-            <span
-              class={`w-fit rounded-full px-3 py-1 text-xs font-semibold ${style.badge}`}
+      <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        {entries.map((entry) => {
+          const style = styleFor(entry.category);
+          const Icon = style.icon;
+          return (
+            <div
+              data-phone-item
+              data-search={`${entry.title} ${entry.subtitle ?? ""} ${entry.phone} ${style.label}`.toLowerCase()}
+              class="flex flex-col gap-3.5 rounded-[22px] border p-5 sm:p-[26px]"
+              style={`background:${style.bg};border-color:${style.border}`}
             >
-              {style.label}
-            </span>
+              <div class="flex items-start justify-between">
+                <span
+                  class="rounded-full px-3 py-1.5 text-[11.5px] font-bold uppercase tracking-[0.09em]"
+                  style={`background:${style.chip};color:${style.fg}`}
+                >
+                  {style.label}
+                </span>
+                <Icon
+                  class="size-6"
+                  style={`color:${style.fg}`}
+                  aria-hidden="true"
+                />
+              </div>
 
-            <h3 class="text-lg font-bold">{entry.title}</h3>
-            {entry.subtitle && (
-              <p class="text-sm text-gray-600">{entry.subtitle}</p>
-            )}
+              <div>
+                <div class="text-[18px] font-extrabold tracking-[-0.015em] text-text-main sm:text-[20px]">
+                  {entry.title}
+                </div>
+                {entry.subtitle && (
+                  <div class="mt-1 text-[13.5px] text-text-body">
+                    {entry.subtitle}
+                  </div>
+                )}
+              </div>
 
-            <a
-              href={`tel:${entry.phone}`}
-              class={`inline-flex w-full items-center justify-center gap-2 rounded-full py-1 font-semibold text-white ${style.button}`}
-            >
-              <Phone size={20} /> {callLabel(entry.phone)}
-            </a>
-          </div>
-        );
-      })
-    }
-  </div>
-</section>
+              <div
+                class={`font-extrabold leading-none tracking-[-0.03em] tabular-nums ${phoneSize(entry.phone)}`}
+                style={`color:${style.fg}`}
+              >
+                {entry.phone}
+              </div>
+
+              <a
+                href={`tel:${entry.phone}`}
+                class="mt-auto flex items-center justify-center gap-2 rounded-[13px] p-3.5 text-[14.5px] font-semibold text-white"
+                style={`background:${style.fg}`}
+              >
+                <Phone class="size-4" aria-hidden="true" />
+                Llamar
+              </a>
+            </div>
+          );
+        })}
+      </div>
+    </section>
+  )
+}

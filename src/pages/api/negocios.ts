@@ -1,9 +1,12 @@
 import type { APIRoute } from "astro";
-import { getBusinessesPage } from "../../lib/repositories/business.repository";
+import {
+  getBusinessesPage,
+  parseBusinessOrder,
+} from "../../lib/repositories/business.repository";
 
 /**
  * Paginado del listado público de negocios.
- * GET /api/negocios?categoria=<slug>&buscar=<texto>&offset=0&limit=24
+ * GET /api/negocios?categoria=<slug>&buscar=<texto>&orden=nombre&offset=0&limit=24
  * Responde { items, total }; lo consume BusinessGrid para el scroll infinito.
  */
 export const GET: APIRoute = async ({ url, locals }) => {
@@ -19,6 +22,7 @@ export const GET: APIRoute = async ({ url, locals }) => {
     offset,
     categorySlug: url.searchParams.get("categoria"),
     search: url.searchParams.get("buscar"),
+    order: parseBusinessOrder(url.searchParams.get("orden")),
   });
 
   return new Response(JSON.stringify(page), {

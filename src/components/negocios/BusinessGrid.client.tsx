@@ -1,5 +1,6 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import BusinessCard from "./BusinessCard";
+import { getTodayStatus } from "../../lib/hours";
 import type { BusinessSummary } from "../../lib/repositories/business.repository";
 
 type BusinessGridProps = {
@@ -9,26 +10,37 @@ type BusinessGridProps = {
   /** Filtros con los que el servidor armó la primera tanda. */
   initialCategory: string | null;
   initialSearch: string | null;
+  initialOrder: string;
   pageSize: number;
 };
 
+type ServerFilters = { categoria: string; buscar: string; orden: string };
+
 // El listado se pagina EN EL SERVIDOR (/api/negocios): acá solo se acumulan
 // las tandas (scroll infinito) y se re-consulta cuando cambian los filtros
-// de la URL (?categoria= / ?buscar=, que maneja CategoryFilter).
+// de la URL (?categoria= / ?buscar= / ?orden=, que maneja CategoryFilter).
+// "Abierto ahora" y "Con ofertas" se resuelven en el cliente sobre lo ya
+// cargado: dependen de la hora del que mira y del array de ofertas.
 export default function BusinessGrid({
   initialItems,
   initialTotal,
   initialCategory,
   initialSearch,
+  initialOrder,
   pageSize,
 }: BusinessGridProps) {
   const [items, setItems] = useState<BusinessSummary[]>(initialItems);
   const [total, setTotal] = useState(initialTotal);
   const [loading, setLoading] = useState(false);
+  const [clientFilters, setClientFilters] = useState({
+    abierto: false,
+    ofertas: false,
+  });
 
-  const filtersRef = useRef({
+  const filtersRef = useRef<ServerFilters>({
     categoria: initialCategory ?? "",
     buscar: initialSearch ?? "",
+    orden: initialOrder,
   });
   // Descarta respuestas viejas si el usuario cambió el filtro mientras cargaba
   const requestSeq = useRef(0);
@@ -39,9 +51,10 @@ export default function BusinessGrid({
     setLoading(true);
 
     const params = new URLSearchParams();
-    const { categoria, buscar } = filtersRef.current;
+    const { categoria, buscar, orden } = filtersRef.current;
     if (categoria) params.set("categoria", categoria);
     if (buscar) params.set("buscar", buscar);
+    if (orden && orden !== "destacados") params.set("orden", orden);
     params.set("offset", String(offset));
     params.set("limit", String(pageSize));
 
@@ -65,13 +78,22 @@ export default function BusinessGrid({
   useEffect(() => {
     const syncFromUrl = () => {
       const params = new URLSearchParams(window.location.search);
-      const next = {
+
+      setClientFilters({
+        abierto: params.get("abierto") === "1",
+        ofertas: params.get("ofertas") === "1",
+      });
+
+      const next: ServerFilters = {
         categoria: params.get("categoria") ?? "",
         buscar: params.get("buscar") ?? "",
+        orden: params.get("orden") ?? "destacados",
       };
+      const current = filtersRef.current;
       if (
-        next.categoria === filtersRef.current.categoria &&
-        next.buscar === filtersRef.current.buscar
+        next.categoria === current.categoria &&
+        next.buscar === current.buscar &&
+        next.orden === current.orden
       )
         return;
 
@@ -80,6 +102,7 @@ export default function BusinessGrid({
       fetchPage(0, true);
     };
 
+    syncFromUrl();
     window.addEventListener("urlchange", syncFromUrl);
     window.addEventListener("popstate", syncFromUrl);
     return () => {
@@ -109,42 +132,56 @@ export default function BusinessGrid({
     return () => observer.disconnect();
   }, [items.length, total, loading]);
 
-  if (!loading && items.length === 0) {
-    return (
-      <div className="col-span-full py-12 text-center text-gray-500">
-        No se encontraron comercios con esos filtros.
-      </div>
-    );
-  }
+  const filtering = clientFilters.abierto || clientFilters.ofertas;
+  const visible = useMemo(() => {
+    if (!filtering) return items;
+    return items.filter((business) => {
+      if (clientFilters.ofertas && !(business.offers?.length > 0)) return false;
+      if (clientFilters.abierto) {
+        if (business.by_appointment) return false;
+        if (getTodayStatus(business.business_hours)?.status !== "open")
+          return false;
+      }
+      return true;
+    });
+  }, [items, filtering, clientFilters]);
+
+  const countLabel = filtering
+    ? `${visible.length} de ${items.length} comercios cargados`
+    : `${total} ${total === 1 ? "comercio" : "comercios"} en la guía`;
 
   return (
-    <div className="flex flex-col justify-center items-center gap-5">
-      <p className="font-bold bg-primary text-white py-1 px-10 rounded-full">
-        Total: {total}
-      </p>
+    <div className="flex flex-col gap-4">
+      <p className="text-sm text-text-muted">{countLabel}</p>
 
-      <div
-        id="comercios"
-        className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-5 xl:grid-cols-6"
-      >
-        {items.map((business) => (
-          <BusinessCard key={business.id} business={business} />
-        ))}
-
-        {/* Placeholders mientras llega la próxima tanda */}
-        {loading &&
-          Array.from({ length: items.length === 0 ? 10 : 5 }, (_, i) => (
-            <div
-              key={`skeleton-${i}`}
-              className="h-52 rounded-xl bg-gray-200/70 animate-pulse"
-            />
+      {!loading && visible.length === 0 ? (
+        <p className="py-12 text-center text-[15px] text-text-muted">
+          No se encontraron comercios con esos filtros.
+        </p>
+      ) : (
+        <div
+          id="comercios"
+          className="grid grid-cols-1 gap-[18px] sm:grid-cols-2 lg:grid-cols-3"
+        >
+          {visible.map((business) => (
+            <BusinessCard key={business.id} business={business} />
           ))}
-      </div>
+
+          {/* Placeholders mientras llega la próxima tanda */}
+          {loading &&
+            Array.from({ length: items.length === 0 ? 6 : 3 }, (_, i) => (
+              <div
+                key={`skeleton-${i}`}
+                className="h-[320px] animate-pulse rounded-[20px] bg-[#eef0ec]"
+              />
+            ))}
+        </div>
+      )}
 
       <div ref={sentinelRef} aria-hidden="true" />
 
       {!hasMore && items.length > 0 && (
-        <p className="pb-4 text-sm text-gray-400">
+        <p className="pb-4 text-center text-sm text-text-faint">
           Eso es todo: {total} negocios.
         </p>
       )}

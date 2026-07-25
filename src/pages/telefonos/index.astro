@@ -1,6 +1,6 @@
 ---
+import { Search } from "@lucide/astro";
 import Layout from "../../layouts/Layout.astro";
-import Hero from "../../components/telefonos/Hero.astro";
 import Emergencies from "../../components/telefonos/Emergencies.astro";
 import Directory from "../../components/telefonos/Directory.astro";
 import { getDirectoryEntries } from "../../lib/repositories/directory.repository";
@@ -16,10 +16,90 @@ const general = entries.filter((e) => !e.is_priority);
 ---
 
 <Layout
-  title={`Teléfonos Útiles en ${barrio.name}`}
+  title={`Teléfonos útiles en ${barrio.name}`}
   description={`Teléfonos de emergencia y servicios de ${barrio.name}: bomberos, policía, salud, Edenor, AySA y más.`}
 >
-  <Hero />
-  <Emergencies entries={priority} />
-  <Directory entries={general} />
+  <div class="flex flex-col gap-8">
+    <header>
+      <h1
+        class="mb-2 text-[29px] font-extrabold leading-[1.05] tracking-[-0.025em] text-text-main sm:text-[44px]"
+      >
+        Teléfonos útiles de {barrio.name}
+      </h1>
+      <p class="mb-5 max-w-[620px] text-[15px] text-text-body sm:text-[16px]">
+        Emergencias, servicios y organismos del barrio. Guardalo en favoritos:
+        el día que lo necesitás, no hay tiempo de buscar.
+      </p>
+
+      <div
+        class="flex max-w-[520px] items-center rounded-2xl bg-bg-card px-4 shadow-soft"
+      >
+        <Search class="size-[19px] shrink-0 text-primary" aria-hidden="true" />
+        <input
+          id="phone-search"
+          type="search"
+          autocomplete="off"
+          aria-label="Buscar un teléfono"
+          placeholder="Buscá: bomberos, hospital, luz, agua…"
+          class="w-full bg-transparent px-3 py-[15px] text-[15.5px] text-text-main outline-none placeholder:text-text-muted"
+        />
+      </div>
+    </header>
+
+    <Emergencies entries={priority} />
+    <Directory entries={general} />
+
+    <p
+      id="phone-empty"
+      hidden
+      class="rounded-[20px] bg-bg-card p-8 text-center text-[15px] text-text-muted shadow-soft"
+    >
+      No encontramos ningún teléfono con esa búsqueda.
+    </p>
+  </div>
 </Layout>
+
+<script>
+  // Filtro en el cliente sobre lo ya renderizado: son unas decenas de
+  // contactos, no hace falta pedirle nada al servidor mientras se escribe.
+  const setupPhoneSearch = () => {
+    const input = document.getElementById(
+      "phone-search",
+    ) as HTMLInputElement | null;
+    const empty = document.getElementById("phone-empty");
+    if (!input || input.dataset.ready) return;
+    input.dataset.ready = "1";
+
+    const items = Array.from(
+      document.querySelectorAll<HTMLElement>("[data-phone-item]"),
+    );
+
+    const apply = () => {
+      const query = input.value.trim().toLowerCase();
+      let visible = 0;
+
+      for (const item of items) {
+        const match = !query || (item.dataset.search ?? "").includes(query);
+        item.hidden = !match;
+        if (match) visible++;
+      }
+
+      // Las secciones vacías se esconden enteras (título incluido)
+      for (const section of document.querySelectorAll<HTMLElement>("section")) {
+        const sectionItems = section.querySelectorAll("[data-phone-item]");
+        if (sectionItems.length === 0) continue;
+        section.hidden = ![...sectionItems].some(
+          (el) => !(el as HTMLElement).hidden,
+        );
+      }
+
+      if (empty) empty.hidden = visible > 0;
+    };
+
+    input.addEventListener("input", apply);
+    apply();
+  };
+
+  setupPhoneSearch();
+  document.addEventListener("astro:page-load", setupPhoneSearch);
+</script>

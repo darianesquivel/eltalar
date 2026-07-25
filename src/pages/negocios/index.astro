@@ -1,9 +1,12 @@
 ---
 import Layout from "../../layouts/Layout.astro";
-import Hero from "../../components/negocios/Hero.astro";
 import CategoryFilter from "../../components/negocios/CategoryFilter.client";
 import BusinessGrid from "../../components/negocios/BusinessGrid.client";
-import { getBusinessesPage } from "../../lib/repositories/business.repository";
+import {
+  getBusinessesPage,
+  getCategoryCounts,
+  parseBusinessOrder,
+} from "../../lib/repositories/business.repository";
 import { supabase } from "../../lib/supabase";
 
 const PAGE_SIZE = 24;
@@ -14,30 +17,65 @@ const PAGE_SIZE = 24;
 // compartida (ej. ?categoria=gastronomia) cargue ya filtrada.
 const categoria = Astro.url.searchParams.get("categoria");
 const buscar = Astro.url.searchParams.get("buscar");
+const orden = parseBusinessOrder(Astro.url.searchParams.get("orden"));
+
+const barrio = Astro.locals.barrio;
 
 const [page, { data: categories }] = await Promise.all([
   getBusinessesPage({
-    barrioId: Astro.locals.barrio.id,
+    barrioId: barrio.id,
     limit: PAGE_SIZE,
     categorySlug: categoria,
     search: buscar,
+    order: orden,
   }),
   supabase.from("categories").select("id, name, slug, icon").order("name"),
 ]);
+
+// Los chips de rubro llevan el contador de negocios activos (cacheado 5 min)
+const counts = await getCategoryCounts(
+  barrio.id,
+  (categories ?? []).map((c) => c.slug),
+);
+
+// Sin negocios cargados un rubro no ayuda a nadie: se esconde
+const categoriesWithCount = (categories ?? [])
+  .map((c) => ({ ...c, count: counts.bySlug[c.slug] ?? 0 }))
+  .filter((c) => c.count > 0)
+  .sort((a, b) => b.count - a.count);
 ---
 
 <Layout
-  title={`Negocios y Servicios en ${Astro.locals.barrio.name}`}
-  description={`Guía de comercios y servicios de ${Astro.locals.barrio.name}: horarios, teléfonos, WhatsApp y ubicación de los negocios del barrio.`}
+  title={`Negocios y Servicios en ${barrio.name}`}
+  description={`Guía de comercios y servicios de ${barrio.name}: horarios, teléfonos, WhatsApp y ubicación de los negocios del barrio.`}
 >
-  <Hero />
-  <CategoryFilter categories={categories ?? []} client:load />
-  <BusinessGrid
-    initialItems={page.items}
-    initialTotal={page.total}
-    initialCategory={categoria}
-    initialSearch={buscar}
-    pageSize={PAGE_SIZE}
-    client:load
-  />
+  <div class="flex flex-col gap-[22px]">
+    <header class="flex flex-col gap-2">
+      <h1
+        class="text-[29px] font-extrabold leading-[1.05] tracking-[-0.025em] text-text-main sm:text-[44px]"
+      >
+        Negocios de {barrio.name}
+      </h1>
+      <p class="max-w-[560px] text-[15px] leading-relaxed text-text-body sm:text-[17px]">
+        Comercios, servicios y profesionales del barrio. Contactalos directo por
+        WhatsApp.
+      </p>
+    </header>
+
+    <CategoryFilter
+      categories={categoriesWithCount}
+      total={counts.total}
+      client:load
+    />
+
+    <BusinessGrid
+      initialItems={page.items}
+      initialTotal={page.total}
+      initialCategory={categoria}
+      initialSearch={buscar}
+      initialOrder={orden}
+      pageSize={PAGE_SIZE}
+      client:load
+    />
+  </div>
 </Layout>
