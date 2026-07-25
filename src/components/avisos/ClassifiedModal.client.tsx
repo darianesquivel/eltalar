@@ -41,6 +41,7 @@ const sinceLabel = (iso: string | null) => {
 export default function ClassifiedModal({ barrioName }: Props) {
   const [avisos, setAvisos] = useState<Aviso[]>([]);
   const [indice, setIndice] = useState<number | null>(null);
+  const [fotoAmpliada, setFotoAmpliada] = useState(false);
   const cerrarRef = useRef<HTMLButtonElement>(null);
   const tocoEn = useRef<number | null>(null);
 
@@ -97,6 +98,7 @@ export default function ClassifiedModal({ barrioName }: Props) {
 
   const mover = useCallback(
     (paso: number) => {
+      setFotoAmpliada(false);
       setIndice((actual) => {
         if (actual === null || avisos.length === 0) return actual;
         return (actual + paso + avisos.length) % avisos.length;
@@ -110,7 +112,10 @@ export default function ClassifiedModal({ barrioName }: Props) {
     if (indice === null) return;
 
     const alTeclear = (e: KeyboardEvent) => {
-      if (e.key === "Escape") cerrar();
+      if (e.key === "Escape") {
+        if (fotoAmpliada) setFotoAmpliada(false);
+        else cerrar();
+      }
       if (e.key === "ArrowRight") mover(1);
       if (e.key === "ArrowLeft") mover(-1);
     };
@@ -124,7 +129,7 @@ export default function ClassifiedModal({ barrioName }: Props) {
       document.removeEventListener("keydown", alTeclear);
       document.body.style.overflow = overflow;
     };
-  }, [indice, cerrar, mover]);
+  }, [indice, fotoAmpliada, cerrar, mover]);
 
   if (indice === null || !avisos[indice]) return null;
 
@@ -167,13 +172,22 @@ export default function ClassifiedModal({ barrioName }: Props) {
           <X size={18} />
         </button>
 
-        <div className="relative h-[220px] sm:h-[280px]">
+        <div className="relative h-[220px] bg-secondary sm:h-[280px]">
           {aviso.photo_url ? (
-            <img
-              src={aviso.photo_url}
-              alt={aviso.title}
-              className="size-full object-cover"
-            />
+            // Entra completa, sin recortar: en la card se recorta para que
+            // la grilla quede pareja, pero acá el vecino quiere ver la cosa.
+            <button
+              type="button"
+              onClick={() => setFotoAmpliada(true)}
+              aria-label="Ver la foto en grande"
+              className="size-full cursor-zoom-in"
+            >
+              <img
+                src={aviso.photo_url}
+                alt={aviso.title}
+                className="size-full object-contain"
+              />
+            </button>
           ) : (
             <div className="img-placeholder size-full" />
           )}
@@ -254,6 +268,29 @@ export default function ClassifiedModal({ barrioName }: Props) {
           )}
         </div>
       </div>
+
+      {fotoAmpliada && aviso.photo_url && (
+        <div
+          className="fixed inset-0 z-[110] flex items-center justify-center bg-black/95 p-4"
+          onClick={(e) => {
+            e.stopPropagation();
+            setFotoAmpliada(false);
+          }}
+        >
+          <img
+            src={aviso.photo_url}
+            alt={aviso.title}
+            className="max-h-full max-w-full object-contain"
+          />
+          <button
+            type="button"
+            aria-label="Cerrar la foto"
+            className="absolute right-4 top-4 flex size-10 items-center justify-center rounded-full bg-white/90 text-text-main"
+          >
+            <X size={18} />
+          </button>
+        </div>
+      )}
     </div>
   );
 }
