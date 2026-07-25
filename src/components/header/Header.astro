@@ -94,6 +94,7 @@ const logoMask = `aspect-ratio:526/410;-webkit-mask:url(${Logo.src}) center/cont
     <div class="flex items-center gap-3">
       <a
         href="/app/login"
+        data-solo-sin-sesion
         class="text-sm font-medium text-text-body transition-colors hover:text-text-main"
       >
         Ingresar
@@ -189,6 +190,7 @@ const logoMask = `aspect-ratio:526/410;-webkit-mask:url(${Logo.src}) center/cont
         }
         <a
           href="/app/login"
+          data-solo-sin-sesion
           class="rounded-xl px-3 py-2.5 text-[15px] font-medium text-text-body"
         >
           Ingresar
@@ -227,14 +229,20 @@ const logoMask = `aspect-ratio:526/410;-webkit-mask:url(${Logo.src}) center/cont
       };
     };
 
-    // Con sesión iniciada, el CTA dice "Mis negocios": el comerciante que ya
-    // cargó el suyo no tiene que adivinar dónde editarlo. Se detecta por la
-    // cookie de Supabase (sb-...-auth-token), sin pegarle a la base.
+    // Con sesión iniciada, el CTA dice "Mis negocios" y desaparece
+    // "Ingresar" (tenerlos juntos no tiene sentido). Se detecta por la
+    // cookie de Supabase (sb-...-auth-token), sin pegarle a la base: las
+    // páginas públicas las cachea el CDN y no pueden depender de la sesión.
     const updateBusinessCta = () => {
       const loggedIn = document.cookie.includes("-auth-token");
       if (!loggedIn) return;
+
       document.querySelectorAll("[data-cta-negocio]").forEach((el) => {
         el.textContent = "Mis negocios";
+      });
+
+      document.querySelectorAll("[data-solo-sin-sesion]").forEach((el) => {
+        el.setAttribute("hidden", "");
       });
     };
 
