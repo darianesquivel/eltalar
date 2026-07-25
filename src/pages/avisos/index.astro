@@ -1,6 +1,7 @@
 ---
 import { Plus } from "@lucide/astro";
 import Layout from "../../layouts/Layout.astro";
+import ClassifiedModal from "../../components/avisos/ClassifiedModal.client";
 import {
   CLASSIFIED_CATEGORIES,
   classifiedCategory,
@@ -116,10 +117,16 @@ const chipClass = (active: boolean) =>
     {
       avisos.length > 0 ? (
         <div class="grid gap-[18px] sm:grid-cols-2 lg:grid-cols-3">
-          {avisos.map((aviso) => {
+          {avisos.map((aviso, i) => {
             const category = classifiedCategory(aviso.category);
             return (
-              <article class="flex flex-col overflow-hidden rounded-[18px] bg-bg-card shadow-soft">
+              <article
+                data-aviso={i}
+                tabindex="0"
+                role="button"
+                aria-label={`Ver el aviso ${aviso.title}`}
+                class="flex cursor-pointer flex-col overflow-hidden rounded-[18px] bg-bg-card shadow-soft transition-colors hover:bg-white"
+              >
                 <div class="relative h-[132px]">
                   {aviso.photo_url ? (
                     <img
@@ -204,6 +211,25 @@ const chipClass = (active: boolean) =>
         </div>
       )
     }
+
+    <script
+      type="application/json"
+      id="avisos-data"
+      is:inline
+      set:html={JSON.stringify(
+        avisos.map((a) => ({
+          category: a.category,
+          title: a.title,
+          description: a.description,
+          price_text: a.price_text,
+          whatsapp: a.whatsapp,
+          author_name: a.author_name,
+          photo_url: a.photo_url,
+          published_at: a.published_at,
+        })),
+      )}
+    />
+    <ClassifiedModal barrioName={barrio.name} client:idle />
 
     <div class="grid gap-[18px] lg:grid-cols-[1fr_320px]">
       <div class="rounded-[20px] border border-[rgba(14,159,82,.22)] bg-[#f2fbf5] p-6">
