@@ -2,6 +2,7 @@
 import { Search, Menu, X } from "@lucide/astro";
 import Logo from "../../assets/logo.svg";
 import UserMenu from "./UserMenu.client";
+import { MOBILE_MENU_ITEMS, NAV_ITEMS } from "../../lib/nav";
 
 const path = Astro.url.pathname;
 
@@ -10,22 +11,6 @@ const path = Astro.url.pathname;
 const query = path.startsWith("/negocios")
   ? (Astro.url.searchParams.get("buscar") ?? "")
   : "";
-
-const NAV = [
-  { href: "/negocios", label: "Negocios" },
-  { href: "/ofertas", label: "Ofertas" },
-  { href: "/farmacias", label: "Farmacias" },
-  { href: "/eventos", label: "Eventos" },
-  { href: "/avisos", label: "Avisos" },
-  { href: "/telefonos", label: "Teléfonos" },
-];
-
-// Secciones secundarias: no entran en la nav de desktop ni en la tab bar
-const MENU_EXTRA = [
-  { href: "/mapa", label: "Mapa" },
-  { href: "/anunciate", label: "Anunciate" },
-  { href: "/contacto", label: "Contacto" },
-];
 
 const POPULARES = ["farmacia", "delivery", "plomero", "veterinaria"];
 
@@ -75,7 +60,7 @@ const logoMask = `aspect-ratio:526/410;-webkit-mask:url(${Logo.src}) center/cont
 
     <nav class="ml-auto flex items-center gap-0.5">
       {
-        NAV.map((item) => (
+        NAV_ITEMS.map((item) => (
           <a
             href={item.href}
             aria-current={isActive(item.href) ? "page" : undefined}
@@ -179,7 +164,7 @@ const logoMask = `aspect-ratio:526/410;-webkit-mask:url(${Logo.src}) center/cont
     >
       <div class="flex flex-col gap-1">
         {
-          [...NAV, ...MENU_EXTRA].map((item) => (
+          MOBILE_MENU_ITEMS.map((item) => (
             <a
               href={item.href}
               class:list={[

@@ -1,16 +1,13 @@
 ---
-import { House, Search, Flame, Megaphone, Pill } from "@lucide/astro";
+import * as icons from "@lucide/astro";
+import { TAB_ITEMS } from "../../lib/nav";
 
-// Barra inferior fija: reemplaza al menú desplegable como navegación
-// principal en mobile. El menú hamburguesa queda para lo secundario
-// (Eventos, Mapa, Teléfonos, Anunciate, Contacto).
-const ITEMS = [
-  { href: "/", label: "Inicio", icon: House },
-  { href: "/negocios", label: "Buscar", icon: Search },
-  { href: "/ofertas", label: "Ofertas", icon: Flame },
-  { href: "/avisos", label: "Avisos", icon: Megaphone },
-  { href: "/farmacias", label: "Farmacias", icon: Pill },
-];
+// Barra inferior fija: es la navegación principal en mobile. Lo que está
+// acá NO se repite en el menú hamburguesa (ver src/lib/nav.ts).
+const ITEMS = TAB_ITEMS;
+
+const iconFor = (name: string) =>
+  (icons as Record<string, any>)[name] ?? icons.House;
 
 const path = Astro.url.pathname;
 const isActive = (href: string) =>
@@ -24,7 +21,7 @@ const isActive = (href: string) =>
   {
     ITEMS.map((item) => {
       const active = isActive(item.href);
-      const Icon = item.icon;
+      const Icon = iconFor(item.icon);
       return (
         <a
           href={item.href}
