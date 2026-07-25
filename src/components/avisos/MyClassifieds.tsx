@@ -21,6 +21,16 @@ type Props = {
   classifieds: MyClassified[];
 };
 
+/** Los avisos vencidos se borran solos una semana después (cron diario). */
+const GRACE_DAYS = 7;
+
+const fecha = (iso: string) => new Date(iso).toLocaleDateString("es-AR");
+
+const seBorraEl = (expiresAt: string) =>
+  new Date(
+    new Date(expiresAt).getTime() + GRACE_DAYS * 86_400_000,
+  ).toISOString();
+
 const STATUS: Record<string, { label: string; bg: string; fg: string }> = {
   pending: { label: "En revisión", bg: "#fff7e6", fg: "#a5761a" },
   published: { label: "Publicado", bg: "#e7f6ec", fg: "#0b7a3f" },
@@ -37,6 +47,31 @@ export default function MyClassifieds({ classifieds }: Props) {
   const [busy, setBusy] = useState<string | null>(null);
   // Borrar no tiene vuelta: se pide un segundo click en vez de un confirm()
   const [confirming, setConfirming] = useState<string | null>(null);
+
+  // Renovar no pasa por moderación: no cambia el contenido, solo estira la
+  // fecha. Por eso va por la función renovar_aviso y no por un update.
+  const renew = async (aviso: MyClassified) => {
+    setBusy(aviso.id);
+
+    const { data, error } = await supabaseBrowser.rpc("renovar_aviso", {
+      p_id: aviso.id,
+    });
+
+    if (error) {
+      console.error(error);
+      alert(error.message ?? "No pudimos renovar el aviso");
+    } else {
+      setItems((prev) =>
+        prev.map((c) =>
+          c.id === aviso.id
+            ? { ...c, status: "published", expires_at: data as string }
+            : c,
+        ),
+      );
+    }
+
+    setBusy(null);
+  };
 
   const remove = async (aviso: MyClassified) => {
     if (confirming !== aviso.id) {
@@ -130,14 +165,28 @@ export default function MyClassifieds({ classifieds }: Props) {
               </div>
 
               <div className="text-[12.5px] text-text-muted">
-                {aviso.price_text ? `${formatPriceText(aviso.price_text)} · ` : ""}
+                {aviso.price_text
+                  ? `${formatPriceText(aviso.price_text)} · `
+                  : ""}
                 {aviso.status === "published"
-                  ? `vence el ${new Date(aviso.expires_at).toLocaleDateString("es-AR")}`
-                  : `cargado el ${new Date(aviso.created_at).toLocaleDateString("es-AR")}`}
+                  ? `vence el ${fecha(aviso.expires_at)}`
+                  : aviso.status === "expired"
+                    ? `venció el ${fecha(aviso.expires_at)} · se borra el ${fecha(seBorraEl(aviso.expires_at))}`
+                    : `cargado el ${fecha(aviso.created_at)}`}
               </div>
             </div>
 
-            <div className="flex gap-2">
+            <div className="flex flex-wrap gap-2">
+              {(aviso.status === "expired" || aviso.status === "published") && (
+                <button
+                  type="button"
+                  onClick={() => renew(aviso)}
+                  disabled={busy === aviso.id}
+                  className="rounded-xl bg-primary px-4 py-2.5 text-[13px] font-semibold text-white transition-colors hover:bg-primary-hover"
+                >
+                  Renovar 30 días
+                </button>
+              )}
               <a
                 href={`/avisos/mios/${aviso.id}`}
                 className="rounded-xl bg-primary-faint px-4 py-2.5 text-[13px] font-semibold text-text-main transition-colors hover:bg-primary-soft"

@@ -393,7 +393,8 @@ export default function ClassifiedForm({
 
       <p className="text-[12.5px] text-text-muted">
         Tu WhatsApp queda visible para que te contacten. Revisamos los avisos
-        antes de publicarlos y vencen a los 30 días.
+        antes de publicarlos y vencen a los 30 días: podés renovarlos con un
+        click, y si no se renuevan se borran una semana después.
       </p>
 
       <button

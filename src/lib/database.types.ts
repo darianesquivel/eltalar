@@ -805,6 +805,7 @@ export type Database = {
       expirar_avisos: { Args: never; Returns: undefined };
       is_admin: { Args: never; Returns: boolean };
       refresh_business_rating: { Args: { p_business_id: string }; Returns: undefined };
+      renovar_aviso: { Args: { p_id: string }; Returns: string };
       today_ar: { Args: never; Returns: string };
     };
     Enums: {
