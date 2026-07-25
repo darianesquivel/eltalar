@@ -5,6 +5,30 @@ import { resolveBarrio } from "./lib/barrio";
 // Rutas de /app accesibles sin sesión
 const PUBLIC_APP_PATHS = ["/app/login", "/app/auth"];
 
+// Páginas públicas que puede cachear el CDN de Vercel. Son iguales para
+// todos (lo único personalizado del header lo pone JavaScript en el
+// navegador), así que la segunda visita se sirve desde el borde en vez de
+// esperar a Supabase. 60 s de frescura + 5 min sirviendo lo viejo mientras
+// se revalida en segundo plano.
+const CACHEABLE_PAGES = [
+  "/",
+  "/negocios",
+  "/ofertas",
+  "/eventos",
+  "/farmacias",
+  "/telefonos",
+  "/avisos",
+  "/mapa",
+  "/contacto",
+  "/anunciate",
+];
+
+const isCacheablePage = (pathname: string) =>
+  CACHEABLE_PAGES.includes(pathname) ||
+  pathname.startsWith("/negocios/") ||
+  pathname.startsWith("/telefonos/") ||
+  pathname.startsWith("/farmacias/");
+
 export const onRequest = defineMiddleware(async (context, next) => {
   const { pathname } = context.url;
 
@@ -30,7 +54,22 @@ export const onRequest = defineMiddleware(async (context, next) => {
 
   // Solo el panel (/app/*) requiere sesión; el resto del sitio es público.
   if (!pathname.startsWith("/app")) {
-    return next();
+    const response = await next();
+
+    // /avisos/nuevo depende de la sesión: nunca se cachea
+    if (
+      context.request.method === "GET" &&
+      response.status === 200 &&
+      isCacheablePage(pathname) &&
+      !response.headers.has("Cache-Control")
+    ) {
+      response.headers.set(
+        "Cache-Control",
+        "public, s-maxage=60, stale-while-revalidate=300",
+      );
+    }
+
+    return response;
   }
 
   const supabase = createSupabaseServer(context);

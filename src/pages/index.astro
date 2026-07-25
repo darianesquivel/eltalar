@@ -7,14 +7,13 @@ import OffersBand from "../components/home/OffersBand.astro";
 import EventsAndClassifieds from "../components/home/EventsAndClassifieds.astro";
 import ForBusinesses from "../components/home/ForBusinesses.astro";
 import {
-  getBusinesses,
   getCategoryCounts,
+  getOpenNowBusinesses,
 } from "../lib/repositories/business.repository";
 import { getCurrentTurn } from "../lib/repositories/pharmacy.repository";
 import { getActiveOffers } from "../lib/repositories/offer.repository";
 import { getUpcomingEvents } from "../lib/repositories/event.repository";
 import { getPublishedClassifieds } from "../lib/repositories/classified.repository";
-import { getTodayStatus } from "../lib/hours";
 import { supabase } from "../lib/supabase";
 
 const { barrio } = Astro.locals;
@@ -29,7 +28,7 @@ const POPULARES = ["farmacia", "delivery", "plomero", "veterinaria", "pizza"];
 const [
   { data: alerts },
   { data: categories },
-  candidates,
+  openNow,
   pharmacy,
   offers,
   events,
@@ -42,9 +41,7 @@ const [
     .eq("is_active", true)
     .order("created_at", { ascending: false }),
   supabase.from("categories").select("id, name, slug").order("name"),
-  // Se piden de más porque "abierto ahora" se resuelve acá: depende de la
-  // hora de Argentina, no de una columna de la base.
-  getBusinesses({ barrioId: barrio.id, limit: 60 }),
+  getOpenNowBusinesses(barrio.id, 4),
   getCurrentTurn(barrio.id),
   getActiveOffers(barrio.id),
   getUpcomingEvents(barrio.id),
@@ -61,10 +58,6 @@ const topCategories = (categories ?? [])
   .filter((c) => c.count > 0)
   .sort((a, b) => b.count - a.count);
 
-const openNow = candidates
-  .filter((b) => getTodayStatus(b.business_hours)?.status === "open")
-  .slice(0, 4)
-  .map(({ photos, ...rest }) => rest);
 ---
 
 <Layout wide>

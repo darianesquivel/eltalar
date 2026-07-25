@@ -251,10 +251,10 @@ export type CategoryCounts = {
   total: number;
 };
 
-// PostgREST no agrupa, así que el conteo es una consulta HEAD por rubro
-// (~22 en paralelo, sin traer filas). Se cachea en memoria porque cambia
-// de a un negocio por vez y lo piden la guía y la home en cada request.
-// Si algún día molesta, el reemplazo natural es una vista materializada.
+// Los contadores salen de la vista category_counts (un group by en la base,
+// UNA consulta). Antes eran ~25 consultas HEAD en paralelo y le costaban más
+// de un segundo de TTFB a la home y a la guía.
+// Se cachean igual en memoria: cambian de a un negocio por vez.
 const COUNTS_TTL_MS = 5 * 60 * 1000;
 const countsCache = new Map<string, { at: number; value: CategoryCounts }>();
 
@@ -262,20 +262,46 @@ export async function getCategoryCounts(
   barrioId: string,
   slugs: string[],
 ): Promise<CategoryCounts> {
-  const key = `${barrioId}|${slugs.join(",")}`;
-  const cached = countsCache.get(key);
+  const cached = countsCache.get(barrioId);
   if (cached && Date.now() - cached.at < COUNTS_TTL_MS) return cached.value;
 
-  const countActive = () =>
+  const [countsRes, totalRes] = await Promise.all([
+    supabase
+      .from("category_counts")
+      .select("slug, total")
+      .eq("barrio_id", barrioId),
     supabase
       .from("businesses")
       .select("id", { count: "exact", head: true })
       .eq("barrio_id", barrioId)
-      .eq("is_active", true);
+      .eq("is_active", true),
+  ]);
 
-  const [totalRes, ...perSlug] = await Promise.all([
-    countActive(),
-    ...slugs.map((slug) =>
+  // Si la vista todavía no existe en este entorno, se cae al método viejo
+  // en vez de mostrar todos los rubros en cero.
+  if (countsRes.error) {
+    console.error("Error category_counts:", countsRes.error);
+    return getCategoryCountsFallback(barrioId, slugs, totalRes.count ?? 0);
+  }
+
+  const bySlug: Record<string, number> = {};
+  for (const row of countsRes.data ?? []) {
+    bySlug[row.slug] = row.total;
+  }
+
+  const value: CategoryCounts = { bySlug, total: totalRes.count ?? 0 };
+  countsCache.set(barrioId, { at: Date.now(), value });
+  return value;
+}
+
+/** Conteo rubro por rubro (una consulta HEAD por rubro). Solo de respaldo. */
+async function getCategoryCountsFallback(
+  barrioId: string,
+  slugs: string[],
+  total: number,
+): Promise<CategoryCounts> {
+  const perSlug = await Promise.all(
+    slugs.map((slug) =>
       supabase
         .from("businesses")
         .select("id, business_categories!inner(categories!inner(slug))", {
@@ -286,16 +312,90 @@ export async function getCategoryCounts(
         .eq("is_active", true)
         .eq("business_categories.categories.slug", slug),
     ),
-  ]);
+  );
 
   const bySlug: Record<string, number> = {};
   slugs.forEach((slug, i) => {
     bySlug[slug] = perSlug[i].count ?? 0;
   });
 
-  const value: CategoryCounts = { bySlug, total: totalRes.count ?? 0 };
-  countsCache.set(key, { at: Date.now(), value });
+  const value: CategoryCounts = { bySlug, total };
+  countsCache.set(barrioId, { at: Date.now(), value });
   return value;
+}
+
+/**
+ * Negocios abiertos EN ESTE MOMENTO, para la home.
+ *
+ * Dos consultas chicas en vez de una grande: primero los horarios de HOY
+ * (una fila por negocio, sin joins de fotos ni ofertas) para saber quién
+ * está abierto, y recién después la ficha completa de los pocos que se
+ * muestran. Traer 60 negocios enteros para mostrar 4 costaba caro.
+ */
+export async function getOpenNowBusinesses(
+  barrioId: string,
+  limit = 4,
+): Promise<BusinessSummary[]> {
+  const [y, m, d] = todayInArgentina().split("-").map(Number);
+  const weekday = new Date(y, m - 1, d).getDay();
+  const now = new Date().toLocaleTimeString("es-AR", {
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: false,
+    timeZone: "America/Argentina/Buenos_Aires",
+  });
+
+  const { data: hours, error } = await supabase
+    .from("business_hours")
+    .select(
+      "business_id, open_time, close_time, is_closed, is_open_24, businesses!inner(barrio_id, is_active, is_featured, by_appointment)",
+    )
+    .eq("businesses.barrio_id", barrioId)
+    .eq("businesses.is_active", true)
+    .eq("businesses.by_appointment", false)
+    .eq("day_of_week", weekday)
+    .eq("is_closed", false)
+    .order("business_id")
+    .limit(600);
+
+  if (error || !hours) {
+    console.error("Error getOpenNowBusinesses:", error);
+    return [];
+  }
+
+  const openIds: string[] = [];
+  for (const h of hours as any[]) {
+    const isOpen =
+      h.is_open_24 ||
+      (h.open_time &&
+        h.close_time &&
+        now >= h.open_time.slice(0, 5) &&
+        now <= h.close_time.slice(0, 5));
+
+    if (isOpen && !openIds.includes(h.business_id)) {
+      openIds.push(h.business_id);
+      // Se piden de más porque el orden final (destacados primero) lo
+      // resuelve la segunda consulta
+      if (openIds.length >= limit * 6) break;
+    }
+  }
+
+  if (openIds.length === 0) return [];
+
+  const { data, error: detailError } = await supabase
+    .from("businesses")
+    .select(BUSINESS_SELECT)
+    .in("id", openIds)
+    .order("is_featured", { ascending: false })
+    .order("priority", { ascending: false })
+    .limit(limit);
+
+  if (detailError || !data) {
+    console.error("Error getOpenNowBusinesses (detalle):", detailError);
+    return [];
+  }
+
+  return data.map(toBusiness).map(({ photos, ...rest }) => rest);
 }
 
 /**

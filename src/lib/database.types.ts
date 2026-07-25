@@ -755,7 +755,14 @@ export type Database = {
       };
     };
     Views: {
-      [_ in never]: never;
+      category_counts: {
+        Row: {
+          barrio_id: string;
+          slug: string;
+          total: number;
+        };
+        Relationships: [];
+      };
     };
     Functions: {
       admin_remove_owner: {
