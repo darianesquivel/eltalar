@@ -147,6 +147,13 @@ export type BusinessPage = {
   total: number;
 };
 
+/** Orden del listado público. "destacados" = los pagos primero (default). */
+export type BusinessOrder = "destacados" | "nombre";
+
+export function parseBusinessOrder(value: string | null): BusinessOrder {
+  return value === "nombre" ? "nombre" : "destacados";
+}
+
 export interface GetBusinessesPageOptions {
   /** Multi-barrio: cada portal solo lista los negocios de su barrio. */
   barrioId: string;
@@ -154,6 +161,7 @@ export interface GetBusinessesPageOptions {
   offset?: number;
   categorySlug?: string | null;
   search?: string | null;
+  order?: BusinessOrder;
 }
 
 // Variante con joins !inner: al filtrar por categoría, el join tiene que ser
@@ -172,7 +180,14 @@ const BUSINESS_SELECT_BY_CATEGORY = BUSINESS_SELECT.replace(
 export async function getBusinessesPage(
   options: GetBusinessesPageOptions,
 ): Promise<BusinessPage> {
-  const { barrioId, limit = 24, offset = 0, categorySlug, search } = options;
+  const {
+    barrioId,
+    limit = 24,
+    offset = 0,
+    categorySlug,
+    search,
+    order = "destacados",
+  } = options;
 
   let query = supabase
     .from("businesses")
@@ -196,9 +211,13 @@ export async function getBusinessesPage(
     }
   }
 
+  if (order === "destacados") {
+    query = query
+      .order("is_featured", { ascending: false })
+      .order("priority", { ascending: false });
+  }
+
   const { data, error, count } = await query
-    .order("is_featured", { ascending: false })
-    .order("priority", { ascending: false })
     // Desempates estables: sin esto el paginado puede duplicar/saltear filas
     .order("name", { ascending: true })
     .order("id", { ascending: true })
@@ -212,6 +231,64 @@ export async function getBusinessesPage(
   // Payload liviano para listados: las cards solo usan coverPhoto
   const items = data.map(toBusiness).map(({ photos, ...rest }) => rest);
   return { items, total: count ?? items.length };
+}
+
+/* =======================
+   CONTEO POR RUBRO
+======================= */
+
+export type CategoryCounts = {
+  /** Negocios activos del barrio por slug de categoría. */
+  bySlug: Record<string, number>;
+  /** Total de negocios activos del barrio. */
+  total: number;
+};
+
+// PostgREST no agrupa, así que el conteo es una consulta HEAD por rubro
+// (~22 en paralelo, sin traer filas). Se cachea en memoria porque cambia
+// de a un negocio por vez y lo piden la guía y la home en cada request.
+// Si algún día molesta, el reemplazo natural es una vista materializada.
+const COUNTS_TTL_MS = 5 * 60 * 1000;
+const countsCache = new Map<string, { at: number; value: CategoryCounts }>();
+
+export async function getCategoryCounts(
+  barrioId: string,
+  slugs: string[],
+): Promise<CategoryCounts> {
+  const key = `${barrioId}|${slugs.join(",")}`;
+  const cached = countsCache.get(key);
+  if (cached && Date.now() - cached.at < COUNTS_TTL_MS) return cached.value;
+
+  const countActive = () =>
+    supabase
+      .from("businesses")
+      .select("id", { count: "exact", head: true })
+      .eq("barrio_id", barrioId)
+      .eq("is_active", true);
+
+  const [totalRes, ...perSlug] = await Promise.all([
+    countActive(),
+    ...slugs.map((slug) =>
+      supabase
+        .from("businesses")
+        .select("id, business_categories!inner(categories!inner(slug))", {
+          count: "exact",
+          head: true,
+        })
+        .eq("barrio_id", barrioId)
+        .eq("is_active", true)
+        .eq("business_categories.categories.slug", slug),
+    ),
+  ]);
+
+  const bySlug: Record<string, number> = {};
+  slugs.forEach((slug, i) => {
+    bySlug[slug] = perSlug[i].count ?? 0;
+  });
+
+  const value: CategoryCounts = { bySlug, total: totalRes.count ?? 0 };
+  countsCache.set(key, { at: Date.now(), value });
+  return value;
 }
 
 export async function getBusinessBySlug(

@@ -1,9 +1,6 @@
 import { navigate } from "astro:transitions/client";
-import { BadgeCheck, PhoneCall } from "lucide-react";
-import CategoryPlaceholder, { categoryColor } from "./CategoryPlaceholder";
-import InstagramIcon from "../icons/InstagramIcon";
+import { MapPin, Phone, Star } from "lucide-react";
 import { getTodayStatus } from "../../lib/hours";
-import { instagramUrl } from "../../lib/links";
 import { track } from "../../lib/track";
 import type { BusinessSummary } from "../../lib/repositories/business.repository";
 
@@ -13,148 +10,185 @@ type BusinessCardProps = {
 
 const wspLogo = "/images/whatsapp-icon.svg";
 
+const CHIP = "rounded-full px-2.5 py-1.5 text-[11.5px] font-bold leading-none";
+
 export default function BusinessCard({ business }: BusinessCardProps) {
   const status = getTodayStatus(business.business_hours);
+  const href = `/negocios/${business.slug}`;
+  const category = business.categories[0];
 
   const whatsappUrl = `https://wa.me/${business.whatsapp}?text=${encodeURIComponent(
     business.whatsapp_message ?? "",
   )}`;
+  const hasContact = Boolean(business.whatsapp || business.phone);
+  const mapsUrl = business.address
+    ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(business.address)}`
+    : null;
 
   // navigate() usa el router de Astro: dispara la barra de progreso global
   // y las view transitions, en vez de una recarga completa sin feedback.
-  const handleClick = () => {
-    navigate(`/negocios/${business.slug}`);
-  };
+  const openDetail = () => navigate(href);
+  // Los botones de contacto no tienen que arrastrar a la ficha
+  const stop = (e: React.MouseEvent) => e.stopPropagation();
+
+  const statusChip = business.by_appointment
+    ? { text: "Atiende con turno", className: "bg-[#e7f0f8] text-info" }
+    : status?.status === "open"
+      ? { text: status.label, className: "bg-primary-soft text-primary-strong" }
+      : status?.status === "closed"
+        ? { text: status.label, className: "bg-[#f7eceb] text-error" }
+        : status
+          ? { text: status.label, className: "bg-bg-muted text-text-body" }
+          : null;
 
   return (
     <div
-      data-tilt
-      className="flex flex-col rounded-xl bg-white shadow-lg overflow-hidden"
+      onClick={openDetail}
+      className="flex cursor-pointer flex-col overflow-hidden rounded-[20px] bg-bg-card shadow-card transition-colors"
     >
-      {/* IMAGE */}
-      <div className="relative " onClick={handleClick}>
-        {business.offers?.length > 0 && (
-          <span className="absolute right-2 top-2 z-10 inline-flex items-center gap-1 rounded-full bg-orange-500 px-2.5 py-0.5 text-xs font-bold text-white shadow">
-            🔥 Oferta
-          </span>
-        )}
-        <div className="absolute top-1.5 left-1.5 z-10 flex flex-wrap gap-1">
-          {business.categories.map((category) => (
-            <span
-              key={category.id}
-              className="inline-flex items-center rounded-full border border-white/40 px-2 py-1 text-[10px] leading-none text-white shadow-sm"
-              style={{ backgroundColor: categoryColor(category.slug) }}
-            >
-              {category.name}
-            </span>
-          ))}
-        </div>
-
+      {/* PORTADA */}
+      <div className="relative">
         {business.coverPhoto?.url ? (
           <img
             src={business.coverPhoto.url}
             alt={business.name}
             width={400}
-            height={112}
+            height={158}
             loading="lazy"
             decoding="async"
-            className="h-28 w-full object-cover cursor-pointer"
+            className="h-[130px] w-full object-cover sm:h-[158px]"
           />
         ) : (
-          <CategoryPlaceholder
-            categorySlug={business.categories[0]?.slug}
-            label={business.name}
-            iconSize={24}
-            className="h-28 w-full cursor-pointer"
+          <div
+            role="img"
+            aria-label={business.name}
+            className="img-placeholder h-[130px] w-full sm:h-[158px]"
           />
         )}
+
+        <div className="absolute inset-x-0 top-0 flex items-start justify-between p-3">
+          {category && (
+            <span className={`${CHIP} bg-white text-text-main shadow-soft`}>
+              {category.name}
+            </span>
+          )}
+
+          {business.is_featured && (
+            <span
+              className={`${CHIP} ml-auto inline-flex items-center gap-1 bg-white text-text-main shadow-soft`}
+            >
+              <Star size={12} className="fill-rating text-rating" />
+              Destacado
+            </span>
+          )}
+        </div>
       </div>
 
-      {/* CONTENT */}
-      <div className="flex flex-col p-2.5 flex-1">
-        {/* TOP INFO */}
-        <div>
-          {/* NAME */}
-          <div className="flex items-center gap-1.5">
-            <h3 className="text-sm font-semibold text-gray-900 line-clamp-1">
-              {business.name}
-            </h3>
+      {/* CUERPO */}
+      <div className="flex flex-1 flex-col gap-[7px] p-4 sm:px-[18px]">
+        <h3 className="line-clamp-1 text-[17px] font-bold leading-tight text-text-main sm:text-[19px]">
+          <a href={href} onClick={stop}>
+            {business.name}
+          </a>
+        </h3>
 
-            {business.is_featured && (
-              <BadgeCheck size={15} className="shrink-0 text-services" />
-            )}
-          </div>
-
-          {/* STATUS: con turno no hay abierto/cerrado */}
-          {business.by_appointment ? (
-            <span className="text-[10px] uppercase text-services">
-              ● Atiende con turno
+        <div className="flex flex-wrap items-center gap-1.5">
+          {statusChip && (
+            <span
+              className={`inline-flex items-center gap-1.5 text-[12.5px] font-semibold ${statusChip.className} rounded-full px-2.5 py-1`}
+            >
+              <span className="size-1.5 rounded-full bg-current" />
+              {statusChip.text}
             </span>
-          ) : (
-            status && (
-              <span
-                className={`text-[10px] uppercase ${
-                  status.status === "open"
-                    ? "text-green-600"
-                    : status.status === "closed"
-                      ? "text-red-500"
-                      : "text-gray-500"
-                }`}
-              >
-                ● {status.label}
-              </span>
-            )
           )}
 
-          {/* ADDRESS */}
-          {business.address && (
-            <p className="text-xs text-services line-clamp-1">
-              {business.address}
-            </p>
-          )}
-
-          {/* DESCRIPTION */}
-          {business.description && (
-            <p className="mt-0.5 text-[11px] text-gray-600 line-clamp-2">
-              {business.description}
-            </p>
+          {business.offers?.length > 0 && (
+            <span className="rounded-full bg-offer px-2.5 py-1 text-[12.5px] font-semibold text-white">
+              {business.offers.length > 1
+                ? `${business.offers.length} ofertas`
+                : "Oferta"}
+            </span>
           )}
         </div>
 
-        {/* BUTTONS — SIEMPRE ABAJO */}
-        <div className="mt-auto flex gap-1.5 pt-2">
-          {business.whatsapp && (
+        {business.description && (
+          <p className="line-clamp-2 text-[13.5px] leading-normal text-text-body">
+            {business.description}
+          </p>
+        )}
+
+        {business.address && (
+          <p className="line-clamp-1 text-[12.5px] text-text-muted">
+            {business.address}
+          </p>
+        )}
+
+        {/* ACCIONES — SIEMPRE ABAJO */}
+        <div className="mt-auto flex gap-2 pt-3">
+          {business.whatsapp ? (
             <a
               href={whatsappUrl}
               target="_blank"
               rel="noopener noreferrer"
-              onClick={() => track(business.id, "whatsapp")}
-              className="flex-1 flex items-center justify-center gap-1 text-[11px] bg-primary text-white px-2 py-1 rounded-lg hover:scale-105 transition"
+              onClick={(e) => {
+                stop(e);
+                track(business.id, "whatsapp");
+              }}
+              className="flex flex-1 items-center justify-center gap-[7px] rounded-xl bg-primary p-3 text-[13px] font-semibold text-white transition-colors hover:bg-primary-hover"
             >
-              <img width={14} src={wspLogo} />
-              Whatsapp
+              <img
+                src={wspLogo}
+                width={15}
+                alt=""
+                className="brightness-0 invert"
+              />
+              WhatsApp
             </a>
+          ) : (
+            // Sin WhatsApp, el botón principal es el teléfono: la card no
+            // queda con una fila de cuadraditos sueltos
+            business.phone && (
+              <a
+                href={`tel:${business.phone}`}
+                onClick={(e) => {
+                  stop(e);
+                  track(business.id, "phone");
+                }}
+                className="flex flex-1 items-center justify-center gap-[7px] rounded-xl bg-primary p-3 text-[13px] font-semibold text-white transition-colors hover:bg-primary-hover"
+              >
+                <Phone size={15} />
+                Llamar
+              </a>
+            )
           )}
 
-          {business.instagram && (
-            <a
-              href={instagramUrl(business.instagram)!}
-              target="_blank"
-              rel="noopener noreferrer"
-              onClick={() => track(business.id, "instagram")}
-              className="p-1.5 rounded-lg bg-secondary-soft/10 hover:bg-secondary-soft/30 transition"
-            >
-              <InstagramIcon size={16} className="text-gray-700" />
-            </a>
-          )}
-
-          {business.phone && (
+          {business.whatsapp && business.phone && (
             <a
               href={`tel:${business.phone}`}
-              onClick={() => track(business.id, "phone")}
-              className="p-1.5 rounded-lg bg-secondary-soft/10 hover:bg-secondary-soft/30 transition"
+              aria-label={`Llamar a ${business.name}`}
+              onClick={(e) => {
+                stop(e);
+                track(business.id, "phone");
+              }}
+              className="flex items-center rounded-xl bg-primary-faint px-[13px] py-3 transition-colors hover:bg-primary-soft"
             >
-              <PhoneCall size={16} className="text-gray-700" />
+              <Phone size={16} className="text-text-main" />
+            </a>
+          )}
+
+          {mapsUrl && (
+            <a
+              href={mapsUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              aria-label={`Cómo llegar a ${business.name}`}
+              onClick={stop}
+              className={`flex items-center justify-center gap-[7px] rounded-xl bg-primary-faint py-3 text-[13px] font-semibold text-text-main transition-colors hover:bg-primary-soft ${
+                hasContact ? "px-[13px]" : "flex-1"
+              }`}
+            >
+              <MapPin size={16} className="text-text-main" />
+              {!hasContact && "Cómo llegar"}
             </a>
           )}
         </div>
