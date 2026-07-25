@@ -1,6 +1,10 @@
 import { supabase } from "../supabase";
 import type { Database } from "../database.types";
-import { todayInArgentina, type BusinessHour } from "../hours";
+import {
+  ARGENTINA_TZ,
+  todayInArgentina,
+  type BusinessHour,
+} from "../hours";
 
 /* =======================
    TYPES
@@ -164,15 +168,54 @@ export interface GetBusinessesPageOptions {
   order?: BusinessOrder;
   /** Puntaje mínimo (filtro "4★ o más" de la guía). */
   minRating?: number | null;
+  /** Solo los que tienen alguna oferta vigente. */
+  onlyOffers?: boolean;
+  /** Solo los que están abiertos en este momento (hora de Argentina). */
+  openNow?: boolean;
 }
 
-// Variante con joins !inner: al filtrar por categoría, el join tiene que ser
-// inner para que el filtro excluya filas (con el join normal, PostgREST solo
-// vacía el array embebido y devuelve el negocio igual).
-const BUSINESS_SELECT_BY_CATEGORY = BUSINESS_SELECT.replace(
-  "business_categories (\n    categories (",
-  "business_categories!inner (\n    categories!inner (",
-);
+// Con el join normal PostgREST solo vacía el array embebido y devuelve el
+// negocio igual: para que un filtro EXCLUYA filas, el join tiene que ser
+// !inner. Se arma el select según qué filtros vengan.
+function buildSelect(opciones: {
+  categorySlug?: string | null;
+  onlyOffers?: boolean;
+  openNow?: boolean;
+}) {
+  let select = BUSINESS_SELECT;
+
+  if (opciones.categorySlug) {
+    select = select.replace(
+      "business_categories (\n    categories (",
+      "business_categories!inner (\n    categories!inner (",
+    );
+  }
+
+  if (opciones.onlyOffers) {
+    select = select.replace("business_offers (", "business_offers!inner (");
+  }
+
+  if (opciones.openNow) {
+    select = select.replace("business_hours (", "business_hours!inner (");
+  }
+
+  return select;
+}
+
+/** Día (0-6) y hora "HH:MM:SS" actuales en Argentina. */
+function ahoraEnArgentina() {
+  const [y, m, d] = todayInArgentina().split("-").map(Number);
+  return {
+    weekday: new Date(y, m - 1, d).getDay(),
+    time: new Date().toLocaleTimeString("es-AR", {
+      hour: "2-digit",
+      minute: "2-digit",
+      second: "2-digit",
+      hour12: false,
+      timeZone: ARGENTINA_TZ,
+    }),
+  };
+}
 
 /**
  * Página de negocios para el listado público: filtra y pagina EN LA BASE.
@@ -190,11 +233,13 @@ export async function getBusinessesPage(
     search,
     order = "destacados",
     minRating,
+    onlyOffers,
+    openNow,
   } = options;
 
   let query = supabase
     .from("businesses")
-    .select(categorySlug ? BUSINESS_SELECT_BY_CATEGORY : BUSINESS_SELECT, {
+    .select(buildSelect({ categorySlug, onlyOffers, openNow }), {
       count: "exact",
     })
     .eq("barrio_id", barrioId)
@@ -202,6 +247,25 @@ export async function getBusinessesPage(
 
   if (categorySlug) {
     query = query.eq("business_categories.categories.slug", categorySlug);
+  }
+
+  if (onlyOffers) {
+    // Vigentes: la fecha de vencimiento todavía no pasó
+    query = query.gte("business_offers.expires_at", todayInArgentina());
+  }
+
+  if (openNow) {
+    // Abierto = tiene un tramo de HOY que incluye la hora actual, o es de
+    // 24 horas. Los que atienden con turno no cuentan: no tienen horario.
+    const { weekday, time } = ahoraEnArgentina();
+    query = query
+      .eq("by_appointment", false)
+      .eq("business_hours.day_of_week", weekday)
+      .eq("business_hours.is_closed", false)
+      .or(
+        `is_open_24.is.true,and(open_time.lte.${time},close_time.gte.${time})`,
+        { referencedTable: "business_hours" },
+      );
   }
 
   if (minRating) {

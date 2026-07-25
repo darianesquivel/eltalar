@@ -20,6 +20,8 @@ const categoria = Astro.url.searchParams.get("categoria");
 const buscar = Astro.url.searchParams.get("buscar");
 const orden = parseBusinessOrder(Astro.url.searchParams.get("orden"));
 const minRating = Number(Astro.url.searchParams.get("min_rating")) || null;
+const soloOfertas = Astro.url.searchParams.get("ofertas") === "1";
+const abiertoAhora = Astro.url.searchParams.get("abierto") === "1";
 
 const barrio = Astro.locals.barrio;
 
@@ -31,6 +33,8 @@ const [page, { data: categories }, ratingsEnabled] = await Promise.all([
     search: buscar,
     order: orden,
     minRating,
+    onlyOffers: soloOfertas,
+    openNow: abiertoAhora,
   }),
   supabase.from("categories").select("id, name, slug, icon").order("name"),
   hasRatings(barrio.id),
@@ -80,6 +84,8 @@ const categoriesWithCount = (categories ?? [])
       initialSearch={buscar}
       initialOrder={orden}
       initialMinRating={minRating}
+      initialOffers={soloOfertas}
+      initialOpenNow={abiertoAhora}
       pageSize={PAGE_SIZE}
       client:load
     />

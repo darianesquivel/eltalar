@@ -6,7 +6,7 @@ import {
 
 /**
  * Paginado del listado público de negocios.
- * GET /api/negocios?categoria=<slug>&buscar=<texto>&orden=nombre&offset=0&limit=24
+ * GET /api/negocios?categoria=<slug>&buscar=<texto>&orden=nombre&abierto=1&ofertas=1&offset=0&limit=24
  * Responde { items, total }; lo consume BusinessGrid para el scroll infinito.
  */
 export const GET: APIRoute = async ({ url, locals }) => {
@@ -24,6 +24,8 @@ export const GET: APIRoute = async ({ url, locals }) => {
     search: url.searchParams.get("buscar"),
     order: parseBusinessOrder(url.searchParams.get("orden")),
     minRating: Number(url.searchParams.get("min_rating")) || null,
+    onlyOffers: url.searchParams.get("ofertas") === "1",
+    openNow: url.searchParams.get("abierto") === "1",
   });
 
   return new Response(JSON.stringify(page), {
