@@ -36,6 +36,29 @@ export function isClassifiedCategory(
 }
 
 /**
+ * Normaliza el precio que escribió el vecino.
+ *
+ * El campo es texto libre a propósito ("A convenir", "2x1", "Gratis"), pero
+ * cuando cargan solo números hay que mostrarlos como plata: "85000" se ve
+ * mal en la card. Si no es un número, se respeta tal cual lo escribió.
+ */
+export function formatPriceText(raw: string | null | undefined): string | null {
+  const value = raw?.trim();
+  if (!value) return null;
+
+  // "$ 85.000", "85000", "85,50" → dígitos con separador decimal normalizado
+  const numeric = value.replace(/[$\s.]/g, "").replace(",", ".");
+  if (!/^\d+(\.\d{1,2})?$/.test(numeric)) return value;
+
+  const amount = Number(numeric);
+  if (!Number.isFinite(amount)) return value;
+
+  return `$${amount.toLocaleString("es-AR", {
+    maximumFractionDigits: 2,
+  })}`;
+}
+
+/**
  * Avisos publicados y vigentes del barrio, del más nuevo al más viejo.
  * La RLS ya filtra pendientes y vencidos; los filtros explícitos están
  * igual para que el admin (que los ve todos) no los mezcle.

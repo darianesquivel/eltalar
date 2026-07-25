@@ -1,9 +1,23 @@
 ---
-import { ArrowLeft } from "@lucide/astro";
+import { ArrowLeft, ShieldCheck } from "@lucide/astro";
 import Layout from "../../layouts/Layout.astro";
 import ClassifiedForm from "../../components/avisos/ClassifiedForm";
+import { createSupabaseServer } from "../../lib/supabase/server";
 
 const { barrio } = Astro.locals;
+
+// El middleware solo resuelve la sesión dentro de /app: esta página es
+// pública pero necesita saber quién es el vecino, así que la consulta acá.
+const {
+  data: { user },
+} = await createSupabaseServer(Astro).auth.getUser();
+
+// Publicar exige cuenta: un aviso sin dueño no se puede atribuir ni
+// bloquear si es spam. El nombre de Google viene precargado y se puede
+// cambiar (el vecino elige cómo lo llaman).
+const metadata = (user?.user_metadata ?? {}) as Record<string, string>;
+const defaultName =
+  metadata.full_name || metadata.name || user?.email?.split("@")[0] || "";
 ---
 
 <Layout
@@ -33,6 +47,30 @@ const { barrio } = Astro.locals;
       </p>
     </header>
 
-    <ClassifiedForm client:load />
+    {
+      user ? (
+        <ClassifiedForm defaultName={defaultName} client:load />
+      ) : (
+        <div class="rounded-[20px] bg-bg-card p-7 shadow-soft sm:p-8">
+          <div class="mb-3 flex size-11 items-center justify-center rounded-xl bg-primary-soft text-primary-strong">
+            <ShieldCheck class="size-5" aria-hidden="true" />
+          </div>
+          <h2 class="mb-2 text-[19px] font-extrabold text-text-main">
+            Entrá con tu cuenta para publicar
+          </h2>
+          <p class="mb-5 text-[14.5px] leading-relaxed text-text-body">
+            Es un click con Google. Pedimos la cuenta para que cada aviso tenga
+            un responsable: así podemos frenar el spam y vos podés editar o
+            borrar el tuyo cuando quieras.
+          </p>
+          <a
+            href="/app/login?next=/avisos/nuevo"
+            class="inline-block rounded-[14px] bg-primary px-6 py-3.5 text-[15px] font-semibold text-white transition-colors hover:bg-primary-hover"
+          >
+            Entrar con Google
+          </a>
+        </div>
+      )
+    }
   </div>
 </Layout>

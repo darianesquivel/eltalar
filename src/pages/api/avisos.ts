@@ -1,7 +1,9 @@
 import type { APIRoute } from "astro";
-import { createSupabaseAdmin } from "../../lib/supabase/admin";
 import { createSupabaseServer } from "../../lib/supabase/server";
-import { isClassifiedCategory } from "../../lib/repositories/classified.repository";
+import {
+  formatPriceText,
+  isClassifiedCategory,
+} from "../../lib/repositories/classified.repository";
 
 const json = (body: object, status: number) =>
   new Response(JSON.stringify(body), {
@@ -15,21 +17,25 @@ const cleanWhatsapp = (value: string) => value.replace(/[^\d]/g, "");
 /**
  * Publicar un aviso de vecino.
  *
- * Se puede sin cuenta (como el formulario de contacto): por eso entra por
- * acá con la service role y no con una policy de insert para anónimos.
- * Todo aviso nace 'pending' y lo publica un admin. Si el vecino está
- * logueado, queda como dueño y después puede editarlo.
+ * Hace falta estar logueado (Google): un aviso sin dueño no se puede
+ * atribuir ni bloquear si es spam. Se escribe con el cliente de sesión, así
+ * la RLS verifica que owner_id sea el propio usuario y que el estado sea
+ * 'pending'. El aviso se ve recién cuando un admin lo aprueba.
  */
 export const POST: APIRoute = async (context) => {
   try {
-    const admin = createSupabaseAdmin();
-    if (!admin) {
+    const supabase = createSupabaseServer(context);
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+
+    if (!user) {
       return json(
         {
-          error: "not_configured",
-          message: "La publicación de avisos todavía no está habilitada.",
+          error: "unauthorized",
+          message: "Entrá con tu cuenta para publicar un aviso.",
         },
-        503,
+        401,
       );
     }
 
@@ -76,33 +82,39 @@ export const POST: APIRoute = async (context) => {
       return json({ error: "El WhatsApp no parece válido" }, 400);
     }
 
-    // Si hay sesión, el aviso queda a nombre del vecino
-    const supabase = createSupabaseServer(context);
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-
-    const { error } = await admin.from("classifieds").insert({
-      barrio_id: context.locals.barrio.id,
-      owner_id: user?.id ?? null,
-      category,
-      title: title.trim(),
-      description:
-        typeof description === "string" && description.trim()
-          ? description.trim()
-          : null,
-      price_text:
-        typeof priceText === "string" && priceText.trim()
-          ? priceText.trim()
-          : null,
-      whatsapp: phone,
-      author_name: authorName.trim(),
-      status: "pending",
-    });
+    const { data: saved, error } = await supabase
+      .from("classifieds")
+      .insert({
+        barrio_id: context.locals.barrio.id,
+        owner_id: user.id,
+        category,
+        title: title.trim(),
+        description:
+          typeof description === "string" && description.trim()
+            ? description.trim()
+            : null,
+        price_text: formatPriceText(priceText),
+        whatsapp: phone,
+        author_name: authorName.trim(),
+        status: "pending",
+      })
+      .select("id");
 
     if (error) {
       console.error("Error guardando aviso:", error);
       return json({ error: "No pudimos guardar tu aviso" }, 500);
+    }
+
+    // La RLS puede filtrar la fila sin devolver error: si no volvió nada,
+    // la escritura no ocurrió y no hay que decirle al vecino que sí.
+    if (!saved || saved.length === 0) {
+      return json(
+        {
+          error: "not_saved",
+          message: "No pudimos guardar tu aviso. Probá de nuevo más tarde.",
+        },
+        409,
+      );
     }
 
     return json({ success: true }, 200);

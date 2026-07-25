@@ -4,6 +4,7 @@ import Layout from "../../layouts/Layout.astro";
 import {
   CLASSIFIED_CATEGORIES,
   classifiedCategory,
+  formatPriceText,
   getClassifiedCounts,
   getPublishedClassifieds,
 } from "../../lib/repositories/classified.repository";
@@ -135,7 +136,8 @@ const chipClass = (active: boolean) =>
 
                   {aviso.price_text && (
                     <div class="text-[17px] font-extrabold text-primary-strong sm:text-[18px]">
-                      {aviso.price_text}
+                      {/* Los avisos viejos pueden tener el precio sin formato */}
+                      {formatPriceText(aviso.price_text)}
                     </div>
                   )}
 

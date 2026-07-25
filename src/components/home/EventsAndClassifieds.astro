@@ -1,6 +1,9 @@
 ---
 import { ArrowRight, ChevronRight } from "@lucide/astro";
-import { classifiedCategory } from "../../lib/repositories/classified.repository";
+import {
+  classifiedCategory,
+  formatPriceText,
+} from "../../lib/repositories/classified.repository";
 import type { EventRow } from "../../lib/repositories/event.repository";
 import type { Classified } from "../../lib/repositories/classified.repository";
 
@@ -128,7 +131,7 @@ const sinceLabel = (iso: string | null) => {
                 </div>
                 {aviso.price_text && (
                   <div class="text-[15px] font-extrabold text-primary-strong">
-                    {aviso.price_text}
+                    {formatPriceText(aviso.price_text)}
                   </div>
                 )}
                 <div class="text-[12px] text-text-muted">

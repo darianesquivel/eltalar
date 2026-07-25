@@ -1,9 +1,16 @@
 ---
 import Layout from "../../layouts/Layout.astro";
 
-// Si ya está logueado, directo al panel
+// ?next= permite volver a donde estaba el vecino (ej: publicar un aviso).
+// Solo rutas internas: un next absoluto sería un open redirect.
+const rawNext = Astro.url.searchParams.get("next");
+const next = rawNext?.startsWith("/") && !rawNext.startsWith("//")
+  ? rawNext
+  : "/app";
+
+// Si ya está logueado, directo a destino
 if (Astro.locals.user) {
-  return Astro.redirect("/app");
+  return Astro.redirect(next);
 }
 ---
 
@@ -19,6 +26,7 @@ if (Astro.locals.user) {
 
       <button
         id="google-btn"
+        data-next={next}
         class="flex w-full items-center justify-center gap-3 rounded-xl border border-gray-300 bg-white px-6 py-3 text-sm font-semibold text-gray-700 transition hover:bg-gray-50 disabled:opacity-60"
       >
         <svg width="20" height="20" viewBox="0 0 48 48">
@@ -74,10 +82,15 @@ if (Astro.locals.user) {
       googleBtn.disabled = true;
       errorBox.classList.add("hidden");
 
+      // El destino viaja hasta /app/auth, que redirige ahí al terminar
+      const next = googleBtn.dataset.next ?? "/app";
+      const callback = new URL("/app/auth", window.location.origin);
+      if (next !== "/app") callback.searchParams.set("next", next);
+
       const { error } = await supabaseBrowser.auth.signInWithOAuth({
         provider: "google",
         options: {
-          redirectTo: `${window.location.origin}/app/auth`,
+          redirectTo: callback.toString(),
         },
       });
 

@@ -6,10 +6,10 @@
 --  * Los avisos vencen a los 30 días.
 --  * Nada de armas, medicamentos ni reventa de entradas.
 --
--- Se puede publicar con cuenta o sin cuenta: sin cuenta el aviso entra por
--- /api/avisos (honeypot + validación) con la service role, así que la tabla
--- NO tiene policy de insert para anónimos. Todo aviso nace 'pending' y lo
--- publica un admin.
+-- Publicar EXIGE cuenta (Google): un aviso sin dueño no se puede atribuir ni
+-- bloquear si es spam. Por eso la tabla no tiene policy de insert anónimo:
+-- /api/avisos escribe con el cliente de sesión del vecino. Todo aviso nace
+-- 'pending' y lo publica un admin.
 --
 -- Correr en el SQL Editor de Supabase.
 

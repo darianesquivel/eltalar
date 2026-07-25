@@ -21,7 +21,14 @@ import Layout from "../../layouts/Layout.astro";
     if (!status || status.dataset.ready) return;
     status.dataset.ready = "1";
 
-    const goToPanel = () => window.location.replace("/app");
+    // ?next= lo pone la página de ingreso para volver a donde estaba el
+    // vecino (ej: /avisos/nuevo). Solo rutas internas: un next absoluto
+    // sería un open redirect.
+    const next = new URLSearchParams(window.location.search).get("next");
+    const destination =
+      next && next.startsWith("/") && !next.startsWith("//") ? next : "/app";
+
+    const goToPanel = () => window.location.replace(destination);
 
     // createBrowserClient procesa automáticamente el ?code= / #access_token
     // de la URL al inicializarse; esperamos a que la sesión exista.

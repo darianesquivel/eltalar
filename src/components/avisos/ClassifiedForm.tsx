@@ -1,17 +1,25 @@
 import { useState } from "react";
-import { CLASSIFIED_CATEGORIES } from "../../lib/repositories/classified.repository";
+import {
+  CLASSIFIED_CATEGORIES,
+  formatPriceText,
+} from "../../lib/repositories/classified.repository";
+
+type Props = {
+  /** Nombre de la cuenta de Google, editable por el vecino. */
+  defaultName?: string;
+};
 
 /**
- * Formulario público para publicar un aviso. No hace falta cuenta: el
- * endpoint valida y guarda el aviso como pendiente hasta que un admin lo
- * aprueba. El campo "company" es el honeypot.
+ * Formulario para publicar un aviso. Hace falta estar logueado (la página
+ * ya lo verifica); el endpoint guarda el aviso como pendiente hasta que un
+ * admin lo aprueba. El campo "company" es el honeypot.
  */
-export default function ClassifiedForm() {
+export default function ClassifiedForm({ defaultName = "" }: Props) {
   const [category, setCategory] = useState("venta");
   const [title, setTitle] = useState("");
   const [priceText, setPriceText] = useState("");
   const [description, setDescription] = useState("");
-  const [authorName, setAuthorName] = useState("");
+  const [authorName, setAuthorName] = useState(defaultName);
   const [whatsapp, setWhatsapp] = useState("");
   const [company, setCompany] = useState("");
   const [sending, setSending] = useState(false);
@@ -135,6 +143,9 @@ export default function ClassifiedForm() {
           maxLength={40}
           value={priceText}
           onChange={(e) => setPriceText(e.target.value)}
+          // Si escribió solo números, se muestra ya formateado como plata:
+          // "85000" pasa a "$85.000". El texto libre queda igual.
+          onBlur={() => setPriceText(formatPriceText(priceText) ?? "")}
           placeholder="$85.000 · A convenir · Gratis"
           className="field"
         />

@@ -1,6 +1,9 @@
 import { useState } from "react";
 import { supabaseBrowser } from "../../lib/supabase/browser";
-import { classifiedCategory } from "../../lib/repositories/classified.repository";
+import {
+  classifiedCategory,
+  formatPriceText,
+} from "../../lib/repositories/classified.repository";
 
 type Classified = {
   id: string;
@@ -150,7 +153,7 @@ export default function ClassifiedsManager({ pending, published }: Props) {
                     </p>
                     <p className="text-xs text-gray-500">
                       {aviso.author_name}
-                      {aviso.price_text ? ` · ${aviso.price_text}` : ""}
+                      {aviso.price_text ? ` · ${formatPriceText(aviso.price_text)}` : ""}
                       {aviso.whatsapp ? ` · ${aviso.whatsapp}` : ""} ·{" "}
                       {tab === "published"
                         ? `vence ${new Date(aviso.expires_at).toLocaleDateString("es-AR")}`
