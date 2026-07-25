@@ -225,9 +225,9 @@ const sectionTitle =
         Sin contratos, sin permanencia, sin letra chica.
       </p>
 
-      <div class="grid items-start gap-[18px] lg:grid-cols-[1fr_1.15fr]">
+      <div class="grid gap-[18px] lg:grid-cols-[1fr_1.15fr]">
         <!-- GRATIS -->
-        <div class="rounded-3xl bg-bg-card p-7 shadow-soft sm:p-[30px]">
+        <div class="flex flex-col rounded-3xl bg-bg-card p-7 shadow-soft sm:p-[30px]">
           <div class="mb-1.5 text-[18px] font-bold text-text-main">
             Tu ficha en {barrio.name}
           </div>
@@ -240,7 +240,7 @@ const sectionTitle =
             <span class="text-[13.5px] text-text-muted">para siempre</span>
           </div>
 
-          <div class="mb-6 flex flex-col gap-2.5">
+          <div class="mb-6 flex flex-1 flex-col gap-2.5">
             {
               GRATIS.map((item) => (
                 <div class="flex items-start gap-2.5 text-[14px] leading-normal text-text-body">
@@ -263,7 +263,7 @@ const sectionTitle =
         </div>
 
         <!-- DESTACADO -->
-        <div class="relative rounded-3xl bg-primary-deep p-7 text-white sm:p-[30px]">
+        <div class="relative flex flex-col rounded-3xl bg-primary-deep p-7 text-white sm:p-[30px]">
           <span
             class="absolute right-6 top-6 rounded-full bg-rating px-3 py-1.5 text-[11px] font-extrabold uppercase tracking-[0.08em] text-[#3d2a00]"
           >
@@ -286,7 +286,7 @@ const sectionTitle =
             Todo lo del plan gratuito, más:
           </p>
 
-          <div class="mb-6 grid gap-x-[22px] gap-y-[11px] sm:grid-cols-2">
+          <div class="mb-6 grid flex-1 content-start gap-x-[22px] gap-y-[11px] sm:grid-cols-2">
             {
               DESTACADO.map((item) => (
                 <div class="flex items-start gap-2.5 text-[13.5px] leading-normal text-white/88">
