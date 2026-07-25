@@ -1,145 +1,192 @@
 ---
+import { Search, Menu, X } from "@lucide/astro";
 import Logo from "../../assets/logo.svg";
+
+const path = Astro.url.pathname;
+
+// El buscador global es el cambio funcional más importante del rediseño:
+// vive en el header de todas las páginas y entra por GET a la guía.
+const query = path.startsWith("/negocios")
+  ? (Astro.url.searchParams.get("buscar") ?? "")
+  : "";
+
+const NAV = [
+  { href: "/negocios", label: "Negocios" },
+  { href: "/ofertas", label: "Ofertas" },
+  { href: "/farmacias", label: "Farmacias" },
+  { href: "/eventos", label: "Eventos" },
+  { href: "/telefonos", label: "Teléfonos" },
+];
+
+// Secciones secundarias: no entran en la nav de desktop ni en la tab bar.
+// "Avisos" y "Contacto" se suman cuando existan esas páginas.
+const MENU_EXTRA = [
+  { href: "/mapa", label: "Mapa" },
+  { href: "/anunciate", label: "Anunciate" },
+];
+
+const POPULARES = ["farmacia", "delivery", "plomero", "veterinaria"];
+
+const isActive = (href: string) =>
+  href === "/" ? path === "/" : path.startsWith(href);
 ---
 
-<header class="relative z-50 h-20">
-  <div class="mx-auto flex max-w-6xl items-center justify-between px-6 py-4">
-    <a href="/">
-      <img src={Logo.src} alt="" class="w-17" />
+<header
+  class="sticky top-0 z-50 border-b border-border bg-bg-card"
+  data-header
+>
+  <!-- Desktop -->
+  <div
+    class="mx-auto hidden max-w-[1280px] items-center gap-[22px] px-10 py-[14px] md:flex"
+  >
+    <a href="/" class="shrink-0">
+      <img src={Logo.src} alt="El Talar" class="w-[72px]" />
     </a>
 
-    <nav class="hidden items-center gap-6 md:flex">
-      <a href="/" class="text-sm font-medium text-text-main hover:text-primary">
-        Inicio
-      </a>
+    <form
+      action="/negocios"
+      method="get"
+      role="search"
+      class="flex max-w-[460px] flex-1 items-center rounded-[14px] bg-bg-muted px-4"
+    >
+      <Search class="size-[18px] shrink-0 text-primary" aria-hidden="true" />
+      <input
+        type="search"
+        name="buscar"
+        value={query}
+        autocomplete="off"
+        aria-label="Buscar en el barrio"
+        placeholder="Buscá comercio, rubro o servicio"
+        class="w-full bg-transparent px-3 py-[13px] text-[15px] text-text-main outline-none placeholder:text-text-muted"
+      />
+    </form>
+
+    <nav class="ml-auto flex items-center gap-0.5">
+      {
+        NAV.map((item) => (
+          <a
+            href={item.href}
+            aria-current={isActive(item.href) ? "page" : undefined}
+            class:list={[
+              "rounded-full text-sm transition-colors",
+              isActive(item.href)
+                ? "bg-primary-faint px-3.5 py-2 font-semibold text-text-main"
+                : "px-3 py-2 font-medium text-text-body hover:text-text-main",
+            ]}
+          >
+            {item.label}
+          </a>
+        ))
+      }
+    </nav>
+
+    <div class="flex items-center gap-3">
       <a
-        href="/negocios"
-        class="text-sm font-medium text-text-main hover:text-primary"
+        href="/app/login"
+        class="text-sm font-medium text-text-body transition-colors hover:text-text-main"
       >
-        Negocios
-      </a>
-      <a
-        href="/ofertas"
-        class="text-sm font-medium text-text-main hover:text-primary"
-      >
-        Ofertas
-      </a>
-      <a
-        href="/eventos"
-        class="text-sm font-medium text-text-main hover:text-primary"
-      >
-        Eventos
-      </a>
-      <a
-        href="/farmacias"
-        class="text-sm font-medium text-text-main hover:text-primary"
-      >
-        Farmacias
-      </a>
-      <a
-        href="/telefonos"
-        class="text-sm font-medium text-text-main hover:text-primary"
-      >
-        Teléfonos útiles
-      </a>
-      <a
-        href="/mapa"
-        class="text-sm font-medium text-text-main hover:text-primary"
-      >
-        Mapa
+        Ingresar
       </a>
       <a
         href="/app"
         data-cta-negocio
-        class="rounded-full bg-primary px-4 py-1.5 text-sm font-semibold text-white hover:bg-green-700"
+        class="rounded-full bg-primary px-5 py-[11px] text-sm font-semibold text-white transition-colors hover:bg-primary-hover"
       >
         Cargá tu negocio
       </a>
-    </nav>
-
-    <button
-      id="menu-button"
-      class="relative h-6 w-6 md:hidden"
-      aria-label="Abrir menú"
-    >
-      <span class="hamburger"></span>
-    </button>
+    </div>
   </div>
 
-  <div
-    id="mobile-menu"
-    class="absolute inset-x-0 top-full z-40 opacity-0 -translate-y-2 pointer-events-none transition-transform duration-300 ease-out"
-  >
-    <nav class="rounded-b-2xl bg-white/95 p-6 shadow-lg backdrop-blur">
-      <div class="flex flex-col gap-4">
-        <a href="/" class="text-sm font-medium text-text-main">Inicio</a>
-        <a href="/negocios" class="text-sm font-medium text-text-main"
-          >Negocios</a
+  <!-- Mobile -->
+  <div class="md:hidden">
+    <div class="flex items-center justify-between px-[18px] py-3">
+      <a href="/">
+        <img src={Logo.src} alt="El Talar" class="w-[62px]" />
+      </a>
+      <button
+        id="menu-button"
+        type="button"
+        aria-label="Abrir menú"
+        aria-expanded="false"
+        aria-controls="mobile-menu"
+        class="flex size-9 items-center justify-center rounded-full bg-primary-faint text-text-main"
+      >
+        <Menu class="size-[17px]" data-menu-icon="open" aria-hidden="true" />
+        <X class="hidden size-[17px]" data-menu-icon="close" aria-hidden="true" />
+      </button>
+    </div>
+
+    <div class="px-[18px] pb-4">
+      <form
+        action="/negocios"
+        method="get"
+        role="search"
+        class="flex items-center rounded-[14px] bg-bg-muted px-3.5"
+      >
+        <Search class="size-[19px] shrink-0 text-primary" aria-hidden="true" />
+        <input
+          type="search"
+          name="buscar"
+          value={query}
+          autocomplete="off"
+          aria-label="Buscar en el barrio"
+          placeholder="¿Qué buscás en el barrio?"
+          class="w-full bg-transparent px-3 py-[15px] text-[15.5px] text-text-main outline-none placeholder:text-text-muted"
+        />
+      </form>
+
+      <div class="mt-3 flex gap-[7px] overflow-x-auto [scrollbar-width:none]">
+        {
+          POPULARES.map((term) => (
+            <a
+              href={`/negocios?buscar=${encodeURIComponent(term)}`}
+              class="shrink-0 rounded-full border border-border bg-bg-main px-[13px] py-[7px] text-[12.5px] font-medium text-text-main"
+            >
+              {term}
+            </a>
+          ))
+        }
+      </div>
+    </div>
+
+    <nav
+      id="mobile-menu"
+      hidden
+      class="border-t border-border px-[18px] py-4"
+      aria-label="Secciones"
+    >
+      <div class="flex flex-col gap-1">
+        {
+          [...NAV, ...MENU_EXTRA].map((item) => (
+            <a
+              href={item.href}
+              class:list={[
+                "rounded-xl px-3 py-2.5 text-[15px]",
+                isActive(item.href)
+                  ? "bg-primary-faint font-semibold text-text-main"
+                  : "font-medium text-text-body",
+              ]}
+            >
+              {item.label}
+            </a>
+          ))
+        }
+        <a
+          href="/app/login"
+          class="rounded-xl px-3 py-2.5 text-[15px] font-medium text-text-body"
         >
-        <a href="/ofertas" class="text-sm font-medium text-text-main">
-          Ofertas
+          Ingresar
         </a>
-        <a href="/eventos" class="text-sm font-medium text-text-main">
-          Eventos
-        </a>
-        <a href="/farmacias" class="text-sm font-medium text-text-main"
-          >Farmacias</a
-        >
-        <a href="/telefonos" class="text-sm font-medium text-text-main">
-          Teléfonos útiles
-        </a>
-        <a href="/mapa" class="text-sm font-medium text-text-main">Mapa</a>
         <a
           href="/app"
           data-cta-negocio
-          class="text-sm font-semibold text-primary"
+          class="mt-2 rounded-full bg-primary px-5 py-3 text-center text-[15px] font-semibold text-white"
         >
           Cargá tu negocio
         </a>
       </div>
     </nav>
   </div>
-
-  <style>
-    .hamburger,
-    .hamburger::before,
-    .hamburger::after {
-      content: "";
-      position: absolute;
-      left: 0;
-      width: 100%;
-      height: 2px;
-      background: currentColor;
-      transition:
-        transform 0.3s ease,
-        opacity 0.3s ease;
-    }
-
-    .hamburger {
-      top: 50%;
-      transform: translateY(-50%);
-    }
-
-    .hamburger::before {
-      top: -8px;
-    }
-
-    .hamburger::after {
-      top: 8px;
-    }
-
-    .open .hamburger {
-      background: transparent;
-    }
-
-    .open .hamburger::before {
-      transform: translateY(8px) rotate(45deg);
-    }
-
-    .open .hamburger::after {
-      transform: translateY(-8px) rotate(-45deg);
-    }
-  </style>
 
   <script>
     const setupMobileMenu = () => {
@@ -149,16 +196,18 @@ import Logo from "../../assets/logo.svg";
       if (!button || !menu) return;
 
       button.onclick = () => {
-        const isOpen = menu.classList.contains("opacity-100");
+        const open = menu.hasAttribute("hidden");
 
-        menu.classList.toggle("opacity-0", isOpen);
-        menu.classList.toggle("-translate-y-2", isOpen);
-        menu.classList.toggle("pointer-events-none", isOpen);
+        menu.toggleAttribute("hidden", !open);
+        button.setAttribute("aria-expanded", String(open));
+        button.setAttribute("aria-label", open ? "Cerrar menú" : "Abrir menú");
 
-        menu.classList.toggle("opacity-100", !isOpen);
-        menu.classList.toggle("translate-y-0", !isOpen);
-
-        button.classList.toggle("open");
+        button
+          .querySelector("[data-menu-icon='open']")
+          ?.classList.toggle("hidden", open);
+        button
+          .querySelector("[data-menu-icon='close']")
+          ?.classList.toggle("hidden", !open);
       };
     };
 

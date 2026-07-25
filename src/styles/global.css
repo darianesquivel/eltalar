@@ -56,38 +56,62 @@ html {
   scroll-behavior: smooth;
 }
 
+/* ============ Design tokens — "El Talar Vivo" ============
+   Los nombres que ya usaba el código se conservan (primary, text-main,
+   bg-card, …) con los valores nuevos, para no romper las páginas que
+   todavía no se rediseñaron. */
+
 @theme {
-  /* Brand */
-  --color-primary: #16a34a; /* Verde principal (CTA, links, botones) */
-  --color-primary-hover: #15803d;
-  --color-primary-soft: #dcfce7;
+  /* Verde */
+  --color-primary: #0e9f52; /* botones primarios, íconos activos */
+  --color-primary-hover: #0b8a46; /* hover del verde primario */
+  --color-primary-strong: #0b7a3f; /* links, texto sobre verde claro */
+  --color-primary-deep: #063b22; /* farmacia de turno, plan Destacado */
+  --color-primary-soft: #e7f6ec; /* chips "Abierto ahora", badges */
+  --color-primary-faint: #eef3ee; /* botones secundarios, cuadraditos */
+  --color-primary-mint: #8ee6ae; /* íconos y labels sobre verde oscuro */
 
-  --color-secondary: #0f172a; /* Texto fuerte / títulos */
-  --color-secondary-soft: #334155;
+  /* Tinta (alias viejos: secondary / secondary-soft) */
+  --color-secondary: #0e1a12;
+  --color-secondary-soft: #4a564d;
 
-  /* Backgrounds */
-  --color-bg-main: #f9fafb; /* Fondo general */
-  --color-bg-card: #ffffff; /* Cards */
-  --color-bg-muted: #f3f4f6; /* Secciones suaves */
+  /* Fondos */
+  --color-bg-main: #fbfaf6; /* fondo del body de todo el sitio */
+  --color-bg-card: #ffffff; /* cards, header */
+  --color-bg-muted: #f4f5f2; /* input de búsqueda del header */
 
-  /* Text */
-  --color-text-main: #111827; /* Texto principal */
-  --color-text-muted: #6b7280; /* Texto secundario */
+  /* Texto */
+  --color-text-main: #0e1a12; /* títulos y texto fuerte */
+  --color-text-body: #4a564d; /* párrafos */
+  --color-text-muted: #8d968f; /* metadatos, placeholders */
+  --color-text-faint: #b7bdb8; /* chevrons, contadores en chips */
   --color-text-inverted: #ffffff;
 
-  /* Borders */
-  --color-border: #e5e7eb;
+  /* Bordes */
+  --color-border: rgba(14, 26, 18, 0.08);
 
-  /* Status */
-  --color-success: #16a34a;
-  --color-warning: #f59e0b;
-  --color-error: #ef4444;
-  --color-info: #2563eb;
+  /* Acentos con dueño: coral = ofertas, ámbar = puntaje/destacado */
+  --color-offer: #ff5c39;
+  --color-offer-soft: #fff2ee;
+  --color-rating: #ffc14d;
+  --color-rating-soft: #fff7e6;
 
-  /* Category / Accents */
-  --color-emergency: #ef4444; /* Emergencias */
-  --color-health: #22c55e; /* Salud */
-  --color-services: #3b82f6; /* Servicios */
+  /* Estado */
+  --color-success: #0e9f52;
+  --color-warning: #ffc14d;
+  --color-error: #c0463a; /* "Cerrado", emergencias médicas */
+  --color-info: #2e6595; /* avisos del municipio, chips "Venta" */
+
+  /* Categorías (compat con páginas viejas) */
+  --color-emergency: #c0463a;
+  --color-health: #0e9f52;
+  --color-services: #2e6595;
+
+  /* Sombras: una sola en todo el sitio, con dos variantes */
+  --shadow-soft: 0 2px 10px rgba(14, 26, 18, 0.05);
+  --shadow-card: 0 3px 14px rgba(14, 26, 18, 0.07);
+  --shadow-tab: 0 -4px 20px rgba(14, 26, 18, 0.06);
+  --shadow-search: 0 8px 28px rgba(14, 26, 18, 0.1);
 }
 
 /* ============ Animaciones ============ */
@@ -103,36 +127,9 @@ html {
   }
 }
 
-@keyframes ken-burns {
-  from {
-    transform: scale(1.02);
-  }
-  to {
-    transform: scale(1.14);
-  }
-}
-
-@keyframes blob-float {
-  0%,
-  100% {
-    transform: translate(0, 0) scale(1);
-  }
-  50% {
-    transform: translate(26px, -20px) scale(1.1);
-  }
-}
-
 .animate-fade-up {
   opacity: 0;
   animation: fade-up 0.8s cubic-bezier(0.22, 1, 0.36, 1) forwards;
-}
-
-.animate-ken-burns {
-  animation: ken-burns 20s ease-in-out infinite alternate;
-}
-
-.animate-blob {
-  animation: blob-float 14s ease-in-out infinite;
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -140,20 +137,25 @@ html {
     animation: none;
     opacity: 1;
   }
-  .animate-ken-burns,
-  .animate-blob {
-    animation: none;
-  }
 }
 
-/* ============ Tilt 3D (ver TiltEffect.astro) ============ */
+/* ============ Foco visible ============ */
 
-[data-tilt] {
-  transform-style: preserve-3d;
-  will-change: transform;
-  transition:
-    transform 0.18s ease-out,
-    box-shadow 0.3s ease;
+:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+}
+
+/* ============ Placeholder de foto ============
+   Rayado neutro mientras no hay foto real (ver README del rediseño).
+   El ícono de rubro gigante queda solo como fallback de la ficha vieja. */
+
+.img-placeholder {
+  background: repeating-linear-gradient(
+    135deg,
+    #eef0ec 0 10px,
+    #e4e8e2 10px 20px
+  );
 }
 
 /* ============ Campos de formulario modernos ============ */

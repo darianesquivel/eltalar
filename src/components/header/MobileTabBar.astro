@@ -1,0 +1,51 @@
+---
+import { House, Search, Flame, CalendarDays, Pill } from "@lucide/astro";
+
+// Barra inferior fija: reemplaza al menú desplegable como navegación
+// principal en mobile. El menú hamburguesa queda para lo secundario.
+// El item "Avisos" del diseño entra cuando exista /avisos; hasta entonces
+// ese lugar lo ocupa Eventos.
+const ITEMS = [
+  { href: "/", label: "Inicio", icon: House },
+  { href: "/negocios", label: "Buscar", icon: Search },
+  { href: "/ofertas", label: "Ofertas", icon: Flame },
+  { href: "/eventos", label: "Eventos", icon: CalendarDays },
+  { href: "/farmacias", label: "Farmacias", icon: Pill },
+];
+
+const path = Astro.url.pathname;
+const isActive = (href: string) =>
+  href === "/" ? path === "/" : path.startsWith(href);
+---
+
+<nav
+  aria-label="Navegación principal"
+  class="fixed inset-x-0 bottom-0 z-50 flex justify-around border-t border-border bg-bg-card px-2 pt-2.5 pb-3.5 shadow-tab md:hidden"
+>
+  {
+    ITEMS.map((item) => {
+      const active = isActive(item.href);
+      const Icon = item.icon;
+      return (
+        <a
+          href={item.href}
+          aria-current={active ? "page" : undefined}
+          class:list={[
+            "flex flex-col items-center gap-1",
+            active ? "text-primary" : "text-text-muted",
+          ]}
+        >
+          <Icon class="size-[22px]" aria-hidden="true" />
+          <span
+            class:list={[
+              "text-[10.5px]",
+              active ? "font-bold" : "font-semibold",
+            ]}
+          >
+            {item.label}
+          </span>
+        </a>
+      );
+    })
+  }
+</nav>

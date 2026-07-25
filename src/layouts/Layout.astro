@@ -1,8 +1,8 @@
 ---
 import Header from "../components/header/Header.astro";
 import Footer from "../components/footer/Footer.astro";
+import MobileTabBar from "../components/header/MobileTabBar.astro";
 import NavLoader from "../components/NavLoader.astro";
-import TiltEffect from "../components/TiltEffect.astro";
 import { ClientRouter } from "astro:transitions";
 import { DEFAULT_BARRIO } from "../lib/barrio";
 
@@ -13,6 +13,12 @@ interface Props {
   description?: string;
   /** URL absoluta de imagen para compartir en redes (og:image). */
   image?: string;
+  /**
+   * `true` = la página maneja su propio ancho y padding (bandas a sangre,
+   * como la home rediseñada). Por defecto el `<main>` centra el contenido
+   * a 1200 px con el padding del sistema (40 px desktop / 18 px mobile).
+   */
+  wide?: boolean;
 }
 
 // El fallback cubre las páginas prerenderizadas (404), donde no hay request
@@ -22,7 +28,13 @@ const {
   title = `${barrio.name} — Guía del barrio`,
   description = `Guía de ${barrio.name}, ${barrio.partido}: negocios y servicios del barrio, farmacias de turno y teléfonos útiles, todo en un solo lugar.`,
   image,
+  wide = false,
 } = Astro.props;
+
+// El colchón de 92 px que deja libre la tab bar mobile lo pone el footer.
+const mainClass = wide
+  ? "flex flex-1 flex-col"
+  : "mx-auto flex w-full max-w-[1200px] flex-1 flex-col gap-12 px-[18px] py-6 sm:px-10 sm:py-10";
 
 // Canónica sobre el dominio del barrio (un deploy sirve varios dominios)
 const canonical = new URL(Astro.url.pathname, barrio.url);
@@ -56,13 +68,13 @@ const canonical = new URL(Astro.url.pathname, barrio.url);
     <ClientRouter />
   </head>
 
-  <body class="flex min-h-screen flex-col bg-gray-100">
+  <body class="flex min-h-screen flex-col bg-bg-main text-text-main">
     <NavLoader />
-    <TiltEffect />
     <Header />
-    <main class="flex flex-1 flex-col gap-20 sm:mx-20 sm:my-10 mx-4 my-5">
+    <main class={mainClass}>
       <slot />
     </main>
     <Footer />
+    <MobileTabBar />
   </body>
 </html>
