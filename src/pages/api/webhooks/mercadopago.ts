@@ -1,4 +1,5 @@
 import type { APIRoute } from "astro";
+import { createHmac, timingSafeEqual } from "node:crypto";
 import { createSupabaseAdmin } from "../../../lib/supabase/admin";
 
 /**
@@ -7,9 +8,47 @@ import { createSupabaseAdmin } from "../../../lib/supabase/admin";
  *
  * MP notifica un evento con el ID del preapproval; acá lo consultamos a la
  * API (fuente de verdad) y actualizamos la suscripción + el negocio.
+ *
+ * Env vars:
+ *  - MP_ACCESS_TOKEN: access token de la cuenta de Mercado Pago
+ *  - MP_WEBHOOK_SECRET: la "clave secreta" del panel de webhooks de MP.
+ *    Con ella se verifica la firma x-signature: sin verificar, cualquiera
+ *    puede postear ids inventados y hacernos gastar llamadas a la API de MP.
  */
 
-const FEATURED_DAYS = 35; // un mes + margen
+const FEATURED_DAYS = 35; // fallback: un mes + margen
+
+/**
+ * Verifica la firma HMAC de MP (header x-signature: "ts=...,v1=...").
+ * El manifest firmado es `id:{data.id};request-id:{x-request-id};ts:{ts};`
+ * según la documentación oficial de notificaciones.
+ */
+function isValidSignature(
+  request: Request,
+  dataId: string,
+  secret: string,
+): boolean {
+  const xSignature = request.headers.get("x-signature") ?? "";
+  const xRequestId = request.headers.get("x-request-id") ?? "";
+
+  const parts: Record<string, string> = {};
+  for (const piece of xSignature.split(",")) {
+    const [key, ...rest] = piece.split("=");
+    if (key && rest.length) parts[key.trim()] = rest.join("=").trim();
+  }
+  const { ts, v1 } = parts;
+  if (!ts || !v1) return false;
+
+  // MP pide el data.id en minúsculas para armar el manifest
+  const manifest = `id:${dataId.toLowerCase()};request-id:${xRequestId};ts:${ts};`;
+  const expected = createHmac("sha256", secret).update(manifest).digest("hex");
+
+  try {
+    return timingSafeEqual(Buffer.from(expected), Buffer.from(v1));
+  } catch {
+    return false; // largos distintos
+  }
+}
 
 export const POST: APIRoute = async ({ request }) => {
   const mpToken = import.meta.env.MP_ACCESS_TOKEN;
@@ -22,22 +61,27 @@ export const POST: APIRoute = async ({ request }) => {
 
   let preapprovalId: string | null = null;
 
-  try {
-    const url = new URL(request.url);
-    // MP manda el id por query (?id= / ?data.id=) o en el body JSON
-    preapprovalId =
-      url.searchParams.get("data.id") ?? url.searchParams.get("id");
+  const url = new URL(request.url);
+  // MP manda el id por query (?id= / ?data.id=) o en el body JSON
+  const queryDataId =
+    url.searchParams.get("data.id") ?? url.searchParams.get("id");
+  preapprovalId = queryDataId;
 
-    if (!preapprovalId) {
-      const body = await request.json().catch(() => null);
-      preapprovalId = body?.data?.id ?? body?.id ?? null;
-    }
-  } catch {
-    /* body vacío */
+  if (!preapprovalId) {
+    const body = await request.json().catch(() => null);
+    preapprovalId = body?.data?.id ?? body?.id ?? null;
   }
 
   if (!preapprovalId) {
     return new Response("no id", { status: 200 });
+  }
+
+  // La firma cubre el data.id de la query; se verifica solo si el secret
+  // está configurado (para no romper el sandbox si todavía no se cargó).
+  const secret = import.meta.env.MP_WEBHOOK_SECRET;
+  if (secret && !isValidSignature(request, queryDataId ?? preapprovalId, secret)) {
+    console.error("MP webhook: firma inválida");
+    return new Response("invalid signature", { status: 403 });
   }
 
   const mpHeaders = { Authorization: `Bearer ${mpToken}` };
@@ -78,6 +122,13 @@ export const POST: APIRoute = async ({ request }) => {
   const preapproval = await mpRes.json();
   const businessId: string | undefined = preapproval.external_reference;
 
+  if (!businessId) {
+    // Sin referencia al negocio no hay nada que actualizar; 200 para que
+    // MP no reintente algo que nunca va a poder procesarse.
+    console.error("MP webhook: preapproval sin external_reference");
+    return new Response("no reference", { status: 200 });
+  }
+
   const STATUS_MAP: Record<string, string> = {
     pending: "pending",
     authorized: "active",
@@ -86,35 +137,50 @@ export const POST: APIRoute = async ({ request }) => {
   };
   const status = STATUS_MAP[preapproval.status] ?? "pending";
 
-  await admin.from("subscriptions").upsert(
+  // Hasta cuándo vale el período pagado: la fecha real del próximo cobro
+  // que informa MP; si no vino, un mes + margen desde ahora.
+  const nextPayment = Date.parse(preapproval.next_payment_date ?? "");
+  const periodEnd = new Date(
+    Number.isFinite(nextPayment) && nextPayment > Date.now()
+      ? nextPayment
+      : Date.now() + FEATURED_DAYS * 86400000,
+  ).toISOString();
+
+  const { error: subError } = await admin.from("subscriptions").upsert(
     {
-      business_id: businessId!,
+      business_id: businessId,
       provider: "mercadopago",
       external_id: preapprovalId,
       status,
       // Solo se pisa cuando hay un período pagado nuevo: al cancelar se
       // conserva la fecha del último período (hasta cuándo tiene beneficio)
-      ...(status === "active" && {
-        current_period_end: new Date(
-          Date.now() + FEATURED_DAYS * 86400000,
-        ).toISOString(),
-      }),
+      ...(status === "active" && { current_period_end: periodEnd }),
       updated_at: new Date().toISOString(),
     },
     { onConflict: "external_id" },
   );
 
-  if (businessId && status === "active") {
-    await admin
+  // Un pago real que no pudo persistirse NO puede devolver 200: con 500,
+  // Mercado Pago reintenta la notificación más tarde.
+  if (subError) {
+    console.error("MP webhook: error guardando subscription:", subError);
+    return new Response("db error", { status: 500 });
+  }
+
+  if (status === "active") {
+    const { error: bizError } = await admin
       .from("businesses")
       .update({
         is_featured: true,
         plan: "destacado",
-        featured_until: new Date(
-          Date.now() + FEATURED_DAYS * 86400000,
-        ).toISOString(),
+        featured_until: periodEnd,
       })
       .eq("id", businessId);
+
+    if (bizError) {
+      console.error("MP webhook: error destacando negocio:", bizError);
+      return new Response("db error", { status: 500 });
+    }
   }
   // cancelled/paused: NO se apaga el destacado acá — el comerciante ya pagó
   // el período vigente y lo conserva hasta featured_until. El job diario de

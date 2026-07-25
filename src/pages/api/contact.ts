@@ -1,5 +1,6 @@
 import type { APIRoute } from "astro";
 import { supabase } from "../../lib/supabase";
+import { rateLimit, tooMany } from "../../lib/rateLimit";
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
@@ -9,8 +10,12 @@ const json = (body: object, status: number) =>
     headers: { "Content-Type": "application/json" },
   });
 
-export const POST: APIRoute = async ({ request, locals }) => {
+export const POST: APIRoute = async ({ request, locals, clientAddress }) => {
   try {
+    if (!rateLimit(`contacto:${clientAddress}`, 5, 10 * 60_000)) {
+      return tooMany();
+    }
+
     const body = await request.json();
     const { name, email, message, company } = body;
 
@@ -37,6 +42,12 @@ export const POST: APIRoute = async ({ request, locals }) => {
 
     if (!EMAIL_RE.test(email)) {
       return json({ error: "Email inválido" }, 400);
+    }
+
+    // Sin barrio resuelto (tabla caída) el insert fallaría con un error de
+    // uuid ilegible: mejor un mensaje honesto que se pueda reintentar.
+    if (!locals.barrio.id) {
+      return json({ error: "Probá de nuevo más tarde" }, 503);
     }
 
     const { error } = await supabase.from("contact_messages").insert({

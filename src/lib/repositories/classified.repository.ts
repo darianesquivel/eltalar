@@ -42,8 +42,10 @@ export function isClassifiedCategory(
  * cuando cargan solo números hay que mostrarlos como plata: "85000" se ve
  * mal en la card. Si no es un número, se respeta tal cual lo escribió.
  */
-export function formatPriceText(raw: string | null | undefined): string | null {
-  const value = raw?.trim();
+export function formatPriceText(raw: unknown): string | null {
+  // `unknown`: llega directo del JSON del request; un número u objeto
+  // rompía el .trim() con un 500
+  const value = typeof raw === "string" ? raw.trim() : "";
   if (!value) return null;
 
   // "$ 85.000", "85000", "85,50" → dígitos con separador decimal normalizado

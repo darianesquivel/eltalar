@@ -8,6 +8,14 @@ import { createSupabaseServer } from "../../../lib/supabase/server";
  * dejar un redirect abierto.
  */
 export const POST: APIRoute = async (context) => {
+  // El form viaja como x-www-form-urlencoded (sin preflight CORS): un sitio
+  // ajeno podría desloguear al vecino con un POST cross-origin. Los
+  // navegadores mandan Origin en todo POST; si viene de otro lado, afuera.
+  const origin = context.request.headers.get("origin");
+  if (origin && origin !== context.url.origin) {
+    return new Response("forbidden", { status: 403 });
+  }
+
   const supabase = createSupabaseServer(context);
   await supabase.auth.signOut();
 

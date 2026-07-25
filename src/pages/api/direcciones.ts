@@ -1,4 +1,5 @@
 import type { APIRoute } from "astro";
+import { rateLimit, tooMany } from "../../lib/rateLimit";
 
 /**
  * Autocompletado de direcciones para el formulario de negocios.
@@ -72,21 +73,57 @@ async function searchPhoton(q: string, bbox: string, lat: number, lng: number) {
   }
 }
 
-export const GET: APIRoute = async ({ url, locals }) => {
+export const GET: APIRoute = async ({ url, locals, clientAddress }) => {
   const { barrio } = locals;
+
+  // Proxy a un servicio público de terceros (Photon): sin freno, un script
+  // martillándolo hace que baneen la IP de salida de Vercel para todos.
+  if (!rateLimit(`direcciones:${clientAddress}`, 30, 60_000)) {
+    return tooMany();
+  }
 
   const placeId = url.searchParams.get("placeId");
   const q = url.searchParams.get("q")?.trim() ?? "";
 
+  // Caja geográfica alrededor del centro del barrio (radio en metros → grados).
+  // Restringe los resultados a la zona, como hacía locationRestriction.
+  const dLat = barrio.radius_m / 111_320;
+  const dLng =
+    barrio.radius_m / (111_320 * Math.cos((barrio.lat * Math.PI) / 180));
+
   // --- Resolver una sugerencia elegida → dirección + coordenadas ---
   // El token ya trae todo (lo generamos nosotros al sugerir): solo decodificar.
+  // OJO: el token no va firmado, así que cualquiera puede fabricar uno. Se
+  // valida que la forma sea la esperada y que las coordenadas no salgan del
+  // barrio (con margen), para que no puedan colarse lat/lng arbitrarias.
   if (placeId) {
     if (!/^[A-Za-z0-9_-]{10,600}$/.test(placeId)) {
       return json({ error: "placeId inválido" }, 400);
     }
     try {
       const r = decodeToken(placeId);
-      return json({ address: r.a ?? null, lat: r.lat, lng: r.lng }, 200, true);
+
+      const address =
+        typeof r.a === "string" && r.a.length <= 200 ? r.a : null;
+      const enBarrio =
+        typeof r.lat === "number" &&
+        typeof r.lng === "number" &&
+        Math.abs(r.lat - barrio.lat) <= dLat * 1.2 &&
+        Math.abs(r.lng - barrio.lng) <= dLng * 1.2;
+
+      if (!address && !enBarrio) {
+        return json({ error: "placeId inválido" }, 400);
+      }
+
+      return json(
+        {
+          address,
+          lat: enBarrio ? r.lat : null,
+          lng: enBarrio ? r.lng : null,
+        },
+        200,
+        true,
+      );
     } catch {
       return json({ error: "placeId inválido" }, 400);
     }
@@ -96,11 +133,6 @@ export const GET: APIRoute = async ({ url, locals }) => {
   if (q.length < 4 || q.length > 120)
     return json({ suggestions: [] }, 200, true);
 
-  // Caja geográfica alrededor del centro del barrio (radio en metros → grados).
-  // Restringe los resultados a la zona, como hacía locationRestriction.
-  const dLat = barrio.radius_m / 111_320;
-  const dLng =
-    barrio.radius_m / (111_320 * Math.cos((barrio.lat * Math.PI) / 180));
   const bbox = [
     barrio.lng - dLng,
     barrio.lat - dLat,

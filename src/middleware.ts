@@ -42,8 +42,16 @@ export const onRequest = defineMiddleware(async (context, next) => {
   // Canje del magic link en CUALQUIER página: si la config de Supabase manda
   // el ?code= a un destino inesperado (p.ej. la home), igual iniciamos sesión
   // acá en el servidor y seguimos al panel.
+  //
+  // Solo si este navegador inició un login (cookie code-verifier de PKCE):
+  // sin eso, el canje no puede prosperar, y probarlo igual costaba un
+  // round-trip a Supabase por cada URL con ?code= (además de dejar la puerta
+  // a que un link ajeno intente fijarle una sesión al vecino).
   const code = context.url.searchParams.get("code");
-  if (code && !pathname.startsWith("/api")) {
+  const hasVerifier = (context.request.headers.get("cookie") ?? "").includes(
+    "-code-verifier",
+  );
+  if (code && hasVerifier && !pathname.startsWith("/api")) {
     const supabase = createSupabaseServer(context);
     const { error } = await supabase.auth.exchangeCodeForSession(code);
     if (!error) {

@@ -41,9 +41,9 @@ const COMPRESSION_OPTIONS = {
 
 /**
  * Formulario de aviso, para crear o editar. Hace falta estar logueado (la
- * página ya lo verifica). Crear va por /api/avisos; editar escribe directo
- * con el cliente de sesión, porque la RLS ya limita al dueño. En los dos
- * casos el aviso queda pendiente de moderación. "company" es el honeypot.
+ * página ya lo verifica). Los dos caminos van por /api/avisos (POST/PUT):
+ * ahí viven las validaciones de largo, WhatsApp y origen de la foto. En los
+ * dos casos el aviso queda pendiente de moderación. "company" es el honeypot.
  */
 export default function ClassifiedForm({
   defaultName = "",
@@ -93,7 +93,7 @@ export default function ClassifiedForm({
       // La carpeta raíz tiene que ser el id del usuario: así lo exige la
       // política de Storage (nadie pisa las fotos de otro).
       const ext = toUpload.type.split("/").pop() || "jpg";
-      const path = `${userId}/${Date.now()}.${ext}`;
+      const path = `${userId}/${crypto.randomUUID()}.${ext}`;
 
       const { error: upError } = await supabaseBrowser.storage
         .from("classified-photos")
@@ -115,10 +115,26 @@ export default function ClassifiedForm({
 
   const removePhoto = async () => {
     if (!photoUrl) return;
-    const path = photoUrl.split("/classified-photos/")[1];
+    const wasSessionUpload = photoUrl !== existing?.photo_url;
     setPhotoUrl(null);
-    if (path) {
-      await supabaseBrowser.storage.from("classified-photos").remove([path]);
+
+    // Solo se borra del bucket si la subió recién en esta sesión: la foto
+    // del aviso guardado sigue referenciada en la base hasta que se guarde
+    // el cambio (la limpia el servidor al confirmar la edición). Antes se
+    // borraba al toque y, si abandonabas la página, el aviso publicado
+    // quedaba con la imagen rota.
+    if (wasSessionUpload) {
+      const raw = photoUrl.split("/classified-photos/")[1];
+      if (raw) {
+        const path = (() => {
+          try {
+            return decodeURIComponent(raw);
+          } catch {
+            return raw;
+          }
+        })();
+        await supabaseBrowser.storage.from("classified-photos").remove([path]);
+      }
     }
   };
 
@@ -128,49 +144,25 @@ export default function ClassifiedForm({
     setError(null);
 
     try {
-      if (existing) {
-        // Editar: la RLS ya limita al dueño y obliga a que vuelva a quedar
-        // pendiente, así que se escribe directo, sin endpoint.
-        const { data, error: updateError } = await supabaseBrowser
-          .from("classifieds")
-          .update({
-            category,
-            title: title.trim(),
-            description: description.trim() || null,
-            price_text: formatPriceText(priceText),
-            whatsapp: whatsapp.replace(/[^\d]/g, ""),
-            author_name: authorName.trim(),
-            photo_url: photoUrl,
-            status: "pending",
-            published_at: null,
-          })
-          .eq("id", existing.id)
-          .select("id");
+      const res = await fetch("/api/avisos", {
+        method: existing ? "PUT" : "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          ...(existing && { id: existing.id }),
+          category,
+          title,
+          priceText,
+          description,
+          authorName,
+          whatsapp,
+          photoUrl,
+          company,
+        }),
+      });
 
-        if (updateError) throw new Error(updateError.message);
-        if (!data || data.length === 0) {
-          throw new Error("No pudimos guardar los cambios.");
-        }
-      } else {
-        const res = await fetch("/api/avisos", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            category,
-            title,
-            priceText,
-            description,
-            authorName,
-            whatsapp,
-            photoUrl,
-            company,
-          }),
-        });
-
-        if (!res.ok) {
-          const body = await res.json().catch(() => null);
-          throw new Error(body?.message || body?.error);
-        }
+      if (!res.ok) {
+        const body = await res.json().catch(() => null);
+        throw new Error(body?.message || body?.error);
       }
 
       setDone(true);
@@ -329,7 +321,9 @@ export default function ClassifiedForm({
             </span>
             <input
               type="file"
-              accept="image/*"
+              // Sin HEIC: si la compresión no puede convertirlo se sube el
+              // original, y ningún navegador muestra HEIC → card rota.
+              accept="image/jpeg,image/png,image/webp"
               onChange={uploadPhoto}
               disabled={uploading}
               className="hidden"
@@ -389,7 +383,11 @@ export default function ClassifiedForm({
         aria-hidden="true"
       />
 
-      {error && <p className="text-[13px] text-error">{error}</p>}
+      {error && (
+        <p role="alert" className="text-[13px] text-error">
+          {error}
+        </p>
+      )}
 
       <p className="text-[12.5px] text-text-muted">
         Tu WhatsApp queda visible para que te contacten. Revisamos los avisos
@@ -399,14 +397,18 @@ export default function ClassifiedForm({
 
       <button
         type="submit"
-        disabled={sending}
+        // uploading también: si guardás mientras la foto sube, el aviso
+        // queda sin foto y el archivo huérfano en el bucket
+        disabled={sending || uploading}
         className="rounded-[14px] bg-primary p-4 text-[15px] font-semibold text-white transition-colors hover:bg-primary-hover disabled:opacity-50"
       >
         {sending
           ? "Guardando…"
-          : isEdit
-            ? "Guardar cambios"
-            : "Publicar aviso"}
+          : uploading
+            ? "Subiendo la foto…"
+            : isEdit
+              ? "Guardar cambios"
+              : "Publicar aviso"}
       </button>
     </form>
   );

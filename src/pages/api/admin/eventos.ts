@@ -19,22 +19,32 @@ const json = (body: object, status: number) =>
     headers: { "Content-Type": "application/json" },
   });
 
-async function requireAdmin(context: APIContext) {
+// 401 sin sesión, 403 con sesión sin permiso: el panel distingue "entrá de
+// nuevo" de "no sos admin".
+async function adminGate(context: APIContext): Promise<Response | null> {
   const supabase = createSupabaseServer(context);
   const {
     data: { user },
   } = await supabase.auth.getUser();
-  if (!user) return null;
+  if (!user) return json({ error: "Sesión vencida" }, 401);
 
   const { data: isAdmin } = await supabase.rpc("is_admin");
-  return isAdmin ? user : null;
+  if (!isAdmin) return json({ error: "No autorizado" }, 403);
+  return null;
 }
 
+// Los mensajes crudos de Postgres (constraints, columnas) no salen al
+// cliente: se loguean y se responde genérico.
+const dbError = (context: string, error: { message: string }) => {
+  console.error(`Error eventos (${context}):`, error.message);
+  return json({ error: "No se pudo completar la operación" }, 500);
+};
+
 export const GET: APIRoute = async (context) => {
-  if (!(await requireAdmin(context)))
-    return json({ error: "No autorizado" }, 403);
+  const denied = await adminGate(context);
+  if (denied) return denied;
   const admin = createSupabaseAdmin();
-  if (!admin) return json({ error: "Falta service role" }, 500);
+  if (!admin) return json({ error: "Falta service role" }, 503);
 
   // Multi-barrio: el manager pide los eventos del barrio del selector
   const barrioId = context.url.searchParams.get("barrio");
@@ -48,15 +58,23 @@ export const GET: APIRoute = async (context) => {
 
   const { data, error } = await query;
 
-  if (error) return json({ error: error.message }, 500);
+  if (error) return dbError("listar", error);
   return json({ events: data }, 200);
 };
 
+// Solo imágenes que los navegadores muestran; la extensión sale del MIME
+// real, no del nombre del archivo (evita subir .svg/.html al bucket público)
+const IMAGE_TYPES: Record<string, string> = {
+  "image/jpeg": "jpg",
+  "image/png": "png",
+  "image/webp": "webp",
+};
+
 export const POST: APIRoute = async (context) => {
-  if (!(await requireAdmin(context)))
-    return json({ error: "No autorizado" }, 403);
+  const denied = await adminGate(context);
+  if (denied) return denied;
   const admin = createSupabaseAdmin();
-  if (!admin) return json({ error: "Falta service role" }, 500);
+  if (!admin) return json({ error: "Falta service role" }, 503);
 
   const form = await context.request.formData();
   const title = String(form.get("title") ?? "").trim();
@@ -74,19 +92,38 @@ export const POST: APIRoute = async (context) => {
     return v || null;
   };
 
+  // Mismo formato que `date`: validar acá da un mensaje claro en vez del
+  // error crudo de Postgres.
+  const end_date = optional("end_date");
+  const start_time = optional("start_time");
+  const end_time = optional("end_time");
+  const TIME_RE = /^\d{2}:\d{2}(:\d{2})?$/;
+  if (
+    (end_date && !/^\d{4}-\d{2}-\d{2}$/.test(end_date)) ||
+    (start_time && !TIME_RE.test(start_time)) ||
+    (end_time && !TIME_RE.test(end_time))
+  ) {
+    return json({ error: "Fecha u horario con formato inválido" }, 400);
+  }
+
   // Foto opcional → bucket público event-photos
   let image_url: string | null = null;
   const photo = form.get("photo");
   if (photo instanceof File && photo.size > 0) {
-    if (photo.size > 5 * 1024 * 1024) {
-      return json({ error: "La foto no puede superar 5MB" }, 400);
+    // 4MB: el límite amable tiene que saltar ANTES que el de Vercel (4.5MB
+    // de body), que corta con un error de plataforma ilegible.
+    if (photo.size > 4 * 1024 * 1024) {
+      return json({ error: "La foto no puede superar 4MB" }, 400);
     }
-    const ext = (photo.name.split(".").pop() || "jpg").toLowerCase();
+    const ext = IMAGE_TYPES[photo.type];
+    if (!ext) {
+      return json({ error: "La foto tiene que ser JPG, PNG o WebP" }, 400);
+    }
     const path = `${crypto.randomUUID()}.${ext}`;
     const { error: upErr } = await admin.storage
       .from("event-photos")
       .upload(path, photo, { contentType: photo.type });
-    if (upErr) return json({ error: `Foto: ${upErr.message}` }, 500);
+    if (upErr) return dbError("subir foto", upErr);
     image_url = admin.storage.from("event-photos").getPublicUrl(path)
       .data.publicUrl;
   }
@@ -97,9 +134,9 @@ export const POST: APIRoute = async (context) => {
       barrio_id,
       title,
       date,
-      end_date: optional("end_date"),
-      start_time: optional("start_time"),
-      end_time: optional("end_time"),
+      end_date,
+      start_time,
+      end_time,
       location: optional("location"),
       description: optional("description"),
       image_url,
@@ -107,15 +144,15 @@ export const POST: APIRoute = async (context) => {
     .select("*")
     .single();
 
-  if (error) return json({ error: error.message }, 500);
+  if (error) return dbError("crear", error);
   return json({ event: data }, 200);
 };
 
 export const PATCH: APIRoute = async (context) => {
-  if (!(await requireAdmin(context)))
-    return json({ error: "No autorizado" }, 403);
+  const denied = await adminGate(context);
+  if (denied) return denied;
   const admin = createSupabaseAdmin();
-  if (!admin) return json({ error: "Falta service role" }, 500);
+  if (!admin) return json({ error: "Falta service role" }, 503);
 
   const { id, is_active } = await context.request.json();
   if (typeof id !== "string" || typeof is_active !== "boolean") {
@@ -126,15 +163,15 @@ export const PATCH: APIRoute = async (context) => {
     .from("events")
     .update({ is_active })
     .eq("id", id);
-  if (error) return json({ error: error.message }, 500);
+  if (error) return dbError("actualizar", error);
   return json({ success: true }, 200);
 };
 
 export const DELETE: APIRoute = async (context) => {
-  if (!(await requireAdmin(context)))
-    return json({ error: "No autorizado" }, 403);
+  const denied = await adminGate(context);
+  if (denied) return denied;
   const admin = createSupabaseAdmin();
-  if (!admin) return json({ error: "Falta service role" }, 500);
+  if (!admin) return json({ error: "Falta service role" }, 503);
 
   const { id } = await context.request.json();
   if (typeof id !== "string") return json({ error: "Datos inválidos" }, 400);
@@ -154,6 +191,6 @@ export const DELETE: APIRoute = async (context) => {
   }
 
   const { error } = await admin.from("events").delete().eq("id", id);
-  if (error) return json({ error: error.message }, 500);
+  if (error) return dbError("borrar", error);
   return json({ success: true }, 200);
 };

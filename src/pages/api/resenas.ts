@@ -1,5 +1,6 @@
 import type { APIRoute } from "astro";
 import { createSupabaseServer } from "../../lib/supabase/server";
+import { rateLimit, tooMany } from "../../lib/rateLimit";
 
 const json = (body: object, status: number) =>
   new Response(JSON.stringify(body), {
@@ -31,6 +32,11 @@ export const POST: APIRoute = async (context) => {
       );
     }
 
+    // Por usuario: una cuenta no puede inundar la cola de moderación
+    if (!rateLimit(`resenas:${user.id}`, 10, 10 * 60_000)) {
+      return tooMany();
+    }
+
     const { businessId, rating, comment } = await context.request.json();
 
     const score = Number(rating);
@@ -46,6 +52,20 @@ export const POST: APIRoute = async (context) => {
 
     if (typeof comment === "string" && comment.length > 1000) {
       return json({ error: "El comentario es demasiado largo" }, 400);
+    }
+
+    // El negocio tiene que existir, estar activo y ser DE ESTE barrio:
+    // sin esto se podía reseñar un negocio de otro portal por id.
+    const { data: business } = await supabase
+      .from("businesses")
+      .select("id")
+      .eq("id", businessId)
+      .eq("barrio_id", context.locals.barrio.id)
+      .eq("is_active", true)
+      .maybeSingle();
+
+    if (!business) {
+      return json({ error: "Datos incompletos" }, 400);
     }
 
     // Nombre de la cuenta de Google; si no vino, la parte del email

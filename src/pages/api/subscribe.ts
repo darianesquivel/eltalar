@@ -1,6 +1,13 @@
 import type { APIRoute } from "astro";
 import { createSupabaseServer } from "../../lib/supabase/server";
 import { createSupabaseAdmin } from "../../lib/supabase/admin";
+import { rateLimit, tooMany } from "../../lib/rateLimit";
+
+const json = (body: object, status: number) =>
+  new Response(JSON.stringify(body), {
+    status,
+    headers: { "Content-Type": "application/json" },
+  });
 
 /**
  * Inicia la suscripción "Destacado" de un negocio vía Mercado Pago.
@@ -11,16 +18,25 @@ import { createSupabaseAdmin } from "../../lib/supabase/admin";
  *  - SUPABASE_SERVICE_ROLE_KEY: para registrar la suscripción
  */
 export const POST: APIRoute = async (context) => {
+  try {
+    return await handle(context);
+  } catch (err) {
+    console.error("Error en /api/subscribe:", err);
+    return json({ error: "unexpected" }, 500);
+  }
+};
+
+const handle = async (context: Parameters<APIRoute>[0]) => {
   const mpToken = import.meta.env.MP_ACCESS_TOKEN;
   const admin = createSupabaseAdmin();
 
   if (!mpToken || !admin) {
-    return new Response(
-      JSON.stringify({
+    return json(
+      {
         error: "not_configured",
         message: "Los pagos todavía no están habilitados.",
-      }),
-      { status: 503 },
+      },
+      503,
     );
   }
 
@@ -30,12 +46,19 @@ export const POST: APIRoute = async (context) => {
   } = await supabase.auth.getUser();
 
   if (!user) {
-    return new Response(JSON.stringify({ error: "unauthorized" }), {
-      status: 401,
-    });
+    return json({ error: "unauthorized" }, 401);
   }
 
-  const { businessId } = await context.request.json();
+  // Cada intento crea un preapproval en MP con nuestro token: con freno
+  if (!rateLimit(`subscribe:${user.id}`, 5, 10 * 60_000)) {
+    return tooMany();
+  }
+
+  const body = await context.request.json().catch(() => null);
+  const businessId = body?.businessId;
+  if (typeof businessId !== "string" || !businessId.trim()) {
+    return json({ error: "bad_request" }, 400);
+  }
 
   // Verifica que el negocio sea del usuario (vía RLS del cliente de sesión)
   const { data: business } = await supabase
@@ -45,23 +68,23 @@ export const POST: APIRoute = async (context) => {
     .single();
 
   if (!business || business.owner_id !== user.id) {
-    return new Response(
-      JSON.stringify({
+    return json(
+      {
         error: "forbidden",
         message:
           "Solo el dueño del negocio puede destacarlo: entrá con la cuenta que tiene asignado este negocio.",
-      }),
-      { status: 403 },
+      },
+      403,
     );
   }
 
   if (business.status !== "approved") {
-    return new Response(
-      JSON.stringify({
+    return json(
+      {
         error: "not_approved",
         message: "El negocio tiene que estar aprobado antes de destacarse.",
-      }),
-      { status: 400 },
+      },
+      400,
     );
   }
 
@@ -98,20 +121,22 @@ export const POST: APIRoute = async (context) => {
 
   if (!mpRes.ok) {
     console.error("MP preapproval error:", await mpRes.text());
-    return new Response(
-      JSON.stringify({
+    return json(
+      {
         error: "mp_error",
         message:
           "Mercado Pago rechazó la operación. Probá de nuevo en un rato; si sigue pasando escribinos desde el formulario de contacto.",
-      }),
-      { status: 502 },
+      },
+      502,
     );
   }
 
   const preapproval = await mpRes.json();
 
-  // Registra la suscripción (pendiente hasta que el webhook confirme)
-  await admin.from("subscriptions").upsert(
+  // Registra la suscripción (pendiente hasta que el webhook confirme).
+  // Si no se pudo registrar, NO se entrega el link de pago: el webhook
+  // podría llegar antes de que exista la fila y el pago quedaría huérfano.
+  const { error: subError } = await admin.from("subscriptions").upsert(
     {
       business_id: business.id,
       provider: "mercadopago",
@@ -121,8 +146,16 @@ export const POST: APIRoute = async (context) => {
     { onConflict: "external_id" },
   );
 
-  return new Response(JSON.stringify({ init_point: preapproval.init_point }), {
-    status: 200,
-    headers: { "Content-Type": "application/json" },
-  });
+  if (subError) {
+    console.error("Error registrando subscription:", subError);
+    return json(
+      {
+        error: "db_error",
+        message: "No pudimos iniciar la suscripción. Probá de nuevo en un rato.",
+      },
+      500,
+    );
+  }
+
+  return json({ init_point: preapproval.init_point }, 200);
 };
