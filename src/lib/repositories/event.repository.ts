@@ -9,6 +9,27 @@ export type EventRow = Database["public"]["Tables"]["events"]["Row"];
  * Un evento se muestra hasta el final de su día (o de end_date si dura varios
  * días); al día siguiente desaparece solo.
  */
+/** Un evento del barrio por id (lo usa el .ics de "Agendar"). */
+export async function getEventById(
+  id: string,
+  barrioId: string,
+): Promise<EventRow | null> {
+  const { data, error } = await supabase
+    .from("events")
+    .select("*")
+    .eq("id", id)
+    .eq("barrio_id", barrioId)
+    .eq("is_active", true)
+    .maybeSingle();
+
+  if (error) {
+    console.error("Error getEventById:", error);
+    return null;
+  }
+
+  return data;
+}
+
 export async function getUpcomingEvents(barrioId: string): Promise<EventRow[]> {
   const today = todayInArgentina();
 

@@ -1,24 +1,28 @@
 ---
+import { CalendarDays, CalendarPlus, Clock, MapPin } from "@lucide/astro";
 import Layout from "../layouts/Layout.astro";
-import Hero from "../components/eventos/Hero.astro";
-import { CalendarDays, Clock, MapPin } from "@lucide/astro";
 import { getUpcomingEvents } from "../lib/repositories/event.repository";
+import { todayInArgentina } from "../lib/hours";
 
-const events = await getUpcomingEvents(Astro.locals.barrio.id);
+const { barrio } = Astro.locals;
+const whatsappLogo = "/images/whatsapp-icon.svg";
+
+const events = await getUpcomingEvents(barrio.id);
+const today = todayInArgentina();
 
 const MESES = [
-  "ENE",
-  "FEB",
-  "MAR",
-  "ABR",
-  "MAY",
-  "JUN",
-  "JUL",
-  "AGO",
-  "SEP",
-  "OCT",
-  "NOV",
-  "DIC",
+  "enero",
+  "febrero",
+  "marzo",
+  "abril",
+  "mayo",
+  "junio",
+  "julio",
+  "agosto",
+  "septiembre",
+  "octubre",
+  "noviembre",
+  "diciembre",
 ];
 const DIAS = [
   "domingo",
@@ -30,116 +34,316 @@ const DIAS = [
   "sábado",
 ];
 
-// "2026-07-18" → partes para el badge de fecha (sin tocar timezones:
-// parsear el string evita el corrimiento de un día de new Date("YYYY-MM-DD"))
+// "2026-07-18" → partes para el badge de fecha. Se parsea el string a mano:
+// new Date("YYYY-MM-DD") es UTC y corre un día según la zona horaria.
 function dateParts(iso: string) {
   const [y, m, d] = iso.split("-").map(Number);
-  const weekday = DIAS[new Date(y, m - 1, d).getDay()];
-  return { day: d, month: MESES[m - 1], weekday };
+  return {
+    day: d,
+    month: MESES[m - 1],
+    monthShort: MESES[m - 1].slice(0, 3).toUpperCase(),
+    weekday: DIAS[new Date(y, m - 1, d).getDay()],
+    key: `${y}-${String(m).padStart(2, "0")}`,
+  };
 }
 
-const hora = (t: string | null) => (t ? t.slice(0, 5) : null);
+const hour = (t: string | null) => (t ? t.slice(0, 5) : null);
 
-function rangoFechas(e: (typeof events)[number]) {
-  const from = dateParts(e.date);
-  if (!e.end_date || e.end_date === e.date) return null;
-  const to = dateParts(e.end_date);
-  return `Del ${from.day} ${from.month} al ${to.day} ${to.month}`;
-}
+const timeLabel = (start: string | null, end: string | null) => {
+  const from = hour(start);
+  if (!from) return null;
+  const to = hour(end);
+  return to ? `${from} a ${to} h` : `${from} h`;
+};
+
+const capitalize = (value: string) =>
+  value.charAt(0).toUpperCase() + value.slice(1);
+
+const longDate = (iso: string) => {
+  const { weekday, day, month } = dateParts(iso);
+  return capitalize(`${weekday} ${day} de ${month}`);
+};
+
+// Chip "Hoy" / "Mañana" / "Este sábado": solo dentro de la semana
+const relativeLabel = (iso: string) => {
+  const days = Math.round(
+    (new Date(`${iso}T00:00:00`).getTime() -
+      new Date(`${today}T00:00:00`).getTime()) /
+      86_400_000,
+  );
+  if (days <= 0) return "Hoy";
+  if (days === 1) return "Mañana";
+  if (days <= 6) return `Este ${dateParts(iso).weekday}`;
+  return null;
+};
+
+const dateRange = (event: (typeof events)[number]) => {
+  if (!event.end_date || event.end_date === event.date) return null;
+  const from = dateParts(event.date);
+  const to = dateParts(event.end_date);
+  return `Del ${from.day} de ${from.month} al ${to.day} de ${to.month}`;
+};
+
+const shareUrl = (event: (typeof events)[number]) =>
+  `https://wa.me/?text=${encodeURIComponent(
+    `${event.title} — ${longDate(event.date)}${
+      event.location ? ` en ${event.location}` : ""
+    }. Más info: ${new URL("/eventos", barrio.url).toString()}`,
+  )}`;
+
+// Chips de mes: solo los meses que realmente tienen eventos cargados
+const monthChips = [...new Set(events.map((e) => dateParts(e.date).key))].map(
+  (key) => ({
+    key,
+    label: MESES[Number(key.split("-")[1]) - 1],
+  }),
+);
+
+const mes = Astro.url.searchParams.get("mes");
+const visible = mes
+  ? events.filter((e) => dateParts(e.date).key === mes)
+  : events;
+
+const [featured, ...rest] = visible;
+
+const chipClass = (active: boolean) =>
+  `rounded-full px-4 py-[9px] text-[13.5px] capitalize transition-colors ${
+    active
+      ? "bg-secondary font-semibold text-white"
+      : "border border-border bg-bg-card font-medium text-text-main hover:border-[rgba(14,26,18,.2)]"
+  }`;
+
+const smallButton =
+  "inline-flex items-center justify-center gap-1.5 rounded-[11px] bg-primary-faint px-3.5 py-[9px] text-[12.5px] font-semibold text-text-main transition-colors hover:bg-primary-soft";
 ---
 
 <Layout
-  title={`Eventos en ${Astro.locals.barrio.name}`}
-  description={`Agenda de eventos de ${Astro.locals.barrio.name}: ferias, festivales, actividades del barrio con día, horario y lugar.`}
+  title={`Eventos en ${barrio.name}`}
+  description={`Agenda de eventos de ${barrio.name}: ferias, festivales y actividades del barrio con día, horario y lugar.`}
 >
-  <Hero />
+  <div class="flex flex-col gap-6">
+    <header>
+      <h1
+        class="mb-2 text-[29px] font-extrabold leading-[1.05] tracking-[-0.025em] text-text-main sm:text-[44px]"
+      >
+        Qué pasa en {barrio.name}
+      </h1>
+      <p class="max-w-[640px] text-[15px] text-text-body sm:text-[16px]">
+        Ferias, torneos, talleres y actividades del barrio. Si organizás algo,
+        mandanos los datos y lo publicamos.
+      </p>
+    </header>
 
-  <section id="eventos" class="mx-auto max-w-5xl space-y-8 px-4">
     {
-      events.length === 0 ? (
-        <div class="rounded-3xl bg-white px-6 py-16 text-center shadow-sm">
-          <CalendarDays size={40} class="mx-auto text-gray-300" />
-          <p class="mt-4 font-semibold text-gray-700">
-            No hay eventos anunciados por ahora
-          </p>
-          <p class="mt-1 text-sm text-gray-500">
-            Volvé a mirar en unos días — acá va a estar la agenda del barrio.
-          </p>
-        </div>
-      ) : (
-        <div class="grid gap-6 sm:grid-cols-2">
-          {events.map((e) => {
-            const { day, month, weekday } = dateParts(e.date);
-            const inicio = hora(e.start_time);
-            const fin = hora(e.end_time);
-            const rango = rangoFechas(e);
-            return (
-              <article class="flex flex-col overflow-hidden rounded-2xl bg-white shadow-lg">
-                <div class="relative">
-                  {e.image_url ? (
-                    <img
-                      src={e.image_url}
-                      alt={e.title}
-                      width={640}
-                      height={320}
-                      loading="lazy"
-                      decoding="async"
-                      class="h-48 w-full object-cover"
-                    />
-                  ) : (
-                    <div
-                      class="flex h-48 w-full items-center justify-center"
-                      style="background: linear-gradient(135deg, #ede9fe, #ddd6fe)"
-                    >
-                      <CalendarDays size={44} class="text-violet-400" />
-                    </div>
-                  )}
+      featured && (
+        <section class="grid gap-[22px] lg:grid-cols-[1fr_380px] lg:items-stretch">
+          <div class="relative flex min-h-[280px] items-end overflow-hidden rounded-3xl p-5 sm:min-h-[340px] sm:p-7">
+            {featured.image_url ? (
+              <img
+                src={featured.image_url}
+                alt={featured.title}
+                width={1280}
+                height={640}
+                loading="eager"
+                decoding="async"
+                class="absolute inset-0 size-full object-cover"
+              />
+            ) : (
+              <div class="img-placeholder absolute inset-0" />
+            )}
 
-                  {/* Badge de fecha */}
-                  <div class="absolute left-4 top-4 rounded-xl bg-white/95 px-3.5 py-2 text-center shadow">
-                    <p class="text-xl font-bold leading-none text-gray-900">
-                      {day}
-                    </p>
-                    <p class="text-[11px] font-bold tracking-wide text-violet-600">
-                      {month}
-                    </p>
-                  </div>
+            <span class="absolute left-5 top-5 rounded-2xl bg-white px-3.5 py-2.5 text-center shadow-soft">
+              <span class="block text-[26px] font-extrabold leading-none text-text-main">
+                {dateParts(featured.date).day}
+              </span>
+              <span class="block text-[11px] font-bold uppercase tracking-[0.08em] text-primary-strong">
+                {dateParts(featured.date).monthShort}
+              </span>
+            </span>
+
+            <div class="relative w-full rounded-[18px] bg-white/94 p-5 backdrop-blur sm:p-[22px]">
+              {relativeLabel(featured.date) && (
+                <div class="mb-2.5 inline-flex rounded-full bg-primary-soft px-[11px] py-1.5 text-[11.5px] font-bold uppercase tracking-[0.07em] text-primary-strong">
+                  {relativeLabel(featured.date)}
                 </div>
+              )}
+              <div class="mb-2 text-[21px] font-extrabold leading-tight tracking-[-0.02em] text-text-main sm:text-[28px]">
+                {featured.title}
+              </div>
+              <div class="flex flex-wrap gap-x-5 gap-y-1.5 text-[13.5px] text-text-body sm:text-[14px]">
+                <span class="inline-flex items-center gap-[7px]">
+                  <CalendarDays class="size-4 text-primary" aria-hidden="true" />
+                  {dateRange(featured) ?? longDate(featured.date)}
+                </span>
+                {timeLabel(featured.start_time, featured.end_time) && (
+                  <span class="inline-flex items-center gap-[7px]">
+                    <Clock class="size-4 text-primary" aria-hidden="true" />
+                    {timeLabel(featured.start_time, featured.end_time)}
+                  </span>
+                )}
+                {featured.location && (
+                  <span class="inline-flex items-center gap-[7px]">
+                    <MapPin class="size-4 text-primary" aria-hidden="true" />
+                    {featured.location}
+                  </span>
+                )}
+              </div>
+            </div>
+          </div>
 
-                <div class="flex flex-1 flex-col gap-2.5 p-6">
-                  <h2 class="text-lg font-bold text-gray-900">{e.title}</h2>
+          <div class="flex flex-col rounded-3xl bg-bg-card p-6 shadow-soft">
+            <div class="mb-3 text-[17px] font-extrabold text-text-main">
+              Sobre este evento
+            </div>
+            <p class="mb-[18px] whitespace-pre-line text-[14px] leading-relaxed text-text-body">
+              {featured.description ??
+                "Todavía no cargaron más detalles de este evento."}
+            </p>
 
-                  <p class="flex items-center gap-2 text-sm capitalize text-gray-600">
-                    <CalendarDays size={16} class="shrink-0 text-violet-500" />
-                    {rango ??
-                      `${weekday} ${day} de ${MESES[Number(e.date.split("-")[1]) - 1].toLowerCase()}.`}
-                  </p>
+            <div class="mt-auto flex flex-col gap-2.5">
+              <a
+                href={`/api/eventos/${featured.id}.ics`}
+                class="flex items-center justify-center gap-2 rounded-[13px] bg-primary p-3.5 text-[14.5px] font-semibold text-white transition-colors hover:bg-primary-hover"
+              >
+                <CalendarPlus class="size-4" aria-hidden="true" />
+                Agendar
+              </a>
+              <a
+                href={shareUrl(featured)}
+                target="_blank"
+                rel="noopener noreferrer"
+                class="flex items-center justify-center gap-2 rounded-[13px] bg-primary-faint p-3.5 text-[14.5px] font-semibold text-text-main transition-colors hover:bg-primary-soft"
+              >
+                <img src={whatsappLogo} width="16" height="16" alt="" />
+                Compartir por WhatsApp
+              </a>
+            </div>
+          </div>
+        </section>
+      )
+    }
 
-                  {inicio && (
-                    <p class="flex items-center gap-2 text-sm text-gray-600">
-                      <Clock size={16} class="shrink-0 text-violet-500" />
-                      {fin ? `${inicio} a ${fin} hs` : `${inicio} hs`}
-                    </p>
-                  )}
-
-                  {e.location && (
-                    <p class="flex items-center gap-2 text-sm text-gray-600">
-                      <MapPin size={16} class="shrink-0 text-violet-500" />
-                      {e.location}
-                    </p>
-                  )}
-
-                  {e.description && (
-                    <p class="mt-1 text-sm leading-relaxed text-gray-600">
-                      {e.description}
-                    </p>
-                  )}
-                </div>
-              </article>
-            );
-          })}
+    {
+      monthChips.length > 1 && (
+        <div class="flex flex-wrap gap-2">
+          <a href="/eventos" class={chipClass(!mes)}>
+            Todos
+          </a>
+          {monthChips.map((month) => (
+            <a
+              href={mes === month.key ? "/eventos" : `/eventos?mes=${month.key}`}
+              class={chipClass(mes === month.key)}
+            >
+              {month.label}
+            </a>
+          ))}
         </div>
       )
     }
-  </section>
+
+    {
+      rest.length > 0 && (
+        <div class="grid gap-3.5 lg:grid-cols-2">
+          {rest.map((event) => (
+            <article class="flex overflow-hidden rounded-[18px] bg-bg-card shadow-soft">
+              <div class="relative w-[110px] shrink-0 sm:w-[130px]">
+                {event.image_url ? (
+                  <img
+                    src={event.image_url}
+                    alt={event.title}
+                    width={260}
+                    height={320}
+                    loading="lazy"
+                    decoding="async"
+                    class="absolute inset-0 size-full object-cover"
+                  />
+                ) : (
+                  <div class="img-placeholder absolute inset-0" />
+                )}
+                <span class="absolute left-2.5 top-2.5 rounded-xl bg-white px-2.5 py-[7px] text-center">
+                  <span class="block text-[17px] font-extrabold leading-none text-text-main">
+                    {dateParts(event.date).day}
+                  </span>
+                  <span class="block text-[9.5px] font-bold text-primary-strong">
+                    {dateParts(event.date).monthShort}
+                  </span>
+                </span>
+              </div>
+
+              <div class="flex flex-1 flex-col gap-1.5 p-4 sm:px-5">
+                <h2 class="text-[16px] font-bold leading-tight text-text-main sm:text-[17.5px]">
+                  {event.title}
+                </h2>
+                <div class="text-[13px] text-text-muted">
+                  {[
+                    dateRange(event) ?? longDate(event.date),
+                    event.location,
+                    timeLabel(event.start_time, event.end_time),
+                  ]
+                    .filter(Boolean)
+                    .join(" · ")}
+                </div>
+                {event.description && (
+                  <p class="line-clamp-2 text-[13.5px] leading-normal text-text-body">
+                    {event.description}
+                  </p>
+                )}
+
+                <div class="mt-auto flex gap-2 pt-2.5">
+                  <a href={`/api/eventos/${event.id}.ics`} class={smallButton}>
+                    <CalendarPlus class="size-[14px]" aria-hidden="true" />
+                    Agendar
+                  </a>
+                  <a
+                    href={shareUrl(event)}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    aria-label={`Compartir ${event.title} por WhatsApp`}
+                    class="flex items-center rounded-[11px] bg-primary-faint px-3 py-[9px] transition-colors hover:bg-primary-soft"
+                  >
+                    <img src={whatsappLogo} width="15" height="15" alt="" />
+                  </a>
+                </div>
+              </div>
+            </article>
+          ))}
+        </div>
+      )
+    }
+
+    {
+      visible.length === 0 && (
+        <div class="rounded-[20px] bg-bg-card p-10 text-center shadow-soft">
+          <h2 class="mb-2 text-[19px] font-extrabold text-text-main">
+            {mes
+              ? "No hay eventos en ese mes"
+              : "No hay eventos anunciados por ahora"}
+          </h2>
+          <p class="text-[14px] text-text-body">
+            Volvé a mirar en unos días — acá va a estar la agenda del barrio.
+          </p>
+        </div>
+      )
+    }
+
+    <div
+      class="flex flex-col gap-5 rounded-[20px] border border-dashed border-[rgba(14,26,18,.2)] p-6 sm:flex-row sm:items-center sm:justify-between sm:px-[30px]"
+    >
+      <div>
+        <div class="mb-1 text-[17px] font-extrabold text-text-main sm:text-[19px]">
+          ¿Organizás algo en el barrio?
+        </div>
+        <p class="text-[14px] text-text-body">
+          Publicamos ferias, torneos, colectas y actividades de clubes e
+          instituciones. Es gratis.
+        </p>
+      </div>
+      <a
+        href="/contacto"
+        class="shrink-0 rounded-[13px] bg-secondary px-6 py-3.5 text-center text-[14.5px] font-semibold text-white"
+      >
+        Proponer un evento
+      </a>
+    </div>
+  </div>
 </Layout>
