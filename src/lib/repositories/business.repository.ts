@@ -162,6 +162,8 @@ export interface GetBusinessesPageOptions {
   categorySlug?: string | null;
   search?: string | null;
   order?: BusinessOrder;
+  /** Puntaje mínimo (filtro "4★ o más" de la guía). */
+  minRating?: number | null;
 }
 
 // Variante con joins !inner: al filtrar por categoría, el join tiene que ser
@@ -187,6 +189,7 @@ export async function getBusinessesPage(
     categorySlug,
     search,
     order = "destacados",
+    minRating,
   } = options;
 
   let query = supabase
@@ -199,6 +202,10 @@ export async function getBusinessesPage(
 
   if (categorySlug) {
     query = query.eq("business_categories.categories.slug", categorySlug);
+  }
+
+  if (minRating) {
+    query = query.gte("rating_avg", minRating);
   }
 
   if (search) {
@@ -289,6 +296,24 @@ export async function getCategoryCounts(
   const value: CategoryCounts = { bySlug, total: totalRes.count ?? 0 };
   countsCache.set(key, { at: Date.now(), value });
   return value;
+}
+
+/**
+ * ¿Ya hay algún negocio con reseñas publicadas en el barrio?
+ * La guía lo usa para habilitar el filtro "4★ o más": mientras no haya
+ * puntajes, el chip queda apagado en vez de devolver una lista vacía.
+ * Devuelve false también si la migración de reseñas todavía no se corrió.
+ */
+export async function hasRatings(barrioId: string): Promise<boolean> {
+  const { count, error } = await supabase
+    .from("businesses")
+    .select("id", { count: "exact", head: true })
+    .eq("barrio_id", barrioId)
+    .eq("is_active", true)
+    .gt("rating_count", 0);
+
+  if (error) return false;
+  return (count ?? 0) > 0;
 }
 
 export async function getBusinessBySlug(

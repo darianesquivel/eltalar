@@ -1,0 +1,33 @@
+---
+import AdminLayout from "../../../layouts/AdminLayout.astro";
+import ReviewsManager from "../../../components/app/ReviewsManager";
+import { createSupabaseServer } from "../../../lib/supabase/server";
+import { getAdminBarrio } from "../../../lib/barrio";
+
+const supabase = createSupabaseServer(Astro);
+const barrio = await getAdminBarrio(Astro);
+
+// El barrio de la reseña viene implícito por el negocio (join !inner)
+const { data: reviews } = await supabase
+  .from("reviews")
+  .select(
+    "id, business_id, author_name, rating, comment, status, created_at, businesses!inner ( name, slug, barrio_id )",
+  )
+  .eq("businesses.barrio_id", barrio.id)
+  .eq("status", "pending")
+  .order("created_at");
+---
+
+<AdminLayout title="Reseñas">
+  <div class="mx-auto max-w-4xl space-y-6">
+    <div>
+      <h1 class="text-2xl font-bold">Reseñas pendientes</h1>
+      <p class="text-sm text-gray-500">
+        Las reseñas de los vecinos se publican recién cuando las aprobás. Mirá
+        que no sean insultos, publicidad ni reseñas del propio dueño.
+      </p>
+    </div>
+
+    <ReviewsManager reviews={reviews ?? []} client:load />
+  </div>
+</AdminLayout>

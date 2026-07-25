@@ -1,0 +1,136 @@
+---
+import { Star } from "@lucide/astro";
+import ReviewForm from "./ReviewForm";
+import type { Review, RatingSummary } from "../../lib/repositories/review.repository";
+
+interface Props {
+  businessId: string;
+  businessName: string;
+  summary: RatingSummary;
+  reviews: Review[];
+}
+
+const { businessId, businessName, summary, reviews } = Astro.props;
+
+const relativeDate = (iso: string) => {
+  const days = Math.floor((Date.now() - new Date(iso).getTime()) / 86_400_000);
+  if (days <= 0) return "hoy";
+  if (days === 1) return "ayer";
+  if (days < 30) return `hace ${days} días`;
+  const months = Math.floor(days / 30);
+  if (months < 12) return `hace ${months} ${months === 1 ? "mes" : "meses"}`;
+  const years = Math.floor(months / 12);
+  return `hace ${years} ${years === 1 ? "año" : "años"}`;
+};
+
+const percent = (count: number) =>
+  summary.total > 0 ? Math.round((count / summary.total) * 100) : 0;
+---
+
+<div
+  id="resenas"
+  class="scroll-mt-24 rounded-[20px] bg-bg-card p-5 shadow-soft sm:p-[26px]"
+>
+  <div class="mb-5 flex flex-wrap items-start justify-between gap-3">
+    <h2
+      class="text-[18px] font-extrabold tracking-[-0.01em] text-text-main sm:text-[20px]"
+    >
+      Reseñas de vecinos
+    </h2>
+    <ReviewForm
+      businessId={businessId}
+      businessName={businessName}
+      client:visible
+    />
+  </div>
+
+  {
+    summary.total > 0 ? (
+      <>
+        <div class="grid gap-6 border-b border-border pb-[22px] sm:grid-cols-[170px_1fr] sm:items-center sm:gap-8">
+          <div class="text-center">
+            <div class="text-[40px] font-extrabold leading-none tracking-[-0.02em] text-text-main sm:text-[48px]">
+              {summary.average?.toFixed(1)}
+            </div>
+            <div class="my-1.5 flex justify-center gap-0.5">
+              {[1, 2, 3, 4, 5].map((value) => (
+                <Star
+                  class={`size-4 ${
+                    value <= Math.round(summary.average ?? 0)
+                      ? "fill-rating text-rating"
+                      : "text-text-faint"
+                  }`}
+                  aria-hidden="true"
+                />
+              ))}
+            </div>
+            <div class="text-[12.5px] text-text-muted">
+              {summary.total} {summary.total === 1 ? "reseña" : "reseñas"}
+            </div>
+          </div>
+
+          <div class="flex flex-col gap-[7px]">
+            {[5, 4, 3, 2, 1].map((value) => (
+              <div class="flex items-center gap-2.5">
+                <span class="w-[22px] text-[11px] text-text-muted">
+                  {value}★
+                </span>
+                <span class="h-[7px] flex-1 overflow-hidden rounded-full bg-[#eef0ec]">
+                  <span
+                    class="block h-full rounded-full bg-rating"
+                    style={`width:${percent(summary.distribution[value - 1])}%`}
+                  />
+                </span>
+                <span class="w-[26px] text-right text-[11px] text-text-muted">
+                  {summary.distribution[value - 1]}
+                </span>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        <div class="flex flex-col gap-5 pt-5">
+          {reviews.map((review) => (
+            <div class="flex gap-3.5">
+              <span class="flex size-10 shrink-0 items-center justify-center rounded-full bg-primary-faint text-[15px] font-extrabold text-primary-strong">
+                {review.author_name.charAt(0).toUpperCase()}
+              </span>
+              <div class="flex-1">
+                <div class="flex flex-wrap items-baseline gap-2.5">
+                  <span class="text-[14.5px] font-bold text-text-main">
+                    {review.author_name}
+                  </span>
+                  <span class="flex gap-0.5">
+                    {[1, 2, 3, 4, 5].map((value) => (
+                      <Star
+                        class={`size-3 ${
+                          value <= review.rating
+                            ? "fill-rating text-rating"
+                            : "text-text-faint"
+                        }`}
+                        aria-hidden="true"
+                      />
+                    ))}
+                  </span>
+                  <span class="ml-auto text-[12px] text-text-muted">
+                    {relativeDate(review.created_at)}
+                  </span>
+                </div>
+                {review.comment && (
+                  <p class="mt-1.5 text-[14px] leading-relaxed text-text-body">
+                    {review.comment}
+                  </p>
+                )}
+              </div>
+            </div>
+          ))}
+        </div>
+      </>
+    ) : (
+      <p class="text-[14px] leading-normal text-text-body">
+        Todavía no hay reseñas de este comercio. Si lo conocés, sé el primero
+        en contarle al barrio cómo te fue.
+      </p>
+    )
+  }
+</div>

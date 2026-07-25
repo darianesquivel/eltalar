@@ -5,6 +5,7 @@ import BusinessGrid from "../../components/negocios/BusinessGrid.client";
 import {
   getBusinessesPage,
   getCategoryCounts,
+  hasRatings,
   parseBusinessOrder,
 } from "../../lib/repositories/business.repository";
 import { supabase } from "../../lib/supabase";
@@ -18,18 +19,21 @@ const PAGE_SIZE = 24;
 const categoria = Astro.url.searchParams.get("categoria");
 const buscar = Astro.url.searchParams.get("buscar");
 const orden = parseBusinessOrder(Astro.url.searchParams.get("orden"));
+const minRating = Number(Astro.url.searchParams.get("min_rating")) || null;
 
 const barrio = Astro.locals.barrio;
 
-const [page, { data: categories }] = await Promise.all([
+const [page, { data: categories }, ratingsEnabled] = await Promise.all([
   getBusinessesPage({
     barrioId: barrio.id,
     limit: PAGE_SIZE,
     categorySlug: categoria,
     search: buscar,
     order: orden,
+    minRating,
   }),
   supabase.from("categories").select("id, name, slug, icon").order("name"),
+  hasRatings(barrio.id),
 ]);
 
 // Los chips de rubro llevan el contador de negocios activos (cacheado 5 min)
@@ -65,6 +69,7 @@ const categoriesWithCount = (categories ?? [])
     <CategoryFilter
       categories={categoriesWithCount}
       total={counts.total}
+      ratingsEnabled={ratingsEnabled}
       client:load
     />
 
@@ -74,6 +79,7 @@ const categoriesWithCount = (categories ?? [])
       initialCategory={categoria}
       initialSearch={buscar}
       initialOrder={orden}
+      initialMinRating={minRating}
       pageSize={PAGE_SIZE}
       client:load
     />

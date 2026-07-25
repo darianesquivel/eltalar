@@ -11,10 +11,16 @@ type BusinessGridProps = {
   initialCategory: string | null;
   initialSearch: string | null;
   initialOrder: string;
+  initialMinRating: number | null;
   pageSize: number;
 };
 
-type ServerFilters = { categoria: string; buscar: string; orden: string };
+type ServerFilters = {
+  categoria: string;
+  buscar: string;
+  orden: string;
+  minRating: string;
+};
 
 // El listado se pagina EN EL SERVIDOR (/api/negocios): acá solo se acumulan
 // las tandas (scroll infinito) y se re-consulta cuando cambian los filtros
@@ -27,6 +33,7 @@ export default function BusinessGrid({
   initialCategory,
   initialSearch,
   initialOrder,
+  initialMinRating,
   pageSize,
 }: BusinessGridProps) {
   const [items, setItems] = useState<BusinessSummary[]>(initialItems);
@@ -41,6 +48,7 @@ export default function BusinessGrid({
     categoria: initialCategory ?? "",
     buscar: initialSearch ?? "",
     orden: initialOrder,
+    minRating: initialMinRating ? String(initialMinRating) : "",
   });
   // Descarta respuestas viejas si el usuario cambió el filtro mientras cargaba
   const requestSeq = useRef(0);
@@ -51,10 +59,11 @@ export default function BusinessGrid({
     setLoading(true);
 
     const params = new URLSearchParams();
-    const { categoria, buscar, orden } = filtersRef.current;
+    const { categoria, buscar, orden, minRating } = filtersRef.current;
     if (categoria) params.set("categoria", categoria);
     if (buscar) params.set("buscar", buscar);
     if (orden && orden !== "destacados") params.set("orden", orden);
+    if (minRating) params.set("min_rating", minRating);
     params.set("offset", String(offset));
     params.set("limit", String(pageSize));
 
@@ -88,12 +97,14 @@ export default function BusinessGrid({
         categoria: params.get("categoria") ?? "",
         buscar: params.get("buscar") ?? "",
         orden: params.get("orden") ?? "destacados",
+        minRating: params.get("min_rating") ?? "",
       };
       const current = filtersRef.current;
       if (
         next.categoria === current.categoria &&
         next.buscar === current.buscar &&
-        next.orden === current.orden
+        next.orden === current.orden &&
+        next.minRating === current.minRating
       )
         return;
 

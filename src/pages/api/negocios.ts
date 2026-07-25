@@ -23,6 +23,7 @@ export const GET: APIRoute = async ({ url, locals }) => {
     categorySlug: url.searchParams.get("categoria"),
     search: url.searchParams.get("buscar"),
     order: parseBusinessOrder(url.searchParams.get("orden")),
+    minRating: Number(url.searchParams.get("min_rating")) || null,
   });
 
   return new Response(JSON.stringify(page), {

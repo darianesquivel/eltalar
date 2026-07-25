@@ -73,13 +73,23 @@ export default function BusinessCard({ business }: BusinessCardProps) {
             </span>
           )}
 
-          {business.is_featured && (
+          {/* Con reseñas publicadas manda el puntaje; si no, el Destacado */}
+          {business.rating_count > 0 && business.rating_avg ? (
             <span
               className={`${CHIP} ml-auto inline-flex items-center gap-1 bg-white text-text-main shadow-soft`}
             >
               <Star size={12} className="fill-rating text-rating" />
-              Destacado
+              {business.rating_avg.toFixed(1)}
             </span>
+          ) : (
+            business.is_featured && (
+              <span
+                className={`${CHIP} ml-auto inline-flex items-center gap-1 bg-white text-text-main shadow-soft`}
+              >
+                <Star size={12} className="fill-rating text-rating" />
+                Destacado
+              </span>
+            )
           )}
         </div>
       </div>
@@ -117,9 +127,16 @@ export default function BusinessCard({ business }: BusinessCardProps) {
           </p>
         )}
 
-        {business.address && (
+        {(business.address || business.rating_count > 0) && (
           <p className="line-clamp-1 text-[12.5px] text-text-muted">
-            {business.address}
+            {[
+              business.address,
+              business.rating_count > 0
+                ? `${business.rating_count} ${business.rating_count === 1 ? "reseña" : "reseñas"}`
+                : null,
+            ]
+              .filter(Boolean)
+              .join(" · ")}
           </p>
         )}
 

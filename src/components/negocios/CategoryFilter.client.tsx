@@ -8,6 +8,8 @@ type CategoryFilterProps = {
   categories: CategoryWithCount[];
   /** Total de negocios activos del barrio (chip "Todos"). */
   total: number;
+  /** Hay al menos un negocio con reseñas: habilita el filtro "4★ o más". */
+  ratingsEnabled?: boolean;
 };
 
 // Filtros de la guía. Siguen viviendo en la URL para que una URL compartida
@@ -19,6 +21,7 @@ const VISIBLE_CATEGORIES = 12;
 export default function CategoryFilter({
   categories,
   total,
+  ratingsEnabled = false,
 }: CategoryFilterProps) {
   const [params, setParams] = useState(() => new URLSearchParams());
   const [showAll, setShowAll] = useState(false);
@@ -36,6 +39,7 @@ export default function CategoryFilter({
   const search = params.get("buscar");
   const onlyOpen = params.get("abierto") === "1";
   const onlyOffers = params.get("ofertas") === "1";
+  const onlyWellRated = params.get("min_rating") === "4";
   const order = params.get("orden") ?? "destacados";
 
   const updateUrl = (mutate: (url: URL) => void) => {
@@ -172,9 +176,29 @@ export default function CategoryFilter({
           </button>
           <button
             type="button"
-            disabled
-            title="Las reseñas de vecinos todavía no están publicadas"
-            className="cursor-not-allowed rounded-full border border-border bg-bg-card px-[15px] py-[9px] text-[13px] font-medium text-text-faint"
+            disabled={!ratingsEnabled}
+            aria-pressed={onlyWellRated}
+            title={
+              ratingsEnabled
+                ? undefined
+                : "Todavía no hay reseñas publicadas en el barrio"
+            }
+            onClick={() =>
+              updateUrl((url) => {
+                if (url.searchParams.get("min_rating") === "4")
+                  url.searchParams.delete("min_rating");
+                else url.searchParams.set("min_rating", "4");
+              })
+            }
+            className={
+              !ratingsEnabled
+                ? "cursor-not-allowed rounded-full border border-border bg-bg-card px-[15px] py-[9px] text-[13px] font-medium text-text-faint"
+                : `rounded-full px-[15px] py-[9px] text-[13px] transition-colors ${
+                    onlyWellRated
+                      ? "bg-rating-soft font-semibold text-[#a5761a]"
+                      : "border border-border bg-bg-card font-medium text-text-body hover:border-[rgba(14,26,18,.2)]"
+                  }`
+            }
           >
             4★ o más
           </button>

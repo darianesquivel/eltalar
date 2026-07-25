@@ -296,6 +296,8 @@ export type Database = {
           phone: string | null;
           plan: string | null;
           priority: number | null;
+          rating_avg: number | null;
+          rating_count: number;
           seo_description: string | null;
           seo_title: string | null;
           services: string | null;
@@ -325,6 +327,8 @@ export type Database = {
           phone?: string | null;
           plan?: string | null;
           priority?: number | null;
+          rating_avg?: number | null;
+          rating_count?: number;
           seo_description?: string | null;
           seo_title?: string | null;
           services?: string | null;
@@ -354,6 +358,8 @@ export type Database = {
           phone?: string | null;
           plan?: string | null;
           priority?: number | null;
+          rating_avg?: number | null;
+          rating_count?: number;
           seo_description?: string | null;
           seo_title?: string | null;
           services?: string | null;
@@ -576,6 +582,47 @@ export type Database = {
         };
         Relationships: [];
       };
+      reviews: {
+        Row: {
+          author_id: string | null;
+          author_name: string;
+          business_id: string;
+          comment: string | null;
+          created_at: string;
+          id: string;
+          rating: number;
+          status: string;
+        };
+        Insert: {
+          author_id?: string | null;
+          author_name: string;
+          business_id: string;
+          comment?: string | null;
+          created_at?: string;
+          id?: string;
+          rating: number;
+          status?: string;
+        };
+        Update: {
+          author_id?: string | null;
+          author_name?: string;
+          business_id?: string;
+          comment?: string | null;
+          created_at?: string;
+          id?: string;
+          rating?: number;
+          status?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "reviews_business_id_fkey";
+            columns: ["business_id"];
+            isOneToOne: false;
+            referencedRelation: "businesses";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
       site_alerts: {
         Row: {
           barrio_id: string;
@@ -690,6 +737,7 @@ export type Database = {
         }[];
       };
       is_admin: { Args: never; Returns: boolean };
+      refresh_business_rating: { Args: { p_business_id: string }; Returns: undefined };
       today_ar: { Args: never; Returns: string };
     };
     Enums: {

@@ -11,8 +11,13 @@ import {
   Star,
 } from "@lucide/astro";
 import ReportBusiness from "./ReportBusiness";
+import Reviews from "./Reviews.astro";
 import MapPreview from "../MapPreview.astro";
 import ShareBusiness from "./ShareBusiness.astro";
+import {
+  getPublishedReviews,
+  getRatingSummary,
+} from "../../lib/repositories/review.repository";
 import { getTodayStatus, getWeekSchedule } from "../../lib/hours";
 import { categoryStyle } from "../../lib/categories";
 import { instagramUrl } from "../../lib/links";
@@ -26,6 +31,14 @@ const { business } = Astro.props;
 
 const hours = getWeekSchedule(business.business_hours);
 const status = getTodayStatus(business.business_hours);
+
+// Reseñas publicadas + resumen para las barras. Si la tabla todavía no
+// existe en este entorno, los repositorios devuelven vacío y el bloque
+// muestra su estado inicial.
+const [reviews, ratingSummary] = await Promise.all([
+  getPublishedReviews(business.id),
+  getRatingSummary(business.id),
+]);
 
 // Servicios: un ítem por línea. El formato "Servicio | precio" es opcional,
 // así las fichas viejas (solo texto) siguen funcionando igual.
@@ -260,15 +273,12 @@ const longDate = (iso: string) =>
         )
       }
 
-      <!-- Reseñas: la tabla todavía no existe (paso 9 del rediseño). Se
-           muestra el bloque vacío, sin inventar puntajes ni comentarios. -->
-      <div class={cardClass}>
-        <h2 class={`mb-2 ${cardTitleClass}`}>Reseñas de vecinos</h2>
-        <p class="text-[14px] leading-normal text-text-body">
-          Todavía no hay reseñas de este comercio. Muy pronto vas a poder
-          contarle al barrio cómo te fue.
-        </p>
-      </div>
+      <Reviews
+        businessId={business.id}
+        businessName={business.name}
+        summary={ratingSummary}
+        reviews={reviews}
+      />
 
       <div class={cardClass}>
         <h2 class={`mb-4 ${cardTitleClass}`}>Dónde queda</h2>
@@ -336,6 +346,32 @@ const longDate = (iso: string) =>
         >
           {business.name}
         </h1>
+
+        {
+          ratingSummary.total > 0 && (
+            <a href="#resenas" class="mb-3 flex items-center gap-2">
+              <span class="text-[15px] font-extrabold text-text-main">
+                {ratingSummary.average?.toFixed(1)}
+              </span>
+              <span class="flex gap-0.5">
+                {[1, 2, 3, 4, 5].map((value) => (
+                  <Star
+                    class={`size-[13px] ${
+                      value <= Math.round(ratingSummary.average ?? 0)
+                        ? "fill-rating text-rating"
+                        : "text-text-faint"
+                    }`}
+                    aria-hidden="true"
+                  />
+                ))}
+              </span>
+              <span class="text-[13px] text-text-muted">
+                {ratingSummary.total}{" "}
+                {ratingSummary.total === 1 ? "reseña" : "reseñas"}
+              </span>
+            </a>
+          )
+        }
 
         {
           statusChip && (

@@ -27,6 +27,7 @@ const [
   eventosVigentes,
   destacadosPagos,
   susActivas,
+  resenasPendientes,
 ] = await Promise.all([
   count(
     supabase
@@ -122,6 +123,17 @@ const [
       .eq("businesses.barrio_id", barrio.id)
       .eq("status", "active"),
   ),
+  // Reseñas esperando moderación (se publican recién cuando se aprueban)
+  count(
+    supabase
+      .from("reviews")
+      .select("id, businesses!inner(barrio_id)", {
+        count: "exact",
+        head: true,
+      })
+      .eq("businesses.barrio_id", barrio.id)
+      .eq("status", "pending"),
+  ),
 ]);
 
 // Uso vs límites del plan Free de Supabase (RPC admin_usage_stats).
@@ -193,6 +205,13 @@ const CARDS = [
     value: susActivas,
     href: "/app/admin/negocios",
     accent: susActivas > 0 ? "text-green-600" : "text-gray-400",
+  },
+  {
+    label: "Reseñas pendientes",
+    value: resenasPendientes,
+    href: "/app/admin/resenas",
+    accent: resenasPendientes > 0 ? "text-amber-500" : "text-gray-400",
+    attention: resenasPendientes > 0,
   },
   {
     label: "Reclamos pendientes",
