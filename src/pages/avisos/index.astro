@@ -123,6 +123,7 @@ const chipClass = (active: boolean) =>
             return (
               <article
                 data-aviso={i}
+                data-cat={aviso.category}
                 tabindex="0"
                 role="button"
                 aria-label={`Ver el aviso ${aviso.title}`}
@@ -131,6 +132,7 @@ const chipClass = (active: boolean) =>
                 <div class="relative h-[132px]">
                   {aviso.photo_url ? (
                     <img
+                      data-f
                       src={cdnImage(aviso.photo_url, 320)}
                       alt={aviso.title}
                       width={400}
@@ -150,26 +152,39 @@ const chipClass = (active: boolean) =>
                   </span>
                 </div>
 
+                {/* Los data-* pelados (data-t, data-p, …) son marcadores: el
+                    modal lee el contenido desde estas mismas cards en vez de
+                    llevar una copia JSON del listado (el HTML pesaba doble). */}
                 <div class="flex flex-1 flex-col gap-1.5 p-4 sm:px-[18px]">
-                  <h2 class="text-[16px] font-bold leading-tight text-text-main sm:text-[16.5px]">
+                  <h2
+                    data-t
+                    class="text-[16px] font-bold leading-tight text-text-main sm:text-[16.5px]"
+                  >
                     {aviso.title}
                   </h2>
 
                   {aviso.price_text && (
-                    <div class="text-[17px] font-extrabold text-primary-strong sm:text-[18px]">
+                    <div
+                      data-p
+                      class="text-[17px] font-extrabold text-primary-strong sm:text-[18px]"
+                    >
                       {/* Los avisos viejos pueden tener el precio sin formato */}
                       {formatPriceText(aviso.price_text)}
                     </div>
                   )}
 
                   {aviso.description && (
-                    <p class="line-clamp-2 text-[13.5px] leading-normal text-text-body">
+                    <p
+                      data-d
+                      class="line-clamp-2 text-[13.5px] leading-normal text-text-body"
+                    >
                       {aviso.description}
                     </p>
                   )}
 
                   <div class="text-[12px] text-text-muted">
-                    {aviso.author_name} · {sinceLabel(aviso.published_at)}
+                    <span data-a>{aviso.author_name}</span> ·{" "}
+                    <span data-s>{sinceLabel(aviso.published_at)}</span>
                   </div>
 
                   <a
@@ -213,23 +228,6 @@ const chipClass = (active: boolean) =>
       )
     }
 
-    <script
-      type="application/json"
-      id="avisos-data"
-      is:inline
-      set:html={JSON.stringify(
-        avisos.map((a) => ({
-          category: a.category,
-          title: a.title,
-          description: a.description,
-          price_text: a.price_text,
-          whatsapp: a.whatsapp,
-          author_name: a.author_name,
-          photo_url: a.photo_url,
-          published_at: a.published_at,
-        })),
-      )}
-    />
     <ClassifiedModal barrioName={barrio.name} client:idle />
 
     <div class="grid gap-[18px] lg:grid-cols-[1fr_320px]">

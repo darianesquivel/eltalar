@@ -55,11 +55,15 @@ begin
   end if;
 
   if tg_op = 'UPDATE' then
-    -- El dueño edita el contenido, no la identidad ni la vigencia del aviso
+    -- El dueño edita el contenido, no la identidad del aviso.
+    -- expires_at NO se pina acá: la renovación (RPC renovar_aviso) corre
+    -- con el JWT del vecino y este trigger se la pisaría. La vigencia queda
+    -- protegida igual: la policy del dueño fuerza status='pending' en todo
+    -- update directo, y al publicar el trigger classifieds_publish_dates
+    -- resetea published_at/expires_at con el reloj del servidor.
     new.barrio_id  := old.barrio_id;
     new.owner_id   := old.owner_id;
     new.created_at := old.created_at;
-    new.expires_at := old.expires_at;
   end if;
 
   -- La foto tiene que vivir en NUESTRO bucket, en la carpeta del dueño:

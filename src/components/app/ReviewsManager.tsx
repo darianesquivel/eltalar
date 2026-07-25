@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Star } from "lucide-react";
 import { supabaseBrowser } from "../../lib/supabase/browser";
 
@@ -16,39 +16,62 @@ type Review = {
 type Props = {
   pending: Review[];
   published: Review[];
+  rejected: Review[];
 };
+
+type Tab = "pending" | "published" | "rejected";
 
 /**
  * Moderación de reseñas: cola de pendientes + las ya publicadas, que el
  * admin puede despublicar o borrar (una reseña que se pasa de la raya no
  * puede quedar viva porque ya se aprobó). El promedio del negocio lo
  * recalcula el trigger de la tabla en cada cambio.
+ * Las rechazadas quedan en su tab: un rechazo por error se deshace con
+ * "Publicar".
  */
-export default function ReviewsManager({ pending, published }: Props) {
-  const [tab, setTab] = useState<"pending" | "published">("pending");
-  const [items, setItems] = useState({ pending, published });
+export default function ReviewsManager({ pending, published, rejected }: Props) {
+  const [tab, setTab] = useState<Tab>("pending");
+  const [items, setItems] = useState({ pending, published, rejected });
   const [busy, setBusy] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
   // Borrar es irreversible: se pide un segundo click en vez de un confirm()
   const [confirming, setConfirming] = useState<string | null>(null);
+  // La confirmación se desarma sola a los ~4s si no se concreta
+  const confirmTimer = useRef<ReturnType<typeof setTimeout> | undefined>(
+    undefined,
+  );
+
+  useEffect(() => () => clearTimeout(confirmTimer.current), []);
+
+  const cancelConfirm = () => {
+    clearTimeout(confirmTimer.current);
+    setConfirming(null);
+  };
 
   const setStatus = async (review: Review, status: string) => {
     setBusy(review.id);
+    setError(null);
 
-    const { error } = await supabaseBrowser
+    const { error: updateError } = await supabaseBrowser
       .from("reviews")
       .update({ status })
       .eq("id", review.id);
 
-    if (error) {
-      console.error(error);
-      alert(error.message ?? "Error moderando la reseña");
+    if (updateError) {
+      console.error(updateError);
+      setError(updateError.message ?? "Error moderando la reseña");
     } else {
+      const updated = { ...review, status };
       setItems((prev) => ({
         pending: prev.pending.filter((r) => r.id !== review.id),
         published:
           status === "published"
-            ? [{ ...review, status }, ...prev.published]
+            ? [updated, ...prev.published.filter((r) => r.id !== review.id)]
             : prev.published.filter((r) => r.id !== review.id),
+        rejected:
+          status === "rejected"
+            ? [updated, ...prev.rejected.filter((r) => r.id !== review.id)]
+            : prev.rejected.filter((r) => r.id !== review.id),
       }));
     }
 
@@ -57,32 +80,36 @@ export default function ReviewsManager({ pending, published }: Props) {
 
   const remove = async (review: Review) => {
     if (confirming !== review.id) {
+      clearTimeout(confirmTimer.current);
       setConfirming(review.id);
+      confirmTimer.current = setTimeout(() => setConfirming(null), 4000);
       return;
     }
 
     setBusy(review.id);
-    setConfirming(null);
+    setError(null);
+    cancelConfirm();
 
-    const { error } = await supabaseBrowser
+    const { error: deleteError } = await supabaseBrowser
       .from("reviews")
       .delete()
       .eq("id", review.id);
 
-    if (error) {
-      console.error(error);
-      alert(error.message ?? "Error borrando la reseña");
+    if (deleteError) {
+      console.error(deleteError);
+      setError(deleteError.message ?? "Error borrando la reseña");
     } else {
       setItems((prev) => ({
         pending: prev.pending.filter((r) => r.id !== review.id),
         published: prev.published.filter((r) => r.id !== review.id),
+        rejected: prev.rejected.filter((r) => r.id !== review.id),
       }));
     }
 
     setBusy(null);
   };
 
-  const list = tab === "pending" ? items.pending : items.published;
+  const list = items[tab];
 
   return (
     <div className="space-y-4">
@@ -91,6 +118,7 @@ export default function ReviewsManager({ pending, published }: Props) {
           [
             ["pending", `Pendientes (${items.pending.length})`],
             ["published", `Publicadas (${items.published.length})`],
+            ["rejected", `Rechazadas (${items.rejected.length})`],
           ] as const
         ).map(([value, label]) => (
           <button
@@ -108,11 +136,19 @@ export default function ReviewsManager({ pending, published }: Props) {
         ))}
       </div>
 
+      {error && (
+        <p role="alert" className="text-sm text-red-600">
+          {error}
+        </p>
+      )}
+
       {list.length === 0 ? (
         <p className="rounded-2xl bg-gray-50 p-5 text-sm text-gray-500">
           {tab === "pending"
             ? "No hay reseñas pendientes."
-            : "Todavía no hay reseñas publicadas."}
+            : tab === "published"
+              ? "Todavía no hay reseñas publicadas."
+              : "No hay reseñas rechazadas."}
         </p>
       ) : (
         <ul className="space-y-2">
@@ -176,13 +212,22 @@ export default function ReviewsManager({ pending, published }: Props) {
                         Rechazar
                       </button>
                     </>
-                  ) : (
+                  ) : tab === "published" ? (
                     <button
                       onClick={() => setStatus(review, "rejected")}
                       disabled={busy === review.id}
                       className="rounded-full border border-gray-300 px-4 py-1.5 text-sm text-gray-600"
                     >
                       Despublicar
+                    </button>
+                  ) : (
+                    // Deshacer un rechazo (o volver a publicar una bajada)
+                    <button
+                      onClick={() => setStatus(review, "published")}
+                      disabled={busy === review.id}
+                      className="rounded-full bg-primary px-4 py-1.5 text-sm font-semibold text-white"
+                    >
+                      Publicar
                     </button>
                   )}
 
@@ -197,6 +242,15 @@ export default function ReviewsManager({ pending, published }: Props) {
                   >
                     {confirming === review.id ? "Confirmar borrado" : "Borrar"}
                   </button>
+                  {confirming === review.id && (
+                    <button
+                      onClick={cancelConfirm}
+                      disabled={busy === review.id}
+                      className="rounded-full border border-gray-300 px-4 py-1.5 text-sm text-gray-600"
+                    >
+                      Cancelar
+                    </button>
+                  )}
                 </div>
               </div>
 

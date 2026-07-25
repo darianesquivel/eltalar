@@ -11,21 +11,30 @@ const SELECT =
   "id, business_id, author_name, rating, comment, status, created_at, businesses!inner ( name, slug, barrio_id )";
 
 // El barrio de la reseña viene implícito por el negocio (join !inner)
-const [{ data: pending }, { data: published }] = await Promise.all([
-  supabase
-    .from("reviews")
-    .select(SELECT)
-    .eq("businesses.barrio_id", barrio.id)
-    .eq("status", "pending")
-    .order("created_at"),
-  supabase
-    .from("reviews")
-    .select(SELECT)
-    .eq("businesses.barrio_id", barrio.id)
-    .eq("status", "published")
-    .order("created_at", { ascending: false })
-    .limit(100),
-]);
+const [{ data: pending }, { data: published }, { data: rejected }] =
+  await Promise.all([
+    supabase
+      .from("reviews")
+      .select(SELECT)
+      .eq("businesses.barrio_id", barrio.id)
+      .eq("status", "pending")
+      .order("created_at"),
+    supabase
+      .from("reviews")
+      .select(SELECT)
+      .eq("businesses.barrio_id", barrio.id)
+      .eq("status", "published")
+      .order("created_at", { ascending: false })
+      .limit(100),
+    // Para deshacer un rechazo hecho por error
+    supabase
+      .from("reviews")
+      .select(SELECT)
+      .eq("businesses.barrio_id", barrio.id)
+      .eq("status", "rejected")
+      .order("created_at", { ascending: false })
+      .limit(100),
+  ]);
 ---
 
 <AdminLayout title="Reseñas">
@@ -43,6 +52,7 @@ const [{ data: pending }, { data: published }] = await Promise.all([
     <ReviewsManager
       pending={pending ?? []}
       published={published ?? []}
+      rejected={rejected ?? []}
       client:load
     />
   </div>

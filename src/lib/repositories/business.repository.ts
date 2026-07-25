@@ -39,16 +39,41 @@ export type Business = BusinessRow & {
   offers: BusinessOffer[];
 };
 
-/** Versión liviana para listados: sin el array completo de fotos
- * (las cards solo usan coverPhoto; evita duplicar peso en el HTML). */
-export type BusinessSummary = Omit<Business, "photos">;
+/**
+ * Versión liviana para listados: SOLO las columnas que pintan las cards
+ * (guía, home, scroll infinito) y sin el array completo de fotos. Traer `*`
+ * arrastraba services, SEO, owner_id, etc. en cada tanda de 24 negocios.
+ */
+export type BusinessSummary = Pick<
+  BusinessRow,
+  | "id"
+  | "name"
+  | "slug"
+  | "address"
+  | "phone"
+  | "whatsapp"
+  | "whatsapp_message"
+  | "description"
+  | "is_featured"
+  | "by_appointment"
+  | "rating_avg"
+  | "rating_count"
+> & {
+  business_hours: BusinessHour[];
+  categories: Category[];
+  coverPhoto: BusinessPhoto | null;
+  offers: BusinessOffer[];
+};
 
-interface GetBusinessesOptions {
-  /** Multi-barrio: cada portal solo lista los negocios de su barrio. */
-  barrioId: string;
-  featured?: boolean;
-  limit?: number;
-}
+/** Select liviano para listados (las columnas de BusinessSummary). */
+const LIST_SELECT = `
+  id, name, slug, address, phone, whatsapp, whatsapp_message, description,
+  is_featured, priority, by_appointment, rating_avg, rating_count,
+  business_categories ( categories ( id, name, slug, icon ) ),
+  business_hours ( day_of_week, open_time, close_time, is_closed, is_open_24 ),
+  business_photos ( id, url, is_cover, position ),
+  business_offers ( id, title, description, expires_at )
+`;
 
 const BUSINESS_SELECT = `
   *,
@@ -114,40 +139,6 @@ function toBusiness(raw: any): Business {
    QUERIES
 ======================= */
 
-export async function getBusinesses(
-  options: GetBusinessesOptions,
-): Promise<Business[]> {
-  const { barrioId, featured, limit } = options;
-
-  let query = supabase
-    .from("businesses")
-    .select(BUSINESS_SELECT)
-    .eq("barrio_id", barrioId)
-    .eq("is_active", true)
-    // Los destacados (plan pago) van primero en todo listado
-    .order("is_featured", { ascending: false })
-    .order("priority", { ascending: false });
-
-  if (featured === true) {
-    query = query.eq("is_featured", true);
-  }
-
-  if (limit) {
-    query = query.limit(limit);
-  }
-
-  const { data, error } = await query;
-
-  if (error || !data) {
-    console.error("Error getBusinesses:", error);
-    return [];
-  }
-
-  // El estado abierto/cerrado NO se calcula acá: depende de la hora del que mira,
-  // así que lo calcula cada componente (getTodayStatus de lib/hours) al renderizar.
-  return data.map(toBusiness);
-}
-
 export type BusinessPage = {
   items: BusinessSummary[];
   total: number;
@@ -184,12 +175,12 @@ function buildSelect(opciones: {
   onlyOffers?: boolean;
   openNow?: boolean;
 }) {
-  let select = BUSINESS_SELECT;
+  let select = LIST_SELECT;
 
   if (opciones.categorySlug) {
     select = select.replace(
-      "business_categories (\n    categories (",
-      "business_categories!inner (\n    categories!inner (",
+      "business_categories ( categories (",
+      "business_categories!inner ( categories!inner (",
     );
   }
 
@@ -439,7 +430,7 @@ export async function getOpenNowBusinesses(
 
   const { data, error: detailError } = await supabase
     .from("businesses")
-    .select(BUSINESS_SELECT)
+    .select(LIST_SELECT)
     .in("id", openIds)
     .order("is_featured", { ascending: false })
     .order("priority", { ascending: false })

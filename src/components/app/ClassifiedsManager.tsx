@@ -22,7 +22,10 @@ type Classified = {
 type Props = {
   pending: Classified[];
   published: Classified[];
+  rejected: Classified[];
 };
+
+type Tab = "pending" | "published" | "rejected";
 
 const DAYS_30 = 30 * 86_400_000;
 
@@ -30,11 +33,18 @@ const DAYS_30 = 30 * 86_400_000;
  * Moderación de avisos: cola de pendientes + los publicados, que el admin
  * puede bajar o borrar en cualquier momento (un aviso que se pasa de la
  * raya no puede quedar vivo porque ya se aprobó).
- * Publicar reinicia los 30 días desde la aprobación.
+ * Publicar reinicia los 30 días desde la aprobación (las fechas exactas
+ * las pone la base con su reloj — trigger classifieds_publish_dates).
+ * Los rechazados quedan visibles una semana (hasta que el cron los borra):
+ * un rechazo por error se deshace con "Publicar" desde esa tab.
  */
-export default function ClassifiedsManager({ pending, published }: Props) {
-  const [tab, setTab] = useState<"pending" | "published">("pending");
-  const [items, setItems] = useState({ pending, published });
+export default function ClassifiedsManager({
+  pending,
+  published,
+  rejected,
+}: Props) {
+  const [tab, setTab] = useState<Tab>("pending");
+  const [items, setItems] = useState({ pending, published, rejected });
   const [busy, setBusy] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   // Borrar es irreversible: se pide un segundo click en vez de un confirm()
@@ -55,29 +65,37 @@ export default function ClassifiedsManager({ pending, published }: Props) {
     setBusy(aviso.id);
     setError(null);
 
-    const now = new Date();
-    const patch = publish
-      ? {
-          status: "published",
-          published_at: now.toISOString(),
-          expires_at: new Date(now.getTime() + DAYS_30).toISOString(),
-        }
-      : { status: "rejected" };
+    // Solo el status: published_at y expires_at los pone la BASE con su
+    // reloj (trigger classifieds_publish_dates). Antes se calculaban acá
+    // y una compu con la hora corrida cambiaba los vencimientos.
+    const status = publish ? "published" : "rejected";
 
     const { error } = await supabaseBrowser
       .from("classifieds")
-      .update(patch)
+      .update({ status })
       .eq("id", aviso.id);
 
     if (error) {
       console.error(error);
       setError(error.message ?? "Error moderando el aviso");
     } else {
+      // El vencimiento local es solo para pintar el "vence ..." sin
+      // recargar; el real quedó en la base
+      const updated: Classified = {
+        ...aviso,
+        status,
+        ...(publish && {
+          expires_at: new Date(Date.now() + DAYS_30).toISOString(),
+        }),
+      };
       setItems((prev) => ({
         pending: prev.pending.filter((c) => c.id !== aviso.id),
         published: publish
-          ? [{ ...aviso, ...patch }, ...prev.published]
+          ? [updated, ...prev.published.filter((c) => c.id !== aviso.id)]
           : prev.published.filter((c) => c.id !== aviso.id),
+        rejected: publish
+          ? prev.rejected.filter((c) => c.id !== aviso.id)
+          : [updated, ...prev.rejected.filter((c) => c.id !== aviso.id)],
       }));
     }
 
@@ -108,13 +126,14 @@ export default function ClassifiedsManager({ pending, published }: Props) {
       setItems((prev) => ({
         pending: prev.pending.filter((c) => c.id !== aviso.id),
         published: prev.published.filter((c) => c.id !== aviso.id),
+        rejected: prev.rejected.filter((c) => c.id !== aviso.id),
       }));
     }
 
     setBusy(null);
   };
 
-  const list = tab === "pending" ? items.pending : items.published;
+  const list = items[tab];
 
   return (
     <div className="space-y-4">
@@ -123,6 +142,7 @@ export default function ClassifiedsManager({ pending, published }: Props) {
           [
             ["pending", `Pendientes (${items.pending.length})`],
             ["published", `Publicados (${items.published.length})`],
+            ["rejected", `Rechazados (${items.rejected.length})`],
           ] as const
         ).map(([value, label]) => (
           <button
@@ -150,7 +170,9 @@ export default function ClassifiedsManager({ pending, published }: Props) {
         <p className="rounded-2xl bg-gray-50 p-5 text-sm text-gray-500">
           {tab === "pending"
             ? "No hay avisos pendientes."
-            : "Todavía no hay avisos publicados."}
+            : tab === "published"
+              ? "Todavía no hay avisos publicados."
+              : "No hay avisos rechazados (se borran solos a la semana)."}
         </p>
       ) : (
         <ul className="space-y-2">
@@ -218,13 +240,22 @@ export default function ClassifiedsManager({ pending, published }: Props) {
                           Rechazar
                         </button>
                       </>
-                    ) : (
+                    ) : tab === "published" ? (
                       <button
                         onClick={() => setStatus(aviso, false)}
                         disabled={busy === aviso.id}
                         className="rounded-full border border-gray-300 px-4 py-1.5 text-sm text-gray-600"
                       >
                         Bajar del sitio
+                      </button>
+                    ) : (
+                      // Deshacer un rechazo: vuelve a publicarse con 30 días
+                      <button
+                        onClick={() => setStatus(aviso, true)}
+                        disabled={busy === aviso.id}
+                        className="rounded-full bg-primary px-4 py-1.5 text-sm font-semibold text-white"
+                      >
+                        Publicar
                       </button>
                     )}
 

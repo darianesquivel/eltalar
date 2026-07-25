@@ -14,7 +14,8 @@ type Aviso = {
   whatsapp: string | null;
   author_name: string;
   photo_url: string | null;
-  published_at: string | null;
+  /** "hace 3 días", ya renderizado por el servidor en la card. */
+  since: string;
 };
 
 type Props = {
@@ -23,13 +24,43 @@ type Props = {
 
 const whatsappLogo = "/images/whatsapp-icon.svg";
 
-const sinceLabel = (iso: string | null) => {
-  if (!iso) return "";
-  const hours = Math.floor((Date.now() - new Date(iso).getTime()) / 3_600_000);
-  if (hours < 1) return "recién";
-  if (hours < 24) return `hace ${hours} h`;
-  const days = Math.floor(hours / 24);
-  return days === 1 ? "ayer" : `hace ${days} días`;
+/**
+ * La card muestra la foto achicada por /_vercel/image; el modal la quiere
+ * más grande, así que recupera la URL original del parámetro `url` del
+ * proxy (en dev la src ya es la original).
+ */
+const originalPhoto = (src: string | null): string | null => {
+  if (!src) return null;
+  if (src.includes("/_vercel/image")) {
+    try {
+      return new URL(src, window.location.origin).searchParams.get("url");
+    } catch {
+      return src;
+    }
+  }
+  return src;
+};
+
+/** Arma un Aviso desde los marcadores data-* de la card servida. */
+const leerCard = (card: HTMLElement): Aviso => {
+  const foto = card.querySelector<HTMLImageElement>("img[data-f]");
+  const link = card.querySelector<HTMLAnchorElement>('a[href^="https://wa.me/"]');
+  let whatsapp: string | null = null;
+  if (link) {
+    const num = new URL(link.href).pathname.slice(1);
+    if (/^\d+$/.test(num)) whatsapp = num;
+  }
+
+  return {
+    category: card.dataset.cat ?? "",
+    title: card.querySelector("[data-t]")?.textContent?.trim() ?? "",
+    description: card.querySelector("[data-d]")?.textContent?.trim() || null,
+    price_text: card.querySelector("[data-p]")?.textContent?.trim() || null,
+    whatsapp,
+    author_name: card.querySelector("[data-a]")?.textContent?.trim() ?? "",
+    photo_url: originalPhoto(foto?.getAttribute("src") ?? null),
+    since: card.querySelector("[data-s]")?.textContent?.trim() ?? "",
+  };
 };
 
 /**
@@ -47,18 +78,19 @@ export default function ClassifiedModal({ barrioName }: Props) {
   const dialogoRef = useRef<HTMLDivElement>(null);
   const tocoEn = useRef<{ x: number; y: number } | null>(null);
 
-  // Los datos viajan en un <script type="application/json"> que imprime la
-  // página: así no se duplica el listado en el HTML.
+  // Los datos se leen de las MISMAS cards que sirvió el servidor (marcadores
+  // data-*): antes viajaba además una copia JSON del listado completo y el
+  // HTML pesaba el doble.
   useEffect(() => {
-    const nodo = document.getElementById("avisos-data");
-    if (nodo?.textContent) {
-      try {
-        setAvisos(JSON.parse(nodo.textContent));
-      } catch (err) {
-        // Sin datos el modal nunca abre: que al menos quede rastro en consola
-        console.error("No se pudo leer #avisos-data", err);
-        setAvisos([]);
-      }
+    try {
+      const cards = [
+        ...document.querySelectorAll<HTMLElement>("[data-aviso]"),
+      ].sort((a, b) => Number(a.dataset.aviso) - Number(b.dataset.aviso));
+      setAvisos(cards.map(leerCard));
+    } catch (err) {
+      // Sin datos el modal nunca abre: que al menos quede rastro en consola
+      console.error("No se pudieron leer las cards de avisos", err);
+      setAvisos([]);
     }
   }, []);
 
@@ -279,7 +311,7 @@ export default function ClassifiedModal({ barrioName }: Props) {
           )}
 
           <div className="text-[13px] text-text-muted">
-            Publicado por {aviso.author_name} · {sinceLabel(aviso.published_at)}
+            Publicado por {aviso.author_name} · {aviso.since}
           </div>
 
           {whatsappUrl && (

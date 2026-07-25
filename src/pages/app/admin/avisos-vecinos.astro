@@ -10,21 +10,31 @@ const barrio = await getAdminBarrio(Astro);
 const SELECT =
   "id, category, title, description, price_text, whatsapp, author_name, photo_url, status, created_at, expires_at";
 
-const [{ data: pending }, { data: published }] = await Promise.all([
-  supabase
-    .from("classifieds")
-    .select(SELECT)
-    .eq("barrio_id", barrio.id)
-    .eq("status", "pending")
-    .order("created_at"),
-  supabase
-    .from("classifieds")
-    .select(SELECT)
-    .eq("barrio_id", barrio.id)
-    .eq("status", "published")
-    .order("published_at", { ascending: false })
-    .limit(100),
-]);
+const [{ data: pending }, { data: published }, { data: rejected }] =
+  await Promise.all([
+    supabase
+      .from("classifieds")
+      .select(SELECT)
+      .eq("barrio_id", barrio.id)
+      .eq("status", "pending")
+      .order("created_at"),
+    supabase
+      .from("classifieds")
+      .select(SELECT)
+      .eq("barrio_id", barrio.id)
+      .eq("status", "published")
+      .order("published_at", { ascending: false })
+      .limit(100),
+    // Los rechazados se ven una semana (después los borra el cron): da
+    // margen para deshacer un rechazo por error
+    supabase
+      .from("classifieds")
+      .select(SELECT)
+      .eq("barrio_id", barrio.id)
+      .eq("status", "rejected")
+      .order("created_at", { ascending: false })
+      .limit(100),
+  ]);
 ---
 
 <AdminLayout title="Avisos de vecinos">
@@ -42,6 +52,7 @@ const [{ data: pending }, { data: published }] = await Promise.all([
     <ClassifiedsManager
       pending={pending ?? []}
       published={published ?? []}
+      rejected={rejected ?? []}
       client:load
     />
   </div>
