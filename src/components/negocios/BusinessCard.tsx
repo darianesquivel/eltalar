@@ -1,6 +1,7 @@
 import { navigate } from "astro:transitions/client";
 import { MapPin, Phone, Star } from "lucide-react";
 import { getTodayStatus } from "../../lib/hours";
+import { cdnImage } from "../../lib/images";
 import { track } from "../../lib/track";
 import type { BusinessSummary } from "../../lib/repositories/business.repository";
 
@@ -50,7 +51,7 @@ export default function BusinessCard({ business }: BusinessCardProps) {
       <div className="relative">
         {business.coverPhoto?.url ? (
           <img
-            src={business.coverPhoto.url}
+            src={cdnImage(business.coverPhoto.url, 640) ?? undefined}
             alt={business.name}
             width={400}
             height={158}

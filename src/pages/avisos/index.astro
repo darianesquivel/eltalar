@@ -9,6 +9,7 @@ import {
   getClassifiedCounts,
   getPublishedClassifieds,
 } from "../../lib/repositories/classified.repository";
+import { cdnImage } from "../../lib/images";
 
 const { barrio } = Astro.locals;
 const whatsappLogo = "/images/whatsapp-icon.svg";
@@ -130,7 +131,7 @@ const chipClass = (active: boolean) =>
                 <div class="relative h-[132px]">
                   {aviso.photo_url ? (
                     <img
-                      src={aviso.photo_url}
+                      src={cdnImage(aviso.photo_url, 320)}
                       alt={aviso.title}
                       width={400}
                       height={132}

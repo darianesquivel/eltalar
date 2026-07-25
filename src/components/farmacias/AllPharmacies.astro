@@ -1,17 +1,17 @@
 ---
 import { Pill, Phone, Navigation } from "@lucide/astro";
 import { getTodayStatus } from "../../lib/hours";
-import type { BusinessSummary } from "../../lib/repositories/business.repository";
+import type { PharmacyListItem } from "../../lib/repositories/pharmacy.repository";
 
 interface Props {
-  pharmacies: BusinessSummary[];
+  pharmacies: PharmacyListItem[];
   /** Ids de las farmacias que están de turno en este momento. */
   onDutyIds: string[];
 }
 
 const { pharmacies, onDutyIds } = Astro.props;
 
-const chipFor = (business: BusinessSummary) => {
+const chipFor = (business: PharmacyListItem) => {
   if (onDutyIds.includes(business.id)) {
     return { text: "De turno", class: "bg-primary-soft text-primary-strong" };
   }

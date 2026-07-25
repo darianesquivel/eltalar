@@ -25,25 +25,24 @@ const abiertoAhora = Astro.url.searchParams.get("abierto") === "1";
 
 const barrio = Astro.locals.barrio;
 
-const [page, { data: categories }, ratingsEnabled] = await Promise.all([
-  getBusinessesPage({
-    barrioId: barrio.id,
-    limit: PAGE_SIZE,
-    categorySlug: categoria,
-    search: buscar,
-    order: orden,
-    minRating,
-    onlyOffers: soloOfertas,
-    openNow: abiertoAhora,
-  }),
-  supabase.from("categories").select("id, name, slug, icon").order("name"),
-  hasRatings(barrio.id),
-]);
-
-// Los chips de rubro llevan el contador de negocios activos (cacheado 5 min)
-const counts = await getCategoryCounts(
-  barrio.id,
-  (categories ?? []).map((c) => c.slug),
+// Los chips de rubro llevan el contador de negocios activos (cacheado 5 min);
+// va en el mismo Promise.all: en serie era un round-trip extra de TTFB.
+const [page, { data: categories }, ratingsEnabled, counts] = await Promise.all(
+  [
+    getBusinessesPage({
+      barrioId: barrio.id,
+      limit: PAGE_SIZE,
+      categorySlug: categoria,
+      search: buscar,
+      order: orden,
+      minRating,
+      onlyOffers: soloOfertas,
+      openNow: abiertoAhora,
+    }),
+    supabase.from("categories").select("id, name, slug, icon").order("name"),
+    hasRatings(barrio.id),
+    getCategoryCounts(barrio.id),
+  ],
 );
 
 // Sin negocios cargados un rubro no ayuda a nadie: se esconde
@@ -74,7 +73,7 @@ const categoriesWithCount = (categories ?? [])
       categories={categoriesWithCount}
       total={counts.total}
       ratingsEnabled={ratingsEnabled}
-      client:load
+      client:idle
     />
 
     <BusinessGrid
@@ -87,7 +86,7 @@ const categoriesWithCount = (categories ?? [])
       initialOffers={soloOfertas}
       initialOpenNow={abiertoAhora}
       pageSize={PAGE_SIZE}
-      client:load
+      client:idle
     />
   </div>
 </Layout>

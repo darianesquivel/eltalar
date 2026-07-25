@@ -47,6 +47,10 @@ export default function BusinessGrid({
   const [items, setItems] = useState<BusinessSummary[]>(initialItems);
   const [total, setTotal] = useState(initialTotal);
   const [loading, setLoading] = useState(false);
+  // Sin esto, un fetch fallido reactivaba el observer del centinela y se
+  // reintentaba el mismo pedido roto para siempre, en silencio; y la grilla
+  // vacía decía "no se encontraron comercios" cuando era un problema de red.
+  const [failed, setFailed] = useState(false);
 
   const filtersRef = useRef<ServerFilters>({
     categoria: initialCategory ?? "",
@@ -63,6 +67,7 @@ export default function BusinessGrid({
   const fetchPage = async (offset: number, replace: boolean) => {
     const seq = ++requestSeq.current;
     setLoading(true);
+    setFailed(false);
 
     const params = new URLSearchParams();
     const { categoria, buscar, orden, minRating, ofertas, abierto } =
@@ -87,6 +92,7 @@ export default function BusinessGrid({
       setItems((prev) => (replace ? page.items : [...prev, ...page.items]));
     } catch (err) {
       console.error("Error cargando negocios:", err);
+      if (seq === requestSeq.current) setFailed(true);
     } finally {
       if (seq === requestSeq.current) setLoading(false);
     }
@@ -97,13 +103,17 @@ export default function BusinessGrid({
     const syncFromUrl = () => {
       const params = new URLSearchParams(window.location.search);
 
+      // Normalizados IGUAL que en el servidor: sin esto, ?min_rating=4.0 u
+      // ?orden=basura no coincidían con los filtros iniciales y se disparaba
+      // un fetch duplicado de la página 1 al montar.
+      const rating = Number(params.get("min_rating")) || null;
       const next: ServerFilters = {
         categoria: params.get("categoria") ?? "",
         buscar: params.get("buscar") ?? "",
-        orden: params.get("orden") ?? "destacados",
-        minRating: params.get("min_rating") ?? "",
-        ofertas: params.get("ofertas") ?? "",
-        abierto: params.get("abierto") ?? "",
+        orden: params.get("orden") === "nombre" ? "nombre" : "destacados",
+        minRating: rating ? String(rating) : "",
+        ofertas: params.get("ofertas") === "1" ? "1" : "",
+        abierto: params.get("abierto") === "1" ? "1" : "",
       };
       const current = filtersRef.current;
       if (
@@ -130,10 +140,11 @@ export default function BusinessGrid({
     };
   }, []);
 
-  // Scroll infinito: cuando el centinela entra en pantalla, pide la siguiente tanda
+  // Scroll infinito: cuando el centinela entra en pantalla, pide la siguiente tanda.
+  // Con un fetch fallido NO se re-observa: el reintento es manual (botón).
   const hasMore = items.length < total;
   useEffect(() => {
-    if (!hasMore || loading) return;
+    if (!hasMore || loading || failed) return;
     const sentinel = sentinelRef.current;
     if (!sentinel) return;
 
@@ -149,15 +160,30 @@ export default function BusinessGrid({
     );
     observer.observe(sentinel);
     return () => observer.disconnect();
-  }, [items.length, total, loading]);
+  }, [items.length, total, loading, failed]);
 
   const countLabel = `${total} ${total === 1 ? "comercio" : "comercios"}`;
 
   return (
     <div className="flex flex-col gap-4">
-      <p className="text-sm text-text-muted">{countLabel}</p>
+      <p className="text-sm text-text-muted" aria-live="polite">
+        {countLabel}
+      </p>
 
-      {!loading && items.length === 0 ? (
+      {failed && items.length === 0 ? (
+        <div className="flex flex-col items-center gap-4 py-12" role="alert">
+          <p className="text-[15px] text-text-muted">
+            No pudimos cargar los comercios. Puede ser un problema de conexión.
+          </p>
+          <button
+            type="button"
+            onClick={() => fetchPage(0, true)}
+            className="rounded-[14px] bg-primary px-6 py-3 text-[14px] font-semibold text-white"
+          >
+            Reintentar
+          </button>
+        </div>
+      ) : !loading && items.length === 0 ? (
         <p className="py-12 text-center text-[15px] text-text-muted">
           No se encontraron comercios con esos filtros.
         </p>
@@ -182,6 +208,21 @@ export default function BusinessGrid({
       )}
 
       <div ref={sentinelRef} aria-hidden="true" />
+
+      {failed && items.length > 0 && (
+        <div className="flex flex-col items-center gap-3 pb-4" role="alert">
+          <p className="text-sm text-text-muted">
+            No pudimos cargar más comercios.
+          </p>
+          <button
+            type="button"
+            onClick={() => fetchPage(items.length, false)}
+            className="rounded-[14px] border border-border px-5 py-2.5 text-[14px] font-semibold text-text-main"
+          >
+            Reintentar
+          </button>
+        </div>
+      )}
 
       {!hasMore && items.length > 0 && (
         <p className="pb-4 text-center text-sm text-text-faint">

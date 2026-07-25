@@ -8,26 +8,36 @@ const PUBLIC_APP_PATHS = ["/app/login", "/app/auth"];
 // Páginas públicas que puede cachear el CDN de Vercel. Son iguales para
 // todos (lo único personalizado del header lo pone JavaScript en el
 // navegador), así que la segunda visita se sirve desde el borde en vez de
-// esperar a Supabase. 60 s de frescura + 5 min sirviendo lo viejo mientras
-// se revalida en segundo plano.
-const CACHEABLE_PAGES = [
-  "/",
-  "/negocios",
-  "/ofertas",
-  "/eventos",
-  "/farmacias",
-  "/telefonos",
-  "/avisos",
-  "/mapa",
-  "/contacto",
-  "/anunciate",
-];
+// esperar a Supabase.
+//
+// El TTL acompaña cuánto cambia cada página: las que muestran
+// "abierto ahora" van cortas (60 s); teléfonos, contacto y anunciate
+// cambian cada tanto y con 1 h de frescura se ahorran ~98% de las
+// invocaciones que pagaban antes. stale-while-revalidate sirve lo viejo
+// mientras refresca en segundo plano: nadie espera a Supabase.
+const CACHE_TTLS: Record<string, string> = {
+  // Sensibles a la hora (badge "abierto ahora", turno de farmacia)
+  "/": "public, s-maxage=60, stale-while-revalidate=300",
+  "/negocios": "public, s-maxage=60, stale-while-revalidate=300",
+  "/farmacias": "public, s-maxage=60, stale-while-revalidate=300",
+  "/mapa": "public, s-maxage=120, stale-while-revalidate=600",
+  // Cambian con la moderación / carga de contenido: minutos alcanza
+  "/ofertas": "public, s-maxage=300, stale-while-revalidate=1800",
+  "/eventos": "public, s-maxage=300, stale-while-revalidate=1800",
+  "/avisos": "public, s-maxage=300, stale-while-revalidate=1800",
+  // Casi estáticas
+  "/telefonos": "public, s-maxage=3600, stale-while-revalidate=86400",
+  "/contacto": "public, s-maxage=3600, stale-while-revalidate=86400",
+  "/anunciate": "public, s-maxage=3600, stale-while-revalidate=86400",
+};
 
-const isCacheablePage = (pathname: string) =>
-  CACHEABLE_PAGES.includes(pathname) ||
-  pathname.startsWith("/negocios/") ||
-  pathname.startsWith("/telefonos/") ||
-  pathname.startsWith("/farmacias/");
+const cacheHeaderFor = (pathname: string): string | null => {
+  if (CACHE_TTLS[pathname]) return CACHE_TTLS[pathname];
+  if (pathname.startsWith("/negocios/")) return CACHE_TTLS["/negocios"];
+  if (pathname.startsWith("/telefonos/")) return CACHE_TTLS["/telefonos"];
+  if (pathname.startsWith("/farmacias/")) return CACHE_TTLS["/farmacias"];
+  return null;
+};
 
 export const onRequest = defineMiddleware(async (context, next) => {
   const { pathname } = context.url;
@@ -65,16 +75,14 @@ export const onRequest = defineMiddleware(async (context, next) => {
     const response = await next();
 
     // /avisos/nuevo depende de la sesión: nunca se cachea
+    const cacheHeader = cacheHeaderFor(pathname);
     if (
       context.request.method === "GET" &&
       response.status === 200 &&
-      isCacheablePage(pathname) &&
+      cacheHeader &&
       !response.headers.has("Cache-Control")
     ) {
-      response.headers.set(
-        "Cache-Control",
-        "public, s-maxage=60, stale-while-revalidate=300",
-      );
+      response.headers.set("Cache-Control", cacheHeader);
     }
 
     // Los 404 también se cachean: un link muerto re-crawleado por Google o

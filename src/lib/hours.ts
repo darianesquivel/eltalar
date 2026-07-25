@@ -45,25 +45,31 @@ const DAY_NAMES = [
 
 const dayName = (day: number) => DAY_NAMES[day];
 
+// Formatters a nivel módulo: crear un Intl.DateTimeFormat es caro y estas
+// funciones corren una vez por card (24 en la guía, 60 en farmacias).
+const DATE_FMT = new Intl.DateTimeFormat("en-CA", {
+  timeZone: ARGENTINA_TZ,
+  year: "numeric",
+  month: "2-digit",
+  day: "2-digit",
+});
+
+const TIME_FMT = new Intl.DateTimeFormat("en-US", {
+  timeZone: ARGENTINA_TZ,
+  weekday: "short",
+  hour: "2-digit",
+  minute: "2-digit",
+  hourCycle: "h23",
+});
+
 /** Fecha de hoy en Argentina como "YYYY-MM-DD" (para vencimientos). */
 export function todayInArgentina(): string {
-  return new Intl.DateTimeFormat("en-CA", {
-    timeZone: ARGENTINA_TZ,
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit",
-  }).format(new Date());
+  return DATE_FMT.format(new Date());
 }
 
 /** Día de la semana (0-6) y hora "HH:MM" actuales en Argentina. */
 export function nowInArgentina() {
-  const parts = new Intl.DateTimeFormat("en-US", {
-    timeZone: ARGENTINA_TZ,
-    weekday: "short",
-    hour: "2-digit",
-    minute: "2-digit",
-    hourCycle: "h23",
-  }).formatToParts(new Date());
+  const parts = TIME_FMT.formatToParts(new Date());
 
   const get = (type: string) => parts.find((p) => p.type === type)?.value ?? "";
 

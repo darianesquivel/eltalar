@@ -4,6 +4,7 @@ import {
   classifiedCategory,
   formatPriceText,
 } from "../../lib/repositories/classified.repository";
+import { cdnImage } from "../../lib/images";
 
 type Aviso = {
   category: string;
@@ -183,7 +184,7 @@ export default function ClassifiedModal({ barrioName }: Props) {
               className="size-full cursor-zoom-in"
             >
               <img
-                src={aviso.photo_url}
+                src={cdnImage(aviso.photo_url, 640) ?? undefined}
                 alt={aviso.title}
                 className="size-full object-contain"
               />
@@ -278,7 +279,7 @@ export default function ClassifiedModal({ barrioName }: Props) {
           }}
         >
           <img
-            src={aviso.photo_url}
+            src={cdnImage(aviso.photo_url, 1280) ?? undefined}
             alt={aviso.title}
             className="max-h-full max-w-full object-contain"
           />

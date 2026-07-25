@@ -94,26 +94,42 @@ export async function getPublishedClassifieds(
   return data;
 }
 
-/** Cuántos avisos vigentes hay por categoría (contadores de los chips). */
+/**
+ * Cuántos avisos vigentes hay por categoría (contadores de los chips).
+ * Consultas HEAD con count: viaja solo el número. Antes se bajaba una fila
+ * por aviso para contarlas en JS, y el corte de 1000 filas de PostgREST
+ * hubiera dejado los contadores mentirosos al crecer la tabla.
+ */
 export async function getClassifiedCounts(
   barrioId: string,
 ): Promise<{ total: number; byCategory: Record<string, number> }> {
-  const { data, error } = await supabase
-    .from("classifieds")
-    .select("category")
-    .eq("barrio_id", barrioId)
-    .eq("status", "published")
-    .gt("expires_at", new Date().toISOString());
+  const now = new Date().toISOString();
 
-  if (error || !data) {
-    if (error) console.error("Error getClassifiedCounts:", error);
+  const countWhere = (category?: string) => {
+    let query = supabase
+      .from("classifieds")
+      .select("id", { count: "exact", head: true })
+      .eq("barrio_id", barrioId)
+      .eq("status", "published")
+      .gt("expires_at", now);
+    if (category) query = query.eq("category", category);
+    return query;
+  };
+
+  const [totalRes, ...perCategory] = await Promise.all([
+    countWhere(),
+    ...CLASSIFIED_CATEGORIES.map((c) => countWhere(c.slug)),
+  ]);
+
+  if (totalRes.error) {
+    console.error("Error getClassifiedCounts:", totalRes.error);
     return { total: 0, byCategory: {} };
   }
 
   const byCategory: Record<string, number> = {};
-  for (const { category } of data) {
-    byCategory[category] = (byCategory[category] ?? 0) + 1;
-  }
+  CLASSIFIED_CATEGORIES.forEach((c, i) => {
+    byCategory[c.slug] = perCategory[i].count ?? 0;
+  });
 
-  return { total: data.length, byCategory };
+  return { total: totalRes.count ?? 0, byCategory };
 }

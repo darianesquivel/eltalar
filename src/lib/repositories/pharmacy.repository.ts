@@ -1,4 +1,44 @@
 import { supabase } from "../supabase";
+import type { BusinessHour } from "../hours";
+
+/** Fila del listado "Todas las farmacias": solo lo que se pinta. */
+export type PharmacyListItem = {
+  id: string;
+  name: string;
+  slug: string;
+  address: string | null;
+  phone: string | null;
+  business_hours: BusinessHour[];
+};
+
+/**
+ * Todas las farmacias activas del barrio, livianas: el listado muestra
+ * nombre, dirección, teléfono y el chip de horario. Antes se usaba
+ * getBusinessesPage, que trae `*` + fotos + ofertas + rubros de las 60.
+ */
+export async function getPharmacyList(
+  barrioId: string,
+): Promise<PharmacyListItem[]> {
+  const { data, error } = await supabase
+    .from("businesses")
+    .select(
+      `id, name, slug, address, phone,
+       business_hours ( day_of_week, open_time, close_time, is_closed, is_open_24 ),
+       business_categories!inner ( categories!inner ( slug ) )`,
+    )
+    .eq("barrio_id", barrioId)
+    .eq("is_active", true)
+    .eq("business_categories.categories.slug", "farmacia")
+    .order("name")
+    .limit(100);
+
+  if (error || !data) {
+    console.error("Error getPharmacyList:", error);
+    return [];
+  }
+
+  return data as unknown as PharmacyListItem[];
+}
 
 /** Farmacia de turno, con los datos que necesita cualquier card del sitio. */
 export type PharmacyTurn = {

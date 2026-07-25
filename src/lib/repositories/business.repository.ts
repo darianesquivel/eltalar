@@ -315,7 +315,10 @@ const countsCache = new Map<string, { at: number; value: CategoryCounts }>();
 
 export async function getCategoryCounts(
   barrioId: string,
-  slugs: string[],
+  // Solo lo usa el fallback (si la vista no existe); puede ir vacío y el
+  // fallback busca los slugs solo. Así la consulta entra al Promise.all de
+  // la página en vez de ser un round-trip en serie.
+  slugs: string[] = [],
 ): Promise<CategoryCounts> {
   const cached = countsCache.get(barrioId);
   if (cached && Date.now() - cached.at < COUNTS_TTL_MS) return cached.value;
@@ -355,6 +358,11 @@ async function getCategoryCountsFallback(
   slugs: string[],
   total: number,
 ): Promise<CategoryCounts> {
+  if (slugs.length === 0) {
+    const { data } = await supabase.from("categories").select("slug");
+    slugs = (data ?? []).map((c) => c.slug);
+  }
+
   const perSlug = await Promise.all(
     slugs.map((slug) =>
       supabase
@@ -467,18 +475,20 @@ export async function getBusinessBySlug(
   slug: string,
   barrioId: string,
 ): Promise<Business | null> {
-  // El slug es único POR BARRIO: dos barrios pueden tener "kiosco-central"
+  // El slug es único POR BARRIO: dos barrios pueden tener "kiosco-central".
+  // maybeSingle: un slug inexistente es un 404 normal, no un error para el log.
   const { data, error } = await supabase
     .from("businesses")
     .select(BUSINESS_SELECT)
     .eq("barrio_id", barrioId)
+    .eq("is_active", true)
     .eq("slug", slug)
-    .single();
+    .maybeSingle();
 
-  if (error || !data) {
+  if (error) {
     console.error("Error getBusinessBySlug:", error);
     return null;
   }
 
-  return toBusiness(data);
+  return data ? toBusiness(data) : null;
 }

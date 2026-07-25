@@ -1,5 +1,6 @@
 ---
 import { Flame } from "@lucide/astro";
+import { cdnImage } from "../../lib/images";
 import type { ActiveOffer } from "../../lib/repositories/offer.repository";
 
 interface Props {
@@ -51,8 +52,10 @@ const untilLabel = (iso: string) =>
               <div class="relative flex h-[118px] items-start justify-end p-3">
                 {offer.coverUrl ? (
                   <img
-                    src={offer.coverUrl}
+                    src={cdnImage(offer.coverUrl, 640)}
                     alt=""
+                    width={400}
+                    height={150}
                     loading="lazy"
                     decoding="async"
                     class="absolute inset-0 size-full object-cover"

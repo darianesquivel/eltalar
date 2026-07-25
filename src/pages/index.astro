@@ -30,28 +30,31 @@ const [
   { data: categories },
   openNow,
   pharmacy,
-  offers,
+  { offers, total: offersTotal },
   events,
   classifieds,
+  counts,
 ] = await Promise.all([
   supabase
     .from("site_alerts")
     .select("id, title, description")
     .eq("barrio_id", barrio.id)
     .eq("is_active", true)
-    .order("created_at", { ascending: false }),
+    .order("created_at", { ascending: false })
+    // El hero muestra UNA alerta: no hace falta bajar el resto
+    .limit(1),
   supabase.from("categories").select("id, name, slug").order("name"),
   getOpenNowBusinesses(barrio.id, 4),
   getCurrentTurn(barrio.id),
-  getActiveOffers(barrio.id),
+  // 24 alcanza para elegir las 3 de la banda con los destacados primero,
+  // sin bajar todas las ofertas del barrio con fotos incluidas
+  getActiveOffers(barrio.id, 24),
   getUpcomingEvents(barrio.id),
   getPublishedClassifieds(barrio.id, { limit: 4 }),
+  // En paralelo con el resto: antes era un round-trip extra en serie que
+  // le sumaba latencia al primer paint de la página más visitada
+  getCategoryCounts(barrio.id),
 ]);
-
-const counts = await getCategoryCounts(
-  barrio.id,
-  (categories ?? []).map((c) => c.slug),
-);
 
 const topCategories = (categories ?? [])
   .map((c) => ({ ...c, count: counts.bySlug[c.slug] ?? 0 }))
@@ -80,7 +83,7 @@ const topCategories = (categories ?? [])
     <OpenNow businesses={openNow} />
   </div>
 
-  <OffersBand offers={offers.slice(0, 3)} total={offers.length} />
+  <OffersBand offers={offers.slice(0, 3)} total={offersTotal} />
 
   <div class="mx-auto w-full max-w-[1200px] px-[18px] pt-11 sm:px-10">
     <EventsAndClassifieds events={events.slice(0, 4)} classifieds={classifieds} />

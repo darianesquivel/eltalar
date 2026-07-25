@@ -3,6 +3,7 @@ import { CalendarDays, CalendarPlus, Clock, MapPin } from "@lucide/astro";
 import Layout from "../layouts/Layout.astro";
 import { getUpcomingEvents } from "../lib/repositories/event.repository";
 import { todayInArgentina } from "../lib/hours";
+import { cdnImage } from "../lib/images";
 
 const { barrio } = Astro.locals;
 const whatsappLogo = "/images/whatsapp-icon.svg";
@@ -140,11 +141,12 @@ const smallButton =
           <div class="relative flex min-h-[280px] items-end overflow-hidden rounded-3xl p-5 sm:min-h-[340px] sm:p-7">
             {featured.image_url ? (
               <img
-                src={featured.image_url}
+                src={cdnImage(featured.image_url, 1280)}
                 alt={featured.title}
                 width={1280}
                 height={640}
                 loading="eager"
+                fetchpriority="high"
                 decoding="async"
                 class="absolute inset-0 size-full object-cover"
               />
@@ -249,7 +251,7 @@ const smallButton =
               <div class="relative w-[110px] shrink-0 sm:w-[130px]">
                 {event.image_url ? (
                   <img
-                    src={event.image_url}
+                    src={cdnImage(event.image_url, 320)}
                     alt={event.title}
                     width={260}
                     height={320}

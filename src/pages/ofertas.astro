@@ -11,7 +11,7 @@ const orden = Astro.url.searchParams.get("orden") === "nuevas" ? "nuevas" : "ven
 
 // Todas las ofertas vigentes del barrio: son pocas (decenas), así que el
 // filtro por rubro y el orden se resuelven acá, sin JavaScript en el cliente.
-const allOffers = await getActiveOffers(barrio.id);
+const { offers: allOffers } = await getActiveOffers(barrio.id);
 
 const countsBySlug = new Map<string, { name: string; count: number }>();
 for (const offer of allOffers) {

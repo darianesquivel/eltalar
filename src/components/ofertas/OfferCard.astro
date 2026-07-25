@@ -1,5 +1,6 @@
 ---
 import { todayInArgentina } from "../../lib/hours";
+import { cdnImage } from "../../lib/images";
 import type { ActiveOffer } from "../../lib/repositories/offer.repository";
 
 interface Props {
@@ -33,7 +34,7 @@ const whatsappUrl = offer.business.whatsapp
     {
       offer.coverUrl ? (
         <img
-          src={offer.coverUrl}
+          src={cdnImage(offer.coverUrl, 640)}
           alt={offer.business.name}
           width={400}
           height={150}

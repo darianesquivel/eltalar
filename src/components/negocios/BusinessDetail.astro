@@ -19,6 +19,7 @@ import {
   getRatingSummary,
 } from "../../lib/repositories/review.repository";
 import { getTodayStatus, getWeekSchedule } from "../../lib/hours";
+import { cdnImage } from "../../lib/images";
 import { categoryStyle } from "../../lib/categories";
 import { instagramUrl } from "../../lib/links";
 import type { Business } from "../../lib/repositories/business.repository";
@@ -138,11 +139,12 @@ const longDate = (iso: string) =>
           business.coverPhoto?.url ? (
             <img
               transition:name={`img-${business.slug}`}
-              src={business.coverPhoto.url}
+              src={cdnImage(business.coverPhoto.url, 1280)}
               alt={business.name}
               width={1280}
               height={540}
               loading="eager"
+              fetchpriority="high"
               decoding="async"
               class="h-[230px] w-full object-cover sm:h-[400px]"
             />
@@ -180,7 +182,7 @@ const longDate = (iso: string) =>
                 class="overflow-hidden rounded-[14px]"
               >
                 <img
-                  src={photo.url}
+                  src={cdnImage(photo.url, 320)}
                   alt={`Foto de ${business.name}`}
                   width={240}
                   height={176}

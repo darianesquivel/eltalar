@@ -20,18 +20,24 @@ export type ActiveOffer = {
   coverUrl: string | null;
 };
 
+export type ActiveOffersPage = { offers: ActiveOffer[]; total: number };
+
 /**
  * Ofertas vigentes de negocios activos del barrio.
  * Orden: primero los destacados (es un beneficio del plan pago), después
  * por vencimiento más próximo.
+ *
+ * `limit` corta EN LA BASE (la home muestra 3 y antes bajaba todas las
+ * ofertas con fotos y rubros incluidos); `total` sale del count de la misma
+ * consulta, para el botón "Ver las N ofertas".
  */
 export async function getActiveOffers(
   barrioId: string,
   limit?: number,
-): Promise<ActiveOffer[]> {
+): Promise<ActiveOffersPage> {
   const today = todayInArgentina();
 
-  const { data, error } = await supabase
+  let query = supabase
     .from("business_offers")
     .select(
       `
@@ -42,15 +48,22 @@ export async function getActiveOffers(
         business_categories ( categories ( name, slug ) )
       )
     `,
+      { count: "exact" },
     )
     .gte("expires_at", today)
     .eq("businesses.barrio_id", barrioId)
     .eq("businesses.is_active", true)
     .order("expires_at");
 
+  if (limit) {
+    query = query.limit(limit);
+  }
+
+  const { data, error, count } = await query;
+
   if (error || !data) {
     console.error("Error getActiveOffers:", error);
-    return [];
+    return { offers: [], total: 0 };
   }
 
   const offers: ActiveOffer[] = data.map((raw: any) => {
@@ -92,5 +105,5 @@ export async function getActiveOffers(
     return a.expires_at.localeCompare(b.expires_at);
   });
 
-  return limit ? offers.slice(0, limit) : offers;
+  return { offers, total: count ?? offers.length };
 }

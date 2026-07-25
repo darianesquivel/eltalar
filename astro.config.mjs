@@ -16,9 +16,17 @@ export default defineConfig({
   // sin necesidad de re-deployar. Las páginas realmente fijas (teléfonos, 404)
   // se marcan con `export const prerender = true` y salen estáticas.
   output: "server",
-  // imageService: las <Image> se sirven optimizadas (webp/avif, resize) por
+  // imageService: las fotos se sirven optimizadas (webp/avif, resize) por
   // el CDN de imágenes de Vercel, con cache. Gratis en el plan hobby.
-  adapter: vercel({ imageService: true }),
+  // Las URLs /_vercel/image las arma lib/images.ts (cdnImage); los anchos
+  // tienen que estar acá para que Vercel los acepte.
+  adapter: vercel({
+    imageService: true,
+    imagesConfig: {
+      sizes: [320, 640, 960, 1280],
+      remotePatterns: [{ protocol: "https", hostname: "**.supabase.co" }],
+    },
+  }),
 
   // Prefetch al pasar el mouse por un link: la página siguiente ya está
   // descargada cuando el usuario hace click → navegación casi instantánea.

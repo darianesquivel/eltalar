@@ -121,10 +121,12 @@ const markers = rows.map((b) => {
   description={`Todos los negocios y servicios de ${barrio.name} en un mapa: encontrá el más cercano y entrá a su ficha con horarios y contacto.`}
   wide
 >
+  <!-- Los ~1700 markers van en un <script> JSON, no en un atributo data-:
+       como atributo, el HTML-escaping de las comillas duplicaba el peso. -->
+  <script type="application/json" id="map-markers" set:html={JSON.stringify(markers)} />
   <div
     id="map-page"
     class="grid min-h-[calc(100vh-66px)] grid-rows-[auto_1fr] lg:grid-cols-[400px_1fr] lg:grid-rows-1"
-    data-markers={JSON.stringify(markers)}
     data-center={JSON.stringify([barrio.lat, barrio.lng])}
   >
     <!-- Panel -->
@@ -330,7 +332,9 @@ const markers = rows.map((b) => {
     if (!page || !el || el.dataset.initialized) return;
     el.dataset.initialized = "true";
 
-    const markers: MarkerData[] = JSON.parse(page.dataset.markers ?? "[]");
+    const markers: MarkerData[] = JSON.parse(
+      document.getElementById("map-markers")?.textContent ?? "[]",
+    );
     const center: [number, number] = JSON.parse(
       page.dataset.center ?? "[-34.4716, -58.655]",
     );

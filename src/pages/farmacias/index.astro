@@ -6,21 +6,16 @@ import AllPharmacies from "../../components/farmacias/AllPharmacies.astro";
 import {
   getCurrentTurns,
   getNextTurns,
+  getPharmacyList,
 } from "../../lib/repositories/pharmacy.repository";
-import { getBusinessesPage } from "../../lib/repositories/business.repository";
 import { ARGENTINA_TZ } from "../../lib/hours";
 
 const { barrio } = Astro.locals;
 
-const [current, next, pharmaciesPage] = await Promise.all([
+const [current, next, pharmacies] = await Promise.all([
   getCurrentTurns(barrio.id),
   getNextTurns(barrio.id, 6),
-  getBusinessesPage({
-    barrioId: barrio.id,
-    categorySlug: "farmacia",
-    limit: 60,
-    order: "nombre",
-  }),
+  getPharmacyList(barrio.id),
 ]);
 
 // "Actualizado hoy, viernes 25 de julio a las 14:20": la hora se calcula en
@@ -51,7 +46,7 @@ const updatedAt = `${fmt({ weekday: "long" })} ${fmt({ day: "numeric" })} de ${f
     <CurrentTurn turns={current} />
     <NextTurns turns={next} />
     <AllPharmacies
-      pharmacies={pharmaciesPage.items}
+      pharmacies={pharmacies}
       onDutyIds={current.map((t) => t.id)}
     />
   </div>
