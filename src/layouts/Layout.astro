@@ -19,6 +19,11 @@ interface Props {
    * a 1200 px con el padding del sistema (40 px desktop / 18 px mobile).
    */
   wide?: boolean;
+  /**
+   * `true` en las páginas que tienen su propia barra de acción fija en
+   * mobile (la ficha de negocio): dos barras fijas no pueden convivir.
+   */
+  hideTabBar?: boolean;
 }
 
 // El fallback cubre las páginas prerenderizadas (404), donde no hay request
@@ -29,6 +34,7 @@ const {
   description = `Guía de ${barrio.name}, ${barrio.partido}: negocios y servicios del barrio, farmacias de turno y teléfonos útiles, todo en un solo lugar.`,
   image,
   wide = false,
+  hideTabBar = false,
 } = Astro.props;
 
 // El colchón de 92 px que deja libre la tab bar mobile lo pone el footer.
@@ -75,6 +81,6 @@ const canonical = new URL(Astro.url.pathname, barrio.url);
       <slot />
     </main>
     <Footer />
-    <MobileTabBar />
+    {!hideTabBar && <MobileTabBar />}
   </body>
 </html>
