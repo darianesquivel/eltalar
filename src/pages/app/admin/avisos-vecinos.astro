@@ -7,27 +7,42 @@ import { getAdminBarrio } from "../../../lib/barrio";
 const supabase = createSupabaseServer(Astro);
 const barrio = await getAdminBarrio(Astro);
 
-const { data: classifieds } = await supabase
-  .from("classifieds")
-  .select(
-    "id, category, title, description, price_text, whatsapp, author_name, status, created_at",
-  )
-  .eq("barrio_id", barrio.id)
-  .eq("status", "pending")
-  .order("created_at");
+const SELECT =
+  "id, category, title, description, price_text, whatsapp, author_name, status, created_at, expires_at";
+
+const [{ data: pending }, { data: published }] = await Promise.all([
+  supabase
+    .from("classifieds")
+    .select(SELECT)
+    .eq("barrio_id", barrio.id)
+    .eq("status", "pending")
+    .order("created_at"),
+  supabase
+    .from("classifieds")
+    .select(SELECT)
+    .eq("barrio_id", barrio.id)
+    .eq("status", "published")
+    .order("published_at", { ascending: false })
+    .limit(100),
+]);
 ---
 
 <AdminLayout title="Avisos de vecinos">
   <div class="mx-auto max-w-4xl space-y-6">
     <div>
-      <h1 class="text-2xl font-bold">Avisos de vecinos pendientes</h1>
+      <h1 class="text-2xl font-bold">Avisos de vecinos</h1>
       <p class="text-sm text-gray-500">
         Los clasificados que publican los vecinos. Revisá que sean del barrio y
         que no sean comercios encubiertos, armas, medicamentos ni reventa de
-        entradas. Al publicar, el aviso queda visible 30 días.
+        entradas. Al publicar, el aviso queda visible 30 días; podés bajarlo o
+        borrarlo en cualquier momento.
       </p>
     </div>
 
-    <ClassifiedsManager classifieds={classifieds ?? []} client:load />
+    <ClassifiedsManager
+      pending={pending ?? []}
+      published={published ?? []}
+      client:load
+    />
   </div>
 </AdminLayout>

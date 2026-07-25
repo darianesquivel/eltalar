@@ -7,27 +7,43 @@ import { getAdminBarrio } from "../../../lib/barrio";
 const supabase = createSupabaseServer(Astro);
 const barrio = await getAdminBarrio(Astro);
 
+const SELECT =
+  "id, business_id, author_name, rating, comment, status, created_at, businesses!inner ( name, slug, barrio_id )";
+
 // El barrio de la reseña viene implícito por el negocio (join !inner)
-const { data: reviews } = await supabase
-  .from("reviews")
-  .select(
-    "id, business_id, author_name, rating, comment, status, created_at, businesses!inner ( name, slug, barrio_id )",
-  )
-  .eq("businesses.barrio_id", barrio.id)
-  .eq("status", "pending")
-  .order("created_at");
+const [{ data: pending }, { data: published }] = await Promise.all([
+  supabase
+    .from("reviews")
+    .select(SELECT)
+    .eq("businesses.barrio_id", barrio.id)
+    .eq("status", "pending")
+    .order("created_at"),
+  supabase
+    .from("reviews")
+    .select(SELECT)
+    .eq("businesses.barrio_id", barrio.id)
+    .eq("status", "published")
+    .order("created_at", { ascending: false })
+    .limit(100),
+]);
 ---
 
 <AdminLayout title="Reseñas">
   <div class="mx-auto max-w-4xl space-y-6">
     <div>
-      <h1 class="text-2xl font-bold">Reseñas pendientes</h1>
+      <h1 class="text-2xl font-bold">Reseñas de vecinos</h1>
       <p class="text-sm text-gray-500">
-        Las reseñas de los vecinos se publican recién cuando las aprobás. Mirá
-        que no sean insultos, publicidad ni reseñas del propio dueño.
+        Las reseñas se publican recién cuando las aprobás. Mirá que no sean
+        insultos, publicidad ni reseñas del propio dueño. Las publicadas se
+        pueden despublicar o borrar en cualquier momento: el promedio del
+        negocio se recalcula solo.
       </p>
     </div>
 
-    <ReviewsManager reviews={reviews ?? []} client:load />
+    <ReviewsManager
+      pending={pending ?? []}
+      published={published ?? []}
+      client:load
+    />
   </div>
 </AdminLayout>
