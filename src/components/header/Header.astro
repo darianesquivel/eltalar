@@ -30,6 +30,11 @@ const POPULARES = ["farmacia", "delivery", "plomero", "veterinaria"];
 
 const isActive = (href: string) =>
   href === "/" ? path === "/" : path.startsWith(href);
+
+// El logo va plano en tinta, igual que el del footer (que se ve como
+// silueta al invertirse a blanco). Se pinta con máscara y no con
+// filter:brightness(0) para dar el color del sistema y no negro puro.
+const logoMask = `aspect-ratio:526/410;-webkit-mask:url(${Logo.src}) center/contain no-repeat;mask:url(${Logo.src}) center/contain no-repeat`;
 ---
 
 <header
@@ -41,7 +46,12 @@ const isActive = (href: string) =>
     class="mx-auto hidden max-w-[1280px] items-center gap-[22px] px-10 py-[14px] md:flex"
   >
     <a href="/" class="shrink-0">
-      <img src={Logo.src} alt="El Talar" class="w-[72px]" />
+      <span
+        role="img"
+        aria-label="El Talar"
+        class="block w-[72px] bg-secondary"
+        style={logoMask}
+      />
     </a>
 
     <form
@@ -102,7 +112,12 @@ const isActive = (href: string) =>
   <div class="md:hidden">
     <div class="flex items-center justify-between px-[18px] py-3">
       <a href="/">
-        <img src={Logo.src} alt="El Talar" class="w-[62px]" />
+        <span
+          role="img"
+          aria-label="El Talar"
+          class="block w-[62px] bg-secondary"
+          style={logoMask}
+        />
       </a>
       <button
         id="menu-button"
