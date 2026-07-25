@@ -139,11 +139,17 @@ html {
   }
 }
 
-/* ============ Foco visible ============ */
+/* ============ Foco visible ============
+   Va en la capa `base` a propósito: así cualquier utilidad de Tailwind
+   (outline-none, focus-within:outline-*) le gana. Sin la capa, esta regla
+   pisaba al outline-none de los inputs y el anillo salía cuadrado adentro
+   de los buscadores redondeados. */
 
-:focus-visible {
-  outline: 2px solid var(--color-primary);
-  outline-offset: 2px;
+@layer base {
+  :focus-visible {
+    outline: 2px solid var(--color-primary);
+    outline-offset: 2px;
+  }
 }
 
 /* ============ Placeholder de foto ============
