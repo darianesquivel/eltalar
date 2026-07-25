@@ -56,7 +56,7 @@ export function todayInArgentina(): string {
 }
 
 /** Día de la semana (0-6) y hora "HH:MM" actuales en Argentina. */
-function nowInArgentina() {
+export function nowInArgentina() {
   const parts = new Intl.DateTimeFormat("en-US", {
     timeZone: ARGENTINA_TZ,
     weekday: "short",
@@ -81,6 +81,30 @@ function nowInArgentina() {
     day: dayMap[get("weekday")] ?? new Date().getDay(),
     time: `${get("hour")}:${get("minute")}`,
   };
+}
+
+/**
+ * ¿Un tramo de HOY está abierto a la hora dada?
+ * Soporta horarios nocturnos (20:00–02:00): después de la apertura se
+ * considera abierto aunque el cierre caiga en el día siguiente (ese caso
+ * lo cubre openFromYesterday cuando ya pasó la medianoche).
+ */
+export function openNowToday(h: BusinessHour, time: string): boolean {
+  if (h.is_closed) return false;
+  if (h.is_open_24) return true;
+  if (!h.open_time || !h.close_time) return false;
+  const open = h.open_time.slice(0, 5);
+  const close = h.close_time.slice(0, 5);
+  return close < open ? time >= open : time >= open && time <= close;
+}
+
+/** Tramo nocturno de AYER que sigue abierto (cierra de madrugada). */
+export function openFromYesterday(h: BusinessHour, time: string): boolean {
+  if (h.is_closed || h.is_open_24 || !h.open_time || !h.close_time)
+    return false;
+  const open = h.open_time.slice(0, 5);
+  const close = h.close_time.slice(0, 5);
+  return close < open && time <= close;
 }
 
 function getNextOpenRange(hours: BusinessHour[], fromDay: number) {
@@ -114,6 +138,19 @@ export function getTodayStatus(
 
   const { day: today, time: currentTime } = nowInArgentina();
 
+  // Tramo nocturno de ayer (p.ej. viernes 20:00–02:00, y son las 01:00 del
+  // sábado): sigue abierto, sin importar qué diga la fila de hoy.
+  const yesterday = (today + 6) % 7;
+  const overnight = hours.find(
+    (h) => h.day_of_week === yesterday && openFromYesterday(h, currentTime),
+  );
+  if (overnight) {
+    return {
+      status: "open",
+      label: `Abierto · Cierra ${overnight.close_time!.slice(0, 5)}`,
+    };
+  }
+
   const todayHours = hours
     .filter((h) => h.day_of_week === today)
     .sort((a, b) => (a.open_time ?? "").localeCompare(b.open_time ?? ""));
@@ -141,7 +178,7 @@ export function getTodayStatus(
     const open = h.open_time.slice(0, 5);
     const close = h.close_time.slice(0, 5);
 
-    if (currentTime >= open && currentTime <= close) {
+    if (openNowToday(h, currentTime)) {
       return { status: "open", label: `Abierto · Cierra ${close}` };
     }
 

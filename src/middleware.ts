@@ -69,6 +69,16 @@ export const onRequest = defineMiddleware(async (context, next) => {
       );
     }
 
+    // Los 404 también se cachean: un link muerto re-crawleado por Google o
+    // un slug viejo compartido en WhatsApp no paga una invocación por visita.
+    if (
+      context.request.method === "GET" &&
+      response.status === 404 &&
+      !response.headers.has("Cache-Control")
+    ) {
+      response.headers.set("Cache-Control", "public, s-maxage=300");
+    }
+
     return response;
   }
 

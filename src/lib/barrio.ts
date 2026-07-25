@@ -37,27 +37,46 @@ export const DEFAULT_BARRIO: Barrio = {
 // Cache en memoria por instancia: los barrios cambian casi nunca y esto
 // evita un round-trip a Supabase en cada request.
 const TTL_MS = 5 * 60_000;
+// Si la consulta falla, no se reintenta en cada request (una tabla caída
+// haría que TODAS las páginas paguen la latencia del error): se sirve el
+// cache viejo o el fallback y se reintenta recién pasado este lapso.
+const RETRY_MS = 30_000;
 let cache = new Map<string, Barrio>();
 let cacheAt = 0;
+let lastAttempt = 0;
+// Dedupe: en un cold start N requests concurrentes disparaban N consultas
+// idénticas a `barrios`; todas esperan la misma promesa.
+let inFlight: Promise<void> | null = null;
 
 async function refreshCache() {
-  if (cache.size > 0 && Date.now() - cacheAt < TTL_MS) return;
+  const now = Date.now();
+  if (cache.size > 0 && now - cacheAt < TTL_MS) return;
+  if (inFlight) return inFlight;
+  if (now - lastAttempt < RETRY_MS) return;
 
-  const { data, error } = await supabase
-    .from("barrios")
-    .select("id, slug, name, partido, domain, url, lat, lng, radius_m")
-    .eq("is_active", true);
+  lastAttempt = now;
+  inFlight = (async () => {
+    try {
+      const { data, error } = await supabase
+        .from("barrios")
+        .select("id, slug, name, partido, domain, url, lat, lng, radius_m")
+        .eq("is_active", true);
 
-  // Si la consulta falla se conserva el cache viejo (o el fallback estático)
-  if (error || !data || data.length === 0) return;
+      // Si la consulta falla se conserva el cache viejo (o el fallback estático)
+      if (error || !data || data.length === 0) return;
 
-  const next = new Map<string, Barrio>();
-  for (const b of data as Barrio[]) {
-    next.set(b.domain, b);
-    next.set(`slug:${b.slug}`, b);
-  }
-  cache = next;
-  cacheAt = Date.now();
+      const next = new Map<string, Barrio>();
+      for (const b of data as Barrio[]) {
+        next.set(b.domain, b);
+        next.set(`slug:${b.slug}`, b);
+      }
+      cache = next;
+      cacheAt = Date.now();
+    } finally {
+      inFlight = null;
+    }
+  })();
+  return inFlight;
 }
 
 /**

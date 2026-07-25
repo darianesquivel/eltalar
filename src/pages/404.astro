@@ -1,7 +1,12 @@
 ---
 import Layout from "../layouts/Layout.astro";
 
-export const prerender = true;
+// SSR a propósito: con `prerender = true`, el rewrite de negocios/[slug]
+// hacia esta página tiraba un 500 (Astro prohíbe reescribir de una ruta
+// on-demand a una prerenderizada). Como SSR además hereda el barrio real
+// del dominio. El middleware cachea los 404 en el CDN para que los bots
+// no cuesten invocaciones.
+Astro.response.status = 404;
 ---
 
 <Layout title="Página no encontrada">

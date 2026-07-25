@@ -2,7 +2,12 @@
 import { Plus, Minus, LocateFixed, Search, X } from "@lucide/astro";
 import Layout from "../layouts/Layout.astro";
 import { supabase } from "../lib/supabase";
-import { todayInArgentina } from "../lib/hours";
+import {
+  nowInArgentina,
+  openFromYesterday,
+  openNowToday,
+  todayInArgentina,
+} from "../lib/hours";
 import { categoryStyle } from "../lib/categories";
 // El CSS de Leaflet va en el frontmatter: así queda como <link> de la página
 // y el ClientRouter lo espera ANTES del swap. Dentro del script podía llegar
@@ -30,15 +35,10 @@ async function fetchAll<T>(
 }
 
 // Día de la semana en Argentina (0 domingo): para saber quién está abierto
-// alcanza con los horarios de HOY, no con la semana entera de 1700 negocios.
-const [y, m, d] = todayInArgentina().split("-").map(Number);
-const weekday = new Date(y, m - 1, d).getDay();
-const nowHHMM = new Date().toLocaleTimeString("es-AR", {
-  hour: "2-digit",
-  minute: "2-digit",
-  hour12: false,
-  timeZone: "America/Argentina/Buenos_Aires",
-});
+// alcanzan los horarios de HOY y de AYER (los nocturnos tipo 20:00–02:00
+// siguen abiertos pasada la medianoche), no la semana entera de 1700 negocios.
+const { day: weekday, time: nowHHMM } = nowInArgentina();
+const ayer = (weekday + 6) % 7;
 
 const [rows, todayHours, offerRows, { data: categories }] = await Promise.all([
   fetchAll<any>((from) =>
@@ -58,10 +58,10 @@ const [rows, todayHours, offerRows, { data: categories }] = await Promise.all([
     supabase
       .from("business_hours")
       .select(
-        "business_id, open_time, close_time, is_closed, is_open_24, businesses!inner(barrio_id)",
+        "business_id, day_of_week, open_time, close_time, is_closed, is_open_24, businesses!inner(barrio_id)",
       )
       .eq("businesses.barrio_id", barrio.id)
-      .eq("day_of_week", weekday)
+      .in("day_of_week", [weekday, ayer])
       .order("business_id")
       .range(from, from + PAGE - 1),
   ),
@@ -85,15 +85,11 @@ const [rows, todayHours, offerRows, { data: categories }] = await Promise.all([
 // navegador del vecino puede tener otra zona horaria configurada.
 const openIds = new Set<string>();
 for (const h of todayHours) {
-  if (h.is_closed) continue;
-  if (h.is_open_24) {
-    openIds.add(h.business_id);
-    continue;
-  }
-  if (!h.open_time || !h.close_time) continue;
-  const open = h.open_time.slice(0, 5);
-  const close = h.close_time.slice(0, 5);
-  if (nowHHMM >= open && nowHHMM <= close) openIds.add(h.business_id);
+  const abierto =
+    h.day_of_week === weekday
+      ? openNowToday(h, nowHHMM)
+      : openFromYesterday(h, nowHHMM);
+  if (abierto) openIds.add(h.business_id);
 }
 
 const offerIds = new Set(offerRows.map((o) => o.business_id));

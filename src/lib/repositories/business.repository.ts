@@ -1,7 +1,9 @@
 import { supabase } from "../supabase";
 import type { Database } from "../database.types";
 import {
-  ARGENTINA_TZ,
+  nowInArgentina,
+  openFromYesterday,
+  openNowToday,
   todayInArgentina,
   type BusinessHour,
 } from "../hours";
@@ -202,21 +204,6 @@ function buildSelect(opciones: {
   return select;
 }
 
-/** Día (0-6) y hora "HH:MM:SS" actuales en Argentina. */
-function ahoraEnArgentina() {
-  const [y, m, d] = todayInArgentina().split("-").map(Number);
-  return {
-    weekday: new Date(y, m - 1, d).getDay(),
-    time: new Date().toLocaleTimeString("es-AR", {
-      hour: "2-digit",
-      minute: "2-digit",
-      second: "2-digit",
-      hour12: false,
-      timeZone: ARGENTINA_TZ,
-    }),
-  };
-}
-
 /**
  * Página de negocios para el listado público: filtra y pagina EN LA BASE.
  * Con ~1700 negocios, mandar todo al cliente era inviable; acá viaja solo
@@ -255,15 +242,19 @@ export async function getBusinessesPage(
   }
 
   if (openNow) {
-    // Abierto = tiene un tramo de HOY que incluye la hora actual, o es de
-    // 24 horas. Los que atienden con turno no cuentan: no tienen horario.
-    const { weekday, time } = ahoraEnArgentina();
+    // Abierto = un tramo de HOY que incluye la hora actual (o 24 hs), o un
+    // tramo NOCTURNO de ayer que todavía no cerró (viernes 20:00–02:00 a la
+    // 01:00 del sábado). `is_overnight` es una columna generada en la base
+    // (close_time < open_time): PostgREST no puede comparar columna contra
+    // columna en un filtro. Los que atienden con turno no cuentan.
+    const { day, time } = nowInArgentina();
+    const yesterday = (day + 6) % 7;
     query = query
       .eq("by_appointment", false)
-      .eq("business_hours.day_of_week", weekday)
       .eq("business_hours.is_closed", false)
       .or(
-        `is_open_24.is.true,and(open_time.lte.${time},close_time.gte.${time})`,
+        `and(day_of_week.eq.${day},or(is_open_24.is.true,and(open_time.lte.${time},close_time.gte.${time}),and(is_overnight.is.true,open_time.lte.${time}))),` +
+          `and(day_of_week.eq.${yesterday},is_overnight.is.true,close_time.gte.${time})`,
         { referencedTable: "business_hours" },
       );
   }
@@ -400,49 +391,41 @@ export async function getOpenNowBusinesses(
   barrioId: string,
   limit = 4,
 ): Promise<BusinessSummary[]> {
-  const [y, m, d] = todayInArgentina().split("-").map(Number);
-  const weekday = new Date(y, m - 1, d).getDay();
-  const now = new Date().toLocaleTimeString("es-AR", {
-    hour: "2-digit",
-    minute: "2-digit",
-    hour12: false,
-    timeZone: "America/Argentina/Buenos_Aires",
-  });
+  const { day, time } = nowInArgentina();
+  // También los tramos de AYER: un nocturno (20:00–02:00) sigue abierto
+  // pasada la medianoche.
+  const yesterday = (day + 6) % 7;
 
   const { data: hours, error } = await supabase
     .from("business_hours")
     .select(
-      "business_id, open_time, close_time, is_closed, is_open_24, businesses!inner(barrio_id, is_active, is_featured, by_appointment)",
+      "business_id, day_of_week, open_time, close_time, is_closed, is_open_24, businesses!inner(barrio_id, is_active, by_appointment)",
     )
     .eq("businesses.barrio_id", barrioId)
     .eq("businesses.is_active", true)
     .eq("businesses.by_appointment", false)
-    .eq("day_of_week", weekday)
+    .in("day_of_week", [day, yesterday])
     .eq("is_closed", false)
     .order("business_id")
-    .limit(600);
+    .limit(1000);
 
   if (error || !hours) {
     console.error("Error getOpenNowBusinesses:", error);
     return [];
   }
 
-  const openIds: string[] = [];
+  const openIdSet = new Set<string>();
   for (const h of hours as any[]) {
     const isOpen =
-      h.is_open_24 ||
-      (h.open_time &&
-        h.close_time &&
-        now >= h.open_time.slice(0, 5) &&
-        now <= h.close_time.slice(0, 5));
-
-    if (isOpen && !openIds.includes(h.business_id)) {
-      openIds.push(h.business_id);
-      // Se piden de más porque el orden final (destacados primero) lo
-      // resuelve la segunda consulta
-      if (openIds.length >= limit * 6) break;
-    }
+      h.day_of_week === day
+        ? openNowToday(h, time)
+        : openFromYesterday(h, time);
+    if (isOpen) openIdSet.add(h.business_id);
   }
+
+  // Se piden de más porque el orden final (destacados primero) lo
+  // resuelve la segunda consulta
+  const openIds = [...openIdSet].slice(0, limit * 6);
 
   if (openIds.length === 0) return [];
 
