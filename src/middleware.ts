@@ -72,6 +72,14 @@ export const onRequest = defineMiddleware(async (context, next) => {
     return response;
   }
 
+  // Ingresar y el callback no necesitan sesión resuelta en el servidor: son
+  // justo las páginas que tienen que abrir siempre, aunque Supabase esté
+  // lento o caído. Al que ya tiene sesión lo redirige la propia página, por
+  // cookie, sin consultar nada.
+  if (PUBLIC_APP_PATHS.includes(pathname)) {
+    return next();
+  }
+
   const supabase = createSupabaseServer(context);
 
   // En paralelo: validar sesión y consultar rol admin (ahorra un round-trip

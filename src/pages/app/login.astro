@@ -8,10 +8,9 @@ const next = rawNext?.startsWith("/") && !rawNext.startsWith("//")
   ? rawNext
   : "/app";
 
-// Si ya está logueado, directo a destino
-if (Astro.locals.user) {
-  return Astro.redirect(next);
-}
+// Al que ya tiene sesión lo manda a destino el script de abajo, mirando la
+// cookie: esta página no consulta a Supabase para dibujarse, así abre
+// siempre, incluso si la red hacia Supabase está lenta.
 ---
 
 <Layout title={`Ingresar | ${Astro.locals.barrio.name}`}>
@@ -71,6 +70,12 @@ if (Astro.locals.user) {
       "google-btn",
     ) as HTMLButtonElement | null;
     const errorBox = document.getElementById("login-error");
+
+    // Ya tiene sesión: derecho a destino, sin pasar por el botón
+    if (googleBtn && document.cookie.includes("-auth-token")) {
+      window.location.replace(googleBtn.dataset.next ?? "/app");
+      return;
+    }
 
     // No estamos en la página de login (o ya se inicializó este DOM)
     if (!googleBtn || !errorBox || googleBtn.dataset.ready) {
