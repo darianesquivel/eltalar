@@ -1,6 +1,7 @@
 ---
 import { Search, Menu, X } from "@lucide/astro";
 import Logo from "../../assets/logo.svg";
+import UserMenu from "./UserMenu.client";
 
 const path = Astro.url.pathname;
 
@@ -100,12 +101,12 @@ const logoMask = `aspect-ratio:526/410;-webkit-mask:url(${Logo.src}) center/cont
         Ingresar
       </a>
       <a
-        href="/app"
-        data-cta-negocio
+        href="/app/negocios/nuevo"
         class="rounded-full bg-primary px-5 py-[11px] text-sm font-semibold text-white transition-colors hover:bg-primary-hover"
       >
         Cargá tu negocio
       </a>
+      <UserMenu client:idle />
     </div>
   </div>
 
@@ -120,6 +121,8 @@ const logoMask = `aspect-ratio:526/410;-webkit-mask:url(${Logo.src}) center/cont
           style={logoMask}
         />
       </a>
+      <div class="flex items-center gap-2">
+      <UserMenu client:idle />
       <button
         id="menu-button"
         type="button"
@@ -131,6 +134,7 @@ const logoMask = `aspect-ratio:526/410;-webkit-mask:url(${Logo.src}) center/cont
         <Menu class="size-[17px]" data-menu-icon="open" aria-hidden="true" />
         <X class="hidden size-[17px]" data-menu-icon="close" aria-hidden="true" />
       </button>
+      </div>
     </div>
 
     <div class="px-[18px] pb-4">
@@ -196,8 +200,7 @@ const logoMask = `aspect-ratio:526/410;-webkit-mask:url(${Logo.src}) center/cont
           Ingresar
         </a>
         <a
-          href="/app"
-          data-cta-negocio
+          href="/app/negocios/nuevo"
           class="mt-2 rounded-full bg-primary px-5 py-3 text-center text-[15px] font-semibold text-white"
         >
           Cargá tu negocio
@@ -229,17 +232,12 @@ const logoMask = `aspect-ratio:526/410;-webkit-mask:url(${Logo.src}) center/cont
       };
     };
 
-    // Con sesión iniciada, el CTA dice "Mis negocios" y desaparece
-    // "Ingresar" (tenerlos juntos no tiene sentido). Se detecta por la
-    // cookie de Supabase (sb-...-auth-token), sin pegarle a la base: las
-    // páginas públicas las cachea el CDN y no pueden depender de la sesión.
+    // Con sesión iniciada, "Ingresar" desaparece: lo del usuario vive en el
+    // menú del avatar. Se detecta por la cookie de Supabase
+    // (sb-...-auth-token), sin pegarle a la base: las páginas públicas las
+    // cachea el CDN y no pueden depender de la sesión en el servidor.
     const updateBusinessCta = () => {
-      const loggedIn = document.cookie.includes("-auth-token");
-      if (!loggedIn) return;
-
-      document.querySelectorAll("[data-cta-negocio]").forEach((el) => {
-        el.textContent = "Mis negocios";
-      });
+      if (!document.cookie.includes("-auth-token")) return;
 
       document.querySelectorAll("[data-solo-sin-sesion]").forEach((el) => {
         el.setAttribute("hidden", "");
