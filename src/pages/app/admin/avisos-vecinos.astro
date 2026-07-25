@@ -8,7 +8,7 @@ const supabase = createSupabaseServer(Astro);
 const barrio = await getAdminBarrio(Astro);
 
 const SELECT =
-  "id, category, title, description, price_text, whatsapp, author_name, status, created_at, expires_at";
+  "id, category, title, description, price_text, whatsapp, author_name, photo_url, status, created_at, expires_at";
 
 const [{ data: pending }, { data: published }] = await Promise.all([
   supabase

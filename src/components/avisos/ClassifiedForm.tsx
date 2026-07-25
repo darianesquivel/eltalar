@@ -1,4 +1,7 @@
 import { useState } from "react";
+import imageCompression from "browser-image-compression";
+import { ImagePlus, X } from "lucide-react";
+import { supabaseBrowser } from "../../lib/supabase/browser";
 import {
   CLASSIFIED_CATEGORIES,
   formatPriceText,
@@ -7,6 +10,20 @@ import {
 type Props = {
   /** Nombre de la cuenta de Google, editable por el vecino. */
   defaultName?: string;
+  /** Id del usuario: la foto se sube a una carpeta con su nombre. */
+  userId: string;
+};
+
+const MAX_SIZE_MB = 10;
+
+// Misma receta que las fotos de negocios: se comprime en el navegador antes
+// de subir (las fotos de celular pesan varios MB) y se guarda en WebP, para
+// servirlas crudas sin gastar cuota de optimización de imágenes.
+const COMPRESSION_OPTIONS = {
+  maxSizeMB: 0.4,
+  maxWidthOrHeight: 1280,
+  useWebWorker: true,
+  fileType: "image/webp",
 };
 
 /**
@@ -14,7 +31,7 @@ type Props = {
  * ya lo verifica); el endpoint guarda el aviso como pendiente hasta que un
  * admin lo aprueba. El campo "company" es el honeypot.
  */
-export default function ClassifiedForm({ defaultName = "" }: Props) {
+export default function ClassifiedForm({ defaultName = "", userId }: Props) {
   const [category, setCategory] = useState("venta");
   const [title, setTitle] = useState("");
   const [priceText, setPriceText] = useState("");
@@ -22,9 +39,65 @@ export default function ClassifiedForm({ defaultName = "" }: Props) {
   const [authorName, setAuthorName] = useState(defaultName);
   const [whatsapp, setWhatsapp] = useState("");
   const [company, setCompany] = useState("");
+  const [photoUrl, setPhotoUrl] = useState<string | null>(null);
+  const [uploading, setUploading] = useState(false);
   const [sending, setSending] = useState(false);
   const [done, setDone] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  const uploadPhoto = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    e.target.value = "";
+    if (!file) return;
+
+    if (file.size > MAX_SIZE_MB * 1024 * 1024) {
+      setError(`La foto no puede pesar más de ${MAX_SIZE_MB} MB`);
+      return;
+    }
+
+    setUploading(true);
+    setError(null);
+
+    try {
+      // Si la compresión falla, se sube el original (ya validado a 10 MB)
+      let toUpload: File | Blob = file;
+      try {
+        toUpload = await imageCompression(file, COMPRESSION_OPTIONS);
+      } catch (compressErr) {
+        console.error("Compresión falló, subo original:", compressErr);
+      }
+
+      // La carpeta raíz tiene que ser el id del usuario: así lo exige la
+      // política de Storage (nadie pisa las fotos de otro).
+      const ext = toUpload.type.split("/").pop() || "jpg";
+      const path = `${userId}/${Date.now()}.${ext}`;
+
+      const { error: upError } = await supabaseBrowser.storage
+        .from("classified-photos")
+        .upload(path, toUpload, { contentType: toUpload.type });
+      if (upError) throw upError;
+
+      const {
+        data: { publicUrl },
+      } = supabaseBrowser.storage.from("classified-photos").getPublicUrl(path);
+
+      setPhotoUrl(publicUrl);
+    } catch (err: any) {
+      console.error(err);
+      setError(err?.message ?? "No pudimos subir la foto, probá de nuevo.");
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  const removePhoto = async () => {
+    if (!photoUrl) return;
+    const path = photoUrl.split("/classified-photos/")[1];
+    setPhotoUrl(null);
+    if (path) {
+      await supabaseBrowser.storage.from("classified-photos").remove([path]);
+    }
+  };
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -42,6 +115,7 @@ export default function ClassifiedForm({ defaultName = "" }: Props) {
           description,
           authorName,
           whatsapp,
+          photoUrl,
           company,
         }),
       });
@@ -168,6 +242,49 @@ export default function ClassifiedForm({ defaultName = "" }: Props) {
           placeholder="Contá el estado, la zona, cómo coordinar la entrega…"
           className="field"
         />
+      </div>
+
+      <div>
+        <label className="mb-1.5 block text-[13.5px] font-semibold text-text-main">
+          Foto <span className="font-normal text-text-muted">(opcional)</span>
+        </label>
+
+        {photoUrl ? (
+          <div className="relative w-fit">
+            <img
+              src={photoUrl}
+              alt="Foto del aviso"
+              className="h-[150px] w-[220px] rounded-xl object-cover"
+            />
+            <button
+              type="button"
+              onClick={removePhoto}
+              aria-label="Quitar la foto"
+              className="absolute right-2 top-2 flex size-7 items-center justify-center rounded-full bg-white/90 text-text-main shadow-soft"
+            >
+              <X size={15} />
+            </button>
+          </div>
+        ) : (
+          <label
+            className={`flex h-[110px] w-full cursor-pointer flex-col items-center justify-center gap-1.5 rounded-xl border border-dashed border-[rgba(14,26,18,.25)] text-[13.5px] text-text-muted transition-colors hover:border-primary ${
+              uploading ? "opacity-60" : ""
+            }`}
+          >
+            <ImagePlus size={22} className="text-primary" />
+            {uploading ? "Subiendo…" : "Agregá una foto"}
+            <span className="text-[12px]">
+              Se ve mucho más si tu aviso tiene foto
+            </span>
+            <input
+              type="file"
+              accept="image/*"
+              onChange={uploadPhoto}
+              disabled={uploading}
+              className="hidden"
+            />
+          </label>
+        )}
       </div>
 
       <div className="grid gap-5 sm:grid-cols-2">

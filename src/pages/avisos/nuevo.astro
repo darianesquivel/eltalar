@@ -49,7 +49,11 @@ const defaultName =
 
     {
       user ? (
-        <ClassifiedForm defaultName={defaultName} client:load />
+        <ClassifiedForm
+          defaultName={defaultName}
+          userId={user.id}
+          client:load
+        />
       ) : (
         <div class="rounded-[20px] bg-bg-card p-7 shadow-soft sm:p-8">
           <div class="mb-3 flex size-11 items-center justify-center rounded-xl bg-primary-soft text-primary-strong">

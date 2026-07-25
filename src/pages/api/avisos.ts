@@ -47,6 +47,7 @@ export const POST: APIRoute = async (context) => {
       priceText,
       whatsapp,
       authorName,
+      photoUrl,
       company,
     } = body;
 
@@ -82,6 +83,19 @@ export const POST: APIRoute = async (context) => {
       return json({ error: "El WhatsApp no parece válido" }, 400);
     }
 
+    // La foto tiene que ser una que se acaba de subir a NUESTRO bucket, y a
+    // la carpeta del propio usuario: si no, cualquiera podría hacer que la
+    // card muestre una imagen de otro sitio.
+    const expectedPrefix = `${import.meta.env.PUBLIC_SUPABASE_URL}/storage/v1/object/public/classified-photos/${user.id}/`;
+    const photo =
+      typeof photoUrl === "string" && photoUrl.startsWith(expectedPrefix)
+        ? photoUrl
+        : null;
+
+    if (photoUrl && !photo) {
+      return json({ error: "La foto no es válida" }, 400);
+    }
+
     const { data: saved, error } = await supabase
       .from("classifieds")
       .insert({
@@ -96,6 +110,7 @@ export const POST: APIRoute = async (context) => {
         price_text: formatPriceText(priceText),
         whatsapp: phone,
         author_name: authorName.trim(),
+        photo_url: photo,
         status: "pending",
       })
       .select("id");

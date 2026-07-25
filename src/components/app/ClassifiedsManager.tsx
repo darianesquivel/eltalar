@@ -13,6 +13,7 @@ type Classified = {
   price_text: string | null;
   whatsapp: string | null;
   author_name: string;
+  photo_url: string | null;
   status: string;
   created_at: string;
   expires_at: string;
@@ -141,7 +142,22 @@ export default function ClassifiedsManager({ pending, published }: Props) {
                 }`}
               >
                 <div className="flex flex-wrap items-start justify-between gap-2">
-                  <div>
+                  <div className="flex gap-3">
+                    {aviso.photo_url && (
+                      <a
+                        href={aviso.photo_url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="shrink-0"
+                      >
+                        <img
+                          src={aviso.photo_url}
+                          alt=""
+                          className="size-16 rounded-xl object-cover"
+                        />
+                      </a>
+                    )}
+                    <div>
                     <p className="flex items-center gap-2 font-semibold">
                       <span
                         className="rounded-full px-2 py-0.5 text-[11px] font-bold"
@@ -159,6 +175,7 @@ export default function ClassifiedsManager({ pending, published }: Props) {
                         ? `vence ${new Date(aviso.expires_at).toLocaleDateString("es-AR")}`
                         : new Date(aviso.created_at).toLocaleDateString("es-AR")}
                     </p>
+                    </div>
                   </div>
 
                   <div className="flex flex-wrap gap-2">
