@@ -44,7 +44,8 @@ export default function ClassifiedModal({ barrioName }: Props) {
   const [indice, setIndice] = useState<number | null>(null);
   const [fotoAmpliada, setFotoAmpliada] = useState(false);
   const cerrarRef = useRef<HTMLButtonElement>(null);
-  const tocoEn = useRef<number | null>(null);
+  const dialogoRef = useRef<HTMLDivElement>(null);
+  const tocoEn = useRef<{ x: number; y: number } | null>(null);
 
   // Los datos viajan en un <script type="application/json"> que imprime la
   // página: así no se duplica el listado en el HTML.
@@ -53,7 +54,9 @@ export default function ClassifiedModal({ barrioName }: Props) {
     if (nodo?.textContent) {
       try {
         setAvisos(JSON.parse(nodo.textContent));
-      } catch {
+      } catch (err) {
+        // Sin datos el modal nunca abre: que al menos quede rastro en consola
+        console.error("No se pudo leer #avisos-data", err);
         setAvisos([]);
       }
     }
@@ -124,13 +127,37 @@ export default function ClassifiedModal({ barrioName }: Props) {
     document.addEventListener("keydown", alTeclear);
     const overflow = document.body.style.overflow;
     document.body.style.overflow = "hidden";
-    cerrarRef.current?.focus();
 
     return () => {
       document.removeEventListener("keydown", alTeclear);
       document.body.style.overflow = overflow;
     };
   }, [indice, fotoAmpliada, cerrar, mover]);
+
+  // El foco va al botón de cerrar solo al abrir el detalle. Si dependiera de
+  // fotoAmpliada, ampliar la foto devolvería el foco detrás del lightbox.
+  const abierto = indice !== null;
+  useEffect(() => {
+    if (abierto) cerrarRef.current?.focus();
+  }, [abierto]);
+
+  // Trampa de foco mínima: Tab no se escapa del diálogo hacia la página
+  const atraparFoco = (e: React.KeyboardEvent) => {
+    if (e.key !== "Tab" || !dialogoRef.current) return;
+    const focusables = dialogoRef.current.querySelectorAll<HTMLElement>(
+      'a[href], button:not([disabled]), [tabindex]:not([tabindex="-1"])',
+    );
+    if (focusables.length === 0) return;
+    const primero = focusables[0];
+    const ultimo = focusables[focusables.length - 1];
+    if (e.shiftKey && document.activeElement === primero) {
+      e.preventDefault();
+      ultimo.focus();
+    } else if (!e.shiftKey && document.activeElement === ultimo) {
+      e.preventDefault();
+      primero.focus();
+    }
+  };
 
   if (indice === null || !avisos[indice]) return null;
 
@@ -146,6 +173,7 @@ export default function ClassifiedModal({ barrioName }: Props) {
 
   return (
     <div
+      ref={dialogoRef}
       role="dialog"
       aria-modal="true"
       aria-label={aviso.title}
@@ -153,12 +181,22 @@ export default function ClassifiedModal({ barrioName }: Props) {
       onClick={(e) => {
         if (e.target === e.currentTarget) cerrar();
       }}
+      onKeyDown={atraparFoco}
       // En el celular se pasa de aviso arrastrando
-      onTouchStart={(e) => (tocoEn.current = e.touches[0].clientX)}
+      onTouchStart={(e) =>
+        (tocoEn.current = {
+          x: e.touches[0].clientX,
+          y: e.touches[0].clientY,
+        })
+      }
       onTouchEnd={(e) => {
         if (tocoEn.current === null) return;
-        const dif = e.changedTouches[0].clientX - tocoEn.current;
-        if (Math.abs(dif) > 60) mover(dif < 0 ? 1 : -1);
+        const dx = e.changedTouches[0].clientX - tocoEn.current.x;
+        const dy = e.changedTouches[0].clientY - tocoEn.current.y;
+        // Solo cuenta el gesto horizontal: el scroll vertical no cambia de aviso
+        if (Math.abs(dx) > 60 && Math.abs(dx) > Math.abs(dy)) {
+          mover(dx < 0 ? 1 : -1);
+        }
         tocoEn.current = null;
       }}
     >
@@ -285,6 +323,7 @@ export default function ClassifiedModal({ barrioName }: Props) {
           />
           <button
             type="button"
+            onClick={() => setFotoAmpliada(false)}
             aria-label="Cerrar la foto"
             className="absolute right-4 top-4 flex size-10 items-center justify-center rounded-full bg-white/90 text-text-main"
           >

@@ -190,12 +190,14 @@ body {
 /* ============ Campos de formulario modernos ============ */
 
 @layer components {
+  /* Tokens del sistema (no la paleta gray- de Tailwind): así los inputs
+     acompañan al resto del diseño si algún día cambian los colores. */
   .field {
-    @apply w-full rounded-xl border border-gray-200 bg-white px-4 py-2.5 text-sm text-gray-900 shadow-sm transition-all duration-200 placeholder:text-gray-400;
+    @apply w-full rounded-xl border border-border bg-bg-card px-4 py-2.5 text-sm text-text-main shadow-sm transition-all duration-200 placeholder:text-text-muted;
   }
 
   .field:hover {
-    @apply border-gray-300;
+    @apply border-text-faint;
   }
 
   .field:focus {

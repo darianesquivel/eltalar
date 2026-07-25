@@ -19,6 +19,9 @@ export default function AlertsManager({ alerts, barrioId }: Props) {
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  // Confirmación en dos pasos para borrar un aviso
+  const [confirmDelete, setConfirmDelete] = useState<string | null>(null);
 
   const refresh = async () => {
     const { data } = await supabaseBrowser
@@ -33,15 +36,18 @@ export default function AlertsManager({ alerts, barrioId }: Props) {
     e.preventDefault();
     if (!title.trim()) return;
     setSaving(true);
-    const { error } = await supabaseBrowser.from("site_alerts").insert({
-      barrio_id: barrioId,
-      title: title.trim(),
-      description: description.trim(),
-      is_active: true,
-    });
-    if (error) {
-      console.error(error);
-      alert("Error creando el aviso");
+    setError(null);
+    const { error: insError } = await supabaseBrowser
+      .from("site_alerts")
+      .insert({
+        barrio_id: barrioId,
+        title: title.trim(),
+        description: description.trim(),
+        is_active: true,
+      });
+    if (insError) {
+      console.error(insError);
+      setError("Error creando el aviso. Probá de nuevo.");
     } else {
       setTitle("");
       setDescription("");
@@ -51,16 +57,32 @@ export default function AlertsManager({ alerts, barrioId }: Props) {
   };
 
   const toggle = async (a: Alert) => {
-    await supabaseBrowser
+    setError(null);
+    const { error: updError } = await supabaseBrowser
       .from("site_alerts")
       .update({ is_active: !a.is_active })
       .eq("id", a.id);
+    if (updError) {
+      console.error(updError);
+      setError("Error actualizando el aviso. Probá de nuevo.");
+      return;
+    }
     await refresh();
   };
 
   const remove = async (id: string) => {
-    await supabaseBrowser.from("site_alerts").delete().eq("id", id);
-    await refresh();
+    setError(null);
+    const { error: delError } = await supabaseBrowser
+      .from("site_alerts")
+      .delete()
+      .eq("id", id);
+    if (delError) {
+      console.error(delError);
+      setError("Error borrando el aviso. Probá de nuevo.");
+    } else {
+      await refresh();
+    }
+    setConfirmDelete(null);
   };
 
   return (
@@ -89,6 +111,12 @@ export default function AlertsManager({ alerts, barrioId }: Props) {
         </div>
       </form>
 
+      {error && (
+        <p role="alert" className="text-sm text-red-600">
+          {error}
+        </p>
+      )}
+
       <ul className="space-y-2">
         {items.map((a) => (
           <li
@@ -106,18 +134,37 @@ export default function AlertsManager({ alerts, barrioId }: Props) {
               )}
             </div>
             <div className="flex gap-2">
-              <button
-                onClick={() => toggle(a)}
-                className="rounded-full bg-gray-200 px-4 py-1 text-xs font-semibold text-gray-700 hover:bg-gray-300"
-              >
-                {a.is_active ? "Desactivar" : "Activar"}
-              </button>
-              <button
-                onClick={() => remove(a.id)}
-                className="rounded-full bg-red-100 px-4 py-1 text-xs font-semibold text-red-600 hover:bg-red-200"
-              >
-                Borrar
-              </button>
+              {confirmDelete === a.id ? (
+                <>
+                  <button
+                    onClick={() => remove(a.id)}
+                    className="rounded-full bg-red-600 px-4 py-1 text-xs font-semibold text-white hover:bg-red-700"
+                  >
+                    ¿Borrar?
+                  </button>
+                  <button
+                    onClick={() => setConfirmDelete(null)}
+                    className="rounded-full bg-gray-200 px-4 py-1 text-xs font-semibold text-gray-700 hover:bg-gray-300"
+                  >
+                    Cancelar
+                  </button>
+                </>
+              ) : (
+                <>
+                  <button
+                    onClick={() => toggle(a)}
+                    className="rounded-full bg-gray-200 px-4 py-1 text-xs font-semibold text-gray-700 hover:bg-gray-300"
+                  >
+                    {a.is_active ? "Desactivar" : "Activar"}
+                  </button>
+                  <button
+                    onClick={() => setConfirmDelete(a.id)}
+                    className="rounded-full bg-red-100 px-4 py-1 text-xs font-semibold text-red-600 hover:bg-red-200"
+                  >
+                    Borrar
+                  </button>
+                </>
+              )}
             </div>
           </li>
         ))}

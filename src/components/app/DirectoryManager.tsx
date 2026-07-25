@@ -33,6 +33,8 @@ export default function DirectoryManager({ entries, barrioId }: Props) {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [confirmDelete, setConfirmDelete] = useState<string | null>(null);
+  // Errores de acciones sobre la lista (ocultar, priorizar, borrar)
+  const [listError, setListError] = useState<string | null>(null);
 
   const refresh = async () => {
     const { data } = await supabaseBrowser
@@ -61,7 +63,8 @@ export default function DirectoryManager({ entries, barrioId }: Props) {
         phone: form.phone.trim(),
         category: form.category,
         is_priority: form.is_priority,
-        position: items.length + 1,
+        // max(position)+1: items.length+1 repite posiciones después de borrar
+        position: Math.max(0, ...items.map((i) => i.position ?? 0)) + 1,
       });
 
     if (insError) {
@@ -75,24 +78,46 @@ export default function DirectoryManager({ entries, barrioId }: Props) {
   };
 
   const toggleActive = async (entry: DirectoryEntry) => {
-    await supabaseBrowser
+    setListError(null);
+    const { error: updError } = await supabaseBrowser
       .from("directory_entries")
       .update({ is_active: !entry.is_active })
       .eq("id", entry.id);
+    if (updError) {
+      console.error(updError);
+      setListError("Error cambiando la visibilidad. Probá de nuevo.");
+      return;
+    }
     await refresh();
   };
 
   const togglePriority = async (entry: DirectoryEntry) => {
-    await supabaseBrowser
+    setListError(null);
+    const { error: updError } = await supabaseBrowser
       .from("directory_entries")
       .update({ is_priority: !entry.is_priority })
       .eq("id", entry.id);
+    if (updError) {
+      console.error(updError);
+      setListError("Error cambiando la prioridad. Probá de nuevo.");
+      return;
+    }
     await refresh();
   };
 
   const remove = async (id: string) => {
-    await supabaseBrowser.from("directory_entries").delete().eq("id", id);
-    await refresh();
+    setListError(null);
+    const { error: delError } = await supabaseBrowser
+      .from("directory_entries")
+      .delete()
+      .eq("id", id);
+    if (delError) {
+      console.error(delError);
+      setListError("Error borrando el teléfono. Probá de nuevo.");
+    } else {
+      await refresh();
+    }
+    setConfirmDelete(null);
   };
 
   return (
@@ -151,6 +176,12 @@ export default function DirectoryManager({ entries, barrioId }: Props) {
         {error && <p className="text-sm text-red-600 sm:col-span-2">{error}</p>}
       </form>
 
+      {listError && (
+        <p role="alert" className="text-sm text-red-600">
+          {listError}
+        </p>
+      )}
+
       {/* Lista (scroll propio) */}
       <ul className="max-h-[50vh] space-y-2 overflow-y-auto pr-1">
         {items.map((entry) => (
@@ -182,10 +213,7 @@ export default function DirectoryManager({ entries, barrioId }: Props) {
                   <IconButton
                     label="Sí, borrar"
                     variant="danger"
-                    onClick={() => {
-                      remove(entry.id);
-                      setConfirmDelete(null);
-                    }}
+                    onClick={() => remove(entry.id)}
                   >
                     <Check size={16} />
                   </IconButton>
@@ -222,7 +250,8 @@ export default function DirectoryManager({ entries, barrioId }: Props) {
                     }
                     onClick={() => toggleActive(entry)}
                   >
-                    {entry.is_active ? <Eye size={16} /> : <EyeOff size={16} />}
+                    {/* Mismo criterio que AdminBusinesses: EyeOff = "ocultar" cuando está visible */}
+                    {entry.is_active ? <EyeOff size={16} /> : <Eye size={16} />}
                   </IconButton>
                   <IconButton
                     label="Borrar"

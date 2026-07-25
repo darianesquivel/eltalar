@@ -71,7 +71,9 @@ export default function BusinessForm({
   const [saved, setSaved] = useState(false);
 
   const set = (field: keyof BusinessFormData) => (e: any) => {
-    setForm({ ...form, [field]: e.target.value });
+    const value = e.target.value;
+    // Update funcional: evita pisar cambios con un closure viejo de `form`
+    setForm((f) => ({ ...f, [field]: value }));
     setSaved(false);
   };
 
@@ -83,18 +85,22 @@ export default function BusinessForm({
   };
 
   const syncCategories = async (businessId: string) => {
-    await supabaseBrowser
+    const { error: delError } = await supabaseBrowser
       .from("business_categories")
       .delete()
       .eq("business_id", businessId);
+    if (delError) throw delError;
 
     if (selectedCats.length > 0) {
-      await supabaseBrowser.from("business_categories").insert(
-        selectedCats.map((category_id) => ({
-          business_id: businessId,
-          category_id,
-        })),
-      );
+      const { error: insError } = await supabaseBrowser
+        .from("business_categories")
+        .insert(
+          selectedCats.map((category_id) => ({
+            business_id: businessId,
+            category_id,
+          })),
+        );
+      if (insError) throw insError;
     }
   };
 

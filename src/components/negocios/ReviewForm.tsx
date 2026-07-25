@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Star } from "lucide-react";
 
 type Props = {
@@ -21,6 +21,23 @@ export default function ReviewForm({ businessId, businessName }: Props) {
   const [error, setError] = useState<string | null>(null);
   const [needsLogin, setNeedsLogin] = useState(false);
 
+  // Si el vecino se fue a loguear, la reseña a medio escribir lo espera acá
+  const storageKey = `resena-borrador-${businessId}`;
+
+  useEffect(() => {
+    try {
+      const raw = sessionStorage.getItem(storageKey);
+      if (!raw) return;
+      const borrador = JSON.parse(raw) as { rating?: number; comment?: string };
+      if (borrador.rating) setRating(borrador.rating);
+      if (borrador.comment) setComment(borrador.comment);
+      setOpen(true);
+    } catch {
+      // Sin borrador (o ilegible): se arranca de cero
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!rating) return;
@@ -37,12 +54,28 @@ export default function ReviewForm({ businessId, businessName }: Props) {
       });
 
       if (res.status === 401) {
+        // Se guarda lo escrito antes de mandar al login, para no perderlo
+        try {
+          sessionStorage.setItem(storageKey, JSON.stringify({ rating, comment }));
+        } catch {
+          // Sin sessionStorage el login sigue andando, solo se pierde el texto
+        }
         setNeedsLogin(true);
         return;
       }
       if (!res.ok) {
         const body = await res.json().catch(() => null);
-        throw new Error(body?.message);
+        throw new Error(
+          body?.message ||
+            (res.status >= 500
+              ? "Tuvimos un problema nuestro, probá más tarde."
+              : "No pudimos guardar tu reseña, revisá los datos."),
+        );
+      }
+      try {
+        sessionStorage.removeItem(storageKey);
+      } catch {
+        // Nada para limpiar
       }
       setDone(true);
     } catch (err) {
@@ -83,15 +116,23 @@ export default function ReviewForm({ businessId, businessName }: Props) {
         ¿Cómo te fue en {businessName}?
       </p>
 
-      <div className="flex items-center gap-1">
+      <div
+        role="radiogroup"
+        aria-label="Puntaje, de 1 a 5 estrellas"
+        className="flex items-center gap-1"
+      >
         {[1, 2, 3, 4, 5].map((value) => (
           <button
             key={value}
             type="button"
+            role="radio"
+            aria-checked={rating === value}
             aria-label={`${value} ${value === 1 ? "estrella" : "estrellas"}`}
             onClick={() => setRating(value)}
             onMouseEnter={() => setHover(value)}
             onMouseLeave={() => setHover(0)}
+            onFocus={() => setHover(value)}
+            onBlur={() => setHover(0)}
             className="p-0.5"
           >
             <Star
@@ -118,7 +159,10 @@ export default function ReviewForm({ businessId, businessName }: Props) {
       {needsLogin && (
         <p className="text-[13px] text-text-body">
           Para dejar una reseña hace falta una cuenta.{" "}
-          <a href="/app/login" className="font-semibold text-primary-strong">
+          <a
+            href={`/app/login?next=${encodeURIComponent(window.location.pathname)}`}
+            className="font-semibold text-primary-strong"
+          >
             Entrar con Google
           </a>
         </p>

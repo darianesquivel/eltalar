@@ -92,8 +92,17 @@ export default function OffersManager({
   };
 
   const remove = async (id: string) => {
-    await supabaseBrowser.from("business_offers").delete().eq("id", id);
+    setError(null);
+    const { error: delError } = await supabaseBrowser
+      .from("business_offers")
+      .delete()
+      .eq("id", id);
     setConfirmDelete(null);
+    if (delError) {
+      console.error(delError);
+      setError("Error borrando la oferta. Probá de nuevo.");
+      return;
+    }
     await refresh();
   };
 

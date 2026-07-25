@@ -23,6 +23,8 @@ export default function ReportBusiness({ slug, businessName }: Props) {
   const [motivo, setMotivo] = useState("");
   const [detalle, setDetalle] = useState("");
   const [email, setEmail] = useState("");
+  // Honeypot: la API descarta el reporte si viene con "company" cargado
+  const [company, setCompany] = useState("");
   const [sending, setSending] = useState(false);
   const [done, setDone] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -36,12 +38,26 @@ export default function ReportBusiness({ slug, businessName }: Props) {
       const res = await fetch("/api/reportar", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ slug, businessName, motivo, detalle, email }),
+        body: JSON.stringify({
+          slug,
+          businessName,
+          motivo,
+          detalle,
+          email,
+          company,
+        }),
       });
-      if (!res.ok) throw new Error();
+      if (!res.ok) {
+        // El servidor suele explicar qué pasó: mejor mostrarlo que taparlo
+        const body = await res.json().catch(() => null);
+        throw new Error(body?.error || body?.message || "");
+      }
       setDone(true);
-    } catch {
-      setError("No pudimos enviar el reporte, probá de nuevo.");
+    } catch (err) {
+      setError(
+        (err as Error)?.message ||
+          "No pudimos enviar el reporte, probá de nuevo.",
+      );
     } finally {
       setSending(false);
     }
@@ -77,7 +93,11 @@ export default function ReportBusiness({ slug, businessName }: Props) {
         Reportar un error en esta ficha
       </p>
 
+      <label htmlFor="reporte-motivo" className="sr-only">
+        ¿Qué está mal?
+      </label>
       <select
+        id="reporte-motivo"
         required
         value={motivo}
         onChange={(e) => setMotivo(e.target.value)}
@@ -91,7 +111,11 @@ export default function ReportBusiness({ slug, businessName }: Props) {
         ))}
       </select>
 
+      <label htmlFor="reporte-detalle" className="sr-only">
+        Contanos más (opcional)
+      </label>
       <textarea
+        id="reporte-detalle"
         value={detalle}
         onChange={(e) => setDetalle(e.target.value)}
         placeholder="Contanos más (opcional)"
@@ -100,7 +124,11 @@ export default function ReportBusiness({ slug, businessName }: Props) {
         className="field w-full text-sm"
       />
 
+      <label htmlFor="reporte-email" className="sr-only">
+        Tu email (opcional)
+      </label>
       <input
+        id="reporte-email"
         type="email"
         value={email}
         onChange={(e) => setEmail(e.target.value)}
@@ -109,20 +137,36 @@ export default function ReportBusiness({ slug, businessName }: Props) {
         className="field w-full text-sm"
       />
 
-      {error && <p className="text-xs text-red-500">{error}</p>}
+      {/* Honeypot: oculto para las personas, irresistible para los bots */}
+      <input
+        type="text"
+        name="company"
+        tabIndex={-1}
+        autoComplete="off"
+        value={company}
+        onChange={(e) => setCompany(e.target.value)}
+        className="hidden"
+        aria-hidden="true"
+      />
+
+      {error && (
+        <p role="alert" className="text-[13px] text-error">
+          {error}
+        </p>
+      )}
 
       <div className="flex gap-2">
         <button
           type="submit"
           disabled={sending || !motivo}
-          className="flex-1 rounded-full bg-primary px-4 py-1.5 text-sm font-semibold text-white transition hover:bg-green-700 disabled:opacity-50"
+          className="flex-1 rounded-full bg-primary px-4 py-3 text-sm font-semibold text-white transition-colors hover:bg-primary-hover disabled:opacity-50"
         >
           {sending ? "Enviando…" : "Enviar reporte"}
         </button>
         <button
           type="button"
           onClick={() => setOpen(false)}
-          className="rounded-full border border-gray-300 px-4 py-1.5 text-sm text-gray-500 transition hover:bg-gray-100"
+          className="rounded-full border border-border px-4 py-3 text-sm text-text-body transition-colors hover:bg-bg-muted"
         >
           Cancelar
         </button>

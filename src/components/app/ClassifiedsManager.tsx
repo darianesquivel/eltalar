@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { supabaseBrowser } from "../../lib/supabase/browser";
 import {
   classifiedCategory,
@@ -36,11 +36,24 @@ export default function ClassifiedsManager({ pending, published }: Props) {
   const [tab, setTab] = useState<"pending" | "published">("pending");
   const [items, setItems] = useState({ pending, published });
   const [busy, setBusy] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
   // Borrar es irreversible: se pide un segundo click en vez de un confirm()
   const [confirming, setConfirming] = useState<string | null>(null);
+  // La confirmación se desarma sola a los ~4s si no se concreta
+  const confirmTimer = useRef<ReturnType<typeof setTimeout> | undefined>(
+    undefined,
+  );
+
+  useEffect(() => () => clearTimeout(confirmTimer.current), []);
+
+  const cancelConfirm = () => {
+    clearTimeout(confirmTimer.current);
+    setConfirming(null);
+  };
 
   const setStatus = async (aviso: Classified, publish: boolean) => {
     setBusy(aviso.id);
+    setError(null);
 
     const now = new Date();
     const patch = publish
@@ -58,7 +71,7 @@ export default function ClassifiedsManager({ pending, published }: Props) {
 
     if (error) {
       console.error(error);
-      alert(error.message ?? "Error moderando el aviso");
+      setError(error.message ?? "Error moderando el aviso");
     } else {
       setItems((prev) => ({
         pending: prev.pending.filter((c) => c.id !== aviso.id),
@@ -73,12 +86,15 @@ export default function ClassifiedsManager({ pending, published }: Props) {
 
   const remove = async (aviso: Classified) => {
     if (confirming !== aviso.id) {
+      clearTimeout(confirmTimer.current);
       setConfirming(aviso.id);
+      confirmTimer.current = setTimeout(() => setConfirming(null), 4000);
       return;
     }
 
     setBusy(aviso.id);
-    setConfirming(null);
+    setError(null);
+    cancelConfirm();
 
     const { error } = await supabaseBrowser
       .from("classifieds")
@@ -87,7 +103,7 @@ export default function ClassifiedsManager({ pending, published }: Props) {
 
     if (error) {
       console.error(error);
-      alert(error.message ?? "Error borrando el aviso");
+      setError(error.message ?? "Error borrando el aviso");
     } else {
       setItems((prev) => ({
         pending: prev.pending.filter((c) => c.id !== aviso.id),
@@ -123,6 +139,12 @@ export default function ClassifiedsManager({ pending, published }: Props) {
           </button>
         ))}
       </div>
+
+      {error && (
+        <p role="alert" className="text-sm text-red-600">
+          {error}
+        </p>
+      )}
 
       {list.length === 0 ? (
         <p className="rounded-2xl bg-gray-50 p-5 text-sm text-gray-500">
@@ -217,6 +239,15 @@ export default function ClassifiedsManager({ pending, published }: Props) {
                     >
                       {confirming === aviso.id ? "Confirmar borrado" : "Borrar"}
                     </button>
+                    {confirming === aviso.id && (
+                      <button
+                        onClick={cancelConfirm}
+                        disabled={busy === aviso.id}
+                        className="rounded-full border border-gray-300 px-4 py-1.5 text-sm text-gray-600"
+                      >
+                        Cancelar
+                      </button>
+                    )}
                   </div>
                 </div>
 

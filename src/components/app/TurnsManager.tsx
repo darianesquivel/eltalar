@@ -45,6 +45,8 @@ export default function TurnsManager({ turns, pharmacies }: Props) {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [confirmDelete, setConfirmDelete] = useState<string | null>(null);
+  // Errores de borrado: se muestran junto a la lista, no en el form de alta
+  const [deleteError, setDeleteError] = useState<string | null>(null);
 
   const refresh = async () => {
     const { data } = await supabaseBrowser
@@ -89,8 +91,18 @@ export default function TurnsManager({ turns, pharmacies }: Props) {
   };
 
   const remove = async (id: string) => {
-    await supabaseBrowser.from("pharmacy_turns").delete().eq("id", id);
-    await refresh();
+    setDeleteError(null);
+    const { error: delError } = await supabaseBrowser
+      .from("pharmacy_turns")
+      .delete()
+      .eq("id", id);
+    if (delError) {
+      console.error(delError);
+      setDeleteError("Error borrando el turno. Probá de nuevo.");
+    } else {
+      await refresh();
+    }
+    setConfirmDelete(null);
   };
 
   const now = new Date().toISOString();
@@ -143,6 +155,12 @@ export default function TurnsManager({ turns, pharmacies }: Props) {
         {error && <p className="text-sm text-red-600 sm:col-span-2">{error}</p>}
       </form>
 
+      {deleteError && (
+        <p role="alert" className="text-sm text-red-600">
+          {deleteError}
+        </p>
+      )}
+
       {/* Lista: turnos recientes y futuros (scroll propio) */}
       <ul className="max-h-[50vh] space-y-2 overflow-y-auto pr-1">
         {items.map((t) => {
@@ -175,10 +193,7 @@ export default function TurnsManager({ turns, pharmacies }: Props) {
                     <IconButton
                       label="Sí, borrar turno"
                       variant="danger"
-                      onClick={() => {
-                        remove(t.id);
-                        setConfirmDelete(null);
-                      }}
+                      onClick={() => remove(t.id)}
                     >
                       <Check size={16} />
                     </IconButton>

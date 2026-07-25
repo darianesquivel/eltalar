@@ -31,6 +31,10 @@ export default function PhotoManager({
   const [photos, setPhotos] = useState<BusinessPhoto[]>(initialPhotos);
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  // Evita dobles clics mientras corre una acción (portada / borrar)
+  const [busy, setBusy] = useState(false);
+  // Confirmación en dos pasos para borrar una foto
+  const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
 
   const maxPhotos = isFeatured ? 4 : 1;
   const atLimit = photos.length >= maxPhotos;
@@ -94,7 +98,12 @@ export default function PhotoManager({
           is_cover: photos.length === 0, // la primera foto es portada
           position: photos.length,
         });
-      if (insError) throw insError;
+      if (insError) {
+        // La fila no se creó: borramos el archivo recién subido para no
+        // dejar huérfanos en el storage
+        await supabaseBrowser.storage.from("business-photos").remove([path]);
+        throw insError;
+      }
 
       await refresh();
     } catch (err: any) {
@@ -106,27 +115,77 @@ export default function PhotoManager({
   };
 
   const setCover = async (photoId: string) => {
-    await supabaseBrowser
-      .from("business_photos")
-      .update({ is_cover: false })
-      .eq("business_id", businessId);
-    await supabaseBrowser
-      .from("business_photos")
-      .update({ is_cover: true })
-      .eq("id", photoId);
-    await refresh();
+    if (busy) return;
+    setBusy(true);
+    setError(null);
+    // Guardamos la portada actual por si hay que restaurarla
+    const prevCoverId = photos.find((p) => p.is_cover)?.id ?? null;
+
+    try {
+      const { error: clearError } = await supabaseBrowser
+        .from("business_photos")
+        .update({ is_cover: false })
+        .eq("business_id", businessId);
+      if (clearError) throw clearError;
+
+      const { error: coverError } = await supabaseBrowser
+        .from("business_photos")
+        .update({ is_cover: true })
+        .eq("id", photoId);
+      if (coverError) {
+        // No quedó ninguna portada: intentamos volver a la anterior
+        if (prevCoverId) {
+          await supabaseBrowser
+            .from("business_photos")
+            .update({ is_cover: true })
+            .eq("id", prevCoverId);
+        }
+        throw coverError;
+      }
+
+      await refresh();
+    } catch (err) {
+      console.error(err);
+      setError("No pudimos cambiar la portada. Probá de nuevo.");
+    } finally {
+      setBusy(false);
+    }
   };
 
   const remove = async (photo: BusinessPhoto) => {
-    // Borra el archivo del storage solo si está en la carpeta del negocio
-    const marker = "/business-photos/";
-    const idx = photo.url.indexOf(marker);
-    if (idx !== -1) {
-      const path = decodeURIComponent(photo.url.slice(idx + marker.length));
-      await supabaseBrowser.storage.from("business-photos").remove([path]);
+    if (busy) return;
+    setBusy(true);
+    setError(null);
+
+    try {
+      // Primero la fila: si falla, el archivo sigue intacto en el storage
+      const { error: delError } = await supabaseBrowser
+        .from("business_photos")
+        .delete()
+        .eq("id", photo.id);
+      if (delError) throw delError;
+
+      // Después el archivo, solo si está en la carpeta del negocio (best-effort)
+      const marker = "/business-photos/";
+      const idx = photo.url.indexOf(marker);
+      if (idx !== -1) {
+        const path = decodeURIComponent(photo.url.slice(idx + marker.length));
+        const { error: storageError } = await supabaseBrowser.storage
+          .from("business-photos")
+          .remove([path]);
+        if (storageError) {
+          console.error("Error borrando el archivo del storage", storageError);
+        }
+      }
+
+      await refresh();
+    } catch (err) {
+      console.error(err);
+      setError("No pudimos borrar la foto. Probá de nuevo.");
+    } finally {
+      setBusy(false);
+      setConfirmDeleteId(null);
     }
-    await supabaseBrowser.from("business_photos").delete().eq("id", photo.id);
-    await refresh();
   };
 
   return (
@@ -149,20 +208,41 @@ export default function PhotoManager({
               </span>
             )}
             <div className="absolute inset-x-0 bottom-0 flex justify-between gap-1 bg-black/50 p-1.5 opacity-0 transition group-hover:opacity-100">
-              {!photo.is_cover && (
+              {!photo.is_cover && confirmDeleteId !== photo.id && (
                 <button
                   onClick={() => setCover(photo.id)}
-                  className="rounded bg-white/90 px-2 py-0.5 text-[11px] font-semibold"
+                  disabled={busy}
+                  className="rounded bg-white/90 px-2 py-0.5 text-[11px] font-semibold disabled:opacity-60"
                 >
                   Hacer portada
                 </button>
               )}
-              <button
-                onClick={() => remove(photo)}
-                className="ml-auto rounded bg-red-500/90 px-2 py-0.5 text-[11px] font-semibold text-white"
-              >
-                Borrar
-              </button>
+              {confirmDeleteId === photo.id ? (
+                <span className="ml-auto flex items-center gap-1">
+                  <button
+                    onClick={() => remove(photo)}
+                    disabled={busy}
+                    className="rounded bg-red-500/90 px-2 py-0.5 text-[11px] font-semibold text-white disabled:opacity-60"
+                  >
+                    ¿Borrar?
+                  </button>
+                  <button
+                    onClick={() => setConfirmDeleteId(null)}
+                    disabled={busy}
+                    className="rounded bg-white/90 px-2 py-0.5 text-[11px] font-semibold"
+                  >
+                    No
+                  </button>
+                </span>
+              ) : (
+                <button
+                  onClick={() => setConfirmDeleteId(photo.id)}
+                  disabled={busy}
+                  className="ml-auto rounded bg-red-500/90 px-2 py-0.5 text-[11px] font-semibold text-white disabled:opacity-60"
+                >
+                  Borrar
+                </button>
+              )}
             </div>
           </div>
         ))}

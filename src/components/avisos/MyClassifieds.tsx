@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { supabaseBrowser } from "../../lib/supabase/browser";
 import {
   classifiedCategory,
@@ -47,11 +47,35 @@ export default function MyClassifieds({ classifieds }: Props) {
   const [busy, setBusy] = useState<string | null>(null);
   // Borrar no tiene vuelta: se pide un segundo click en vez de un confirm()
   const [confirming, setConfirming] = useState<string | null>(null);
+  // Errores de renovar/borrar, mostrados al lado de la card afectada
+  const [errorDe, setErrorDe] = useState<{
+    id: string;
+    mensaje: string;
+  } | null>(null);
+  // Feedback breve después de renovar
+  const [renovado, setRenovado] = useState<string | null>(null);
+
+  const confirmTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const renovadoTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(
+    () => () => {
+      if (confirmTimer.current) clearTimeout(confirmTimer.current);
+      if (renovadoTimer.current) clearTimeout(renovadoTimer.current);
+    },
+    [],
+  );
+
+  const cancelarConfirmacion = () => {
+    if (confirmTimer.current) clearTimeout(confirmTimer.current);
+    setConfirming(null);
+  };
 
   // Renovar no pasa por moderación: no cambia el contenido, solo estira la
   // fecha. Por eso va por la función renovar_aviso y no por un update.
   const renew = async (aviso: MyClassified) => {
     setBusy(aviso.id);
+    setErrorDe(null);
 
     const { data, error } = await supabaseBrowser.rpc("renovar_aviso", {
       p_id: aviso.id,
@@ -59,7 +83,10 @@ export default function MyClassifieds({ classifieds }: Props) {
 
     if (error) {
       console.error(error);
-      alert(error.message ?? "No pudimos renovar el aviso");
+      setErrorDe({
+        id: aviso.id,
+        mensaje: error.message ?? "No pudimos renovar el aviso",
+      });
     } else {
       setItems((prev) =>
         prev.map((c) =>
@@ -68,6 +95,9 @@ export default function MyClassifieds({ classifieds }: Props) {
             : c,
         ),
       );
+      setRenovado(aviso.id);
+      if (renovadoTimer.current) clearTimeout(renovadoTimer.current);
+      renovadoTimer.current = setTimeout(() => setRenovado(null), 4000);
     }
 
     setBusy(null);
@@ -75,12 +105,17 @@ export default function MyClassifieds({ classifieds }: Props) {
 
   const remove = async (aviso: MyClassified) => {
     if (confirming !== aviso.id) {
+      // El pedido de confirmación vence solo: nadie quiere un botón rojo
+      // armado para siempre.
       setConfirming(aviso.id);
+      if (confirmTimer.current) clearTimeout(confirmTimer.current);
+      confirmTimer.current = setTimeout(() => setConfirming(null), 4000);
       return;
     }
 
     setBusy(aviso.id);
-    setConfirming(null);
+    setErrorDe(null);
+    cancelarConfirmacion();
 
     const { error } = await supabaseBrowser
       .from("classifieds")
@@ -89,11 +124,22 @@ export default function MyClassifieds({ classifieds }: Props) {
 
     if (error) {
       console.error(error);
-      alert(error.message ?? "No pudimos borrar el aviso");
+      setErrorDe({
+        id: aviso.id,
+        mensaje: error.message ?? "No pudimos borrar el aviso",
+      });
     } else {
-      // La foto se va con el aviso: si no, queda ocupando storage sin dueño
-      const path = aviso.photo_url?.split("/classified-photos/")[1];
-      if (path) {
+      // La foto se va con el aviso: si no, queda ocupando storage sin dueño.
+      // La URL pública viene percent-encodeada: hay que decodificarla igual
+      // que storagePath() en la API, o Storage no encuentra el objeto.
+      const raw = aviso.photo_url?.split("/classified-photos/")[1];
+      if (raw) {
+        let path = raw;
+        try {
+          path = decodeURIComponent(raw);
+        } catch {
+          // Queda la ruta cruda: mejor intentar con algo que con nada
+        }
         await supabaseBrowser.storage.from("classified-photos").remove([path]);
       }
       setItems((prev) => prev.filter((c) => c.id !== aviso.id));
@@ -176,7 +222,7 @@ export default function MyClassifieds({ classifieds }: Props) {
               </div>
             </div>
 
-            <div className="flex flex-wrap gap-2">
+            <div className="flex flex-wrap items-center gap-2">
               {(aviso.status === "expired" || aviso.status === "published") && (
                 <button
                   type="button"
@@ -186,6 +232,14 @@ export default function MyClassifieds({ classifieds }: Props) {
                 >
                   Renovar 30 días
                 </button>
+              )}
+              {renovado === aviso.id && (
+                <span
+                  role="status"
+                  className="text-[13px] font-semibold text-primary-strong"
+                >
+                  Renovado ✓
+                </span>
               )}
               <a
                 href={`/avisos/mios/${aviso.id}`}
@@ -205,7 +259,22 @@ export default function MyClassifieds({ classifieds }: Props) {
               >
                 {confirming === aviso.id ? "Confirmar" : "Borrar"}
               </button>
+              {confirming === aviso.id && (
+                <button
+                  type="button"
+                  onClick={cancelarConfirmacion}
+                  className="rounded-xl bg-primary-faint px-4 py-2.5 text-[13px] font-semibold text-text-main transition-colors hover:bg-primary-soft"
+                >
+                  Cancelar
+                </button>
+              )}
             </div>
+
+            {errorDe?.id === aviso.id && (
+              <p role="alert" className="w-full text-[13px] text-error">
+                {errorDe.mensaje}
+              </p>
+            )}
           </div>
         );
       })}

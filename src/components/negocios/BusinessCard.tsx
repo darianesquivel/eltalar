@@ -45,6 +45,18 @@ export default function BusinessCard({ business }: BusinessCardProps) {
   return (
     <div
       onClick={openDetail}
+      // Accesible con teclado: sin esto, la card solo era clickeable con
+      // mouse y el lector de pantalla no la anunciaba como acción (el link
+      // del título sigue siendo el acceso semántico principal).
+      role="button"
+      tabIndex={0}
+      aria-label={`Ver ficha de ${business.name}`}
+      onKeyDown={(e) => {
+        if (e.key === "Enter" || e.key === " ") {
+          e.preventDefault();
+          openDetail();
+        }
+      }}
       className="flex cursor-pointer flex-col overflow-hidden rounded-[20px] bg-bg-card shadow-card transition-colors"
     >
       {/* PORTADA */}

@@ -56,9 +56,12 @@ export default function StatsCard({ businessId, isFeatured }: Props) {
   const [error, setError] = useState(false);
 
   useEffect(() => {
+    // Flag de cancelación: evita setState de una respuesta vieja o tras desmontar
+    let cancelled = false;
     supabaseBrowser
       .rpc("get_business_stats", { p_business_id: businessId, p_days: 30 })
       .then(({ data, error }) => {
+        if (cancelled) return;
         if (error) {
           console.error(error);
           setError(true);
@@ -66,9 +69,18 @@ export default function StatsCard({ businessId, isFeatured }: Props) {
           setStats((data as StatRow[]) ?? []);
         }
       });
+    return () => {
+      cancelled = true;
+    };
   }, [businessId]);
 
-  if (error) return null;
+  if (error) {
+    return (
+      <p role="alert" className="text-sm text-gray-400">
+        No pudimos cargar las estadísticas.
+      </p>
+    );
+  }
 
   if (!stats) {
     return <p className="text-sm text-gray-400">Cargando estadísticas…</p>;

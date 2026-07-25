@@ -23,7 +23,14 @@ export default function CategoryFilter({
   total,
   ratingsEnabled = false,
 }: CategoryFilterProps) {
-  const [params, setParams] = useState(() => new URLSearchParams());
+  // Arranca leyendo la URL real: si no, el primer paint pinta "Todos" activo
+  // aunque la URL compartida traiga filtros (flash visible).
+  const [params, setParams] = useState(
+    () =>
+      new URLSearchParams(
+        typeof window === "undefined" ? "" : window.location.search,
+      ),
+  );
   const [showAll, setShowAll] = useState(false);
 
   const syncFromUrl = () =>
@@ -126,6 +133,7 @@ export default function CategoryFilter({
           <button
             type="button"
             onClick={() => setShowAll((v) => !v)}
+            aria-expanded={showAll}
             className="px-3 py-[9px] text-[13.5px] font-semibold text-primary-strong"
           >
             {showAll ? "Ver menos" : `Ver los ${categories.length} rubros`}

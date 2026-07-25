@@ -18,16 +18,18 @@ type Props = {
 export default function ClaimsManager({ claims }: Props) {
   const [items, setItems] = useState(claims);
   const [busy, setBusy] = useState<string | null>(null);
+  const [actionError, setActionError] = useState<string | null>(null);
 
   const resolve = async (id: string, approve: boolean) => {
     setBusy(id);
+    setActionError(null);
     const { error } = await supabaseBrowser.rpc("admin_resolve_claim", {
       p_claim_id: id,
       p_approve: approve,
     });
     if (error) {
       console.error(error);
-      alert(error.message ?? "Error resolviendo el reclamo");
+      setActionError(error.message ?? "Error resolviendo el reclamo");
     } else {
       setItems((prev) =>
         prev.map((c) =>
@@ -49,7 +51,13 @@ export default function ClaimsManager({ claims }: Props) {
   }
 
   return (
-    <ul className="space-y-2">
+    <div className="space-y-2">
+      {actionError && (
+        <p role="alert" className="text-sm text-red-600">
+          {actionError}
+        </p>
+      )}
+      <ul className="space-y-2">
       {pending.map((c) => (
         <li
           key={c.id}
@@ -89,6 +97,7 @@ export default function ClaimsManager({ claims }: Props) {
           )}
         </li>
       ))}
-    </ul>
+      </ul>
+    </div>
   );
 }

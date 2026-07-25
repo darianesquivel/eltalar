@@ -180,6 +180,8 @@ export default function BulkTurnsLoader({ pharmacies }: Props) {
   const [durationHours, setDurationHours] = useState(24);
   const [parsed, setParsed] = useState<ParsedLine[] | null>(null);
   const [loading, setLoading] = useState(false);
+  const [analyzing, setAnalyzing] = useState(false);
+  const [analyzeError, setAnalyzeError] = useState<string | null>(null);
   const [result, setResult] = useState<string | null>(null);
   const [overlapWarning, setOverlapWarning] = useState<string | null>(null);
 
@@ -188,20 +190,34 @@ export default function BulkTurnsLoader({ pharmacies }: Props) {
     setParsed(lines);
     setResult(null);
     setOverlapWarning(null);
+    setAnalyzeError(null);
 
     const dates = lines.map((l) => l.date).filter(Boolean) as string[];
     if (dates.length > 0) {
-      const min = `${dates.reduce((a, b) => (a < b ? a : b))}T00:00:00-03:00`;
-      const max = `${dates.reduce((a, b) => (a > b ? a : b))}T23:59:59-03:00`;
-      const { count } = await supabaseBrowser
-        .from("pharmacy_turns")
-        .select("id", { count: "exact", head: true })
-        .gte("starts_at", new Date(min).toISOString())
-        .lte("starts_at", new Date(max).toISOString());
-      if (count && count > 0) {
-        setOverlapWarning(
-          `⚠️ Ojo: ya hay ${count} turno(s) cargados en ese rango de fechas. Si estás recargando el mismo mes, borralos primero para no duplicar.`,
+      setAnalyzing(true);
+      try {
+        const min = `${dates.reduce((a, b) => (a < b ? a : b))}T00:00:00-03:00`;
+        const max = `${dates.reduce((a, b) => (a > b ? a : b))}T23:59:59-03:00`;
+        const { count, error: countError } = await supabaseBrowser
+          .from("pharmacy_turns")
+          .select("id", { count: "exact", head: true })
+          .gte("starts_at", new Date(min).toISOString())
+          .lte("starts_at", new Date(max).toISOString());
+        if (countError) throw countError;
+        if (count && count > 0) {
+          setOverlapWarning(
+            `⚠️ Ojo: ya hay ${count} turno(s) cargados en ese rango de fechas. Si estás recargando el mismo mes, borralos primero para no duplicar.`,
+          );
+        }
+      } catch (err) {
+        // El chequeo de duplicados falló (p.ej. sin red): se avisa, pero el
+        // análisis de la lista sigue siendo válido
+        console.error(err);
+        setAnalyzeError(
+          "No pudimos chequear si ya hay turnos cargados en esas fechas. Revisá a mano antes de cargar para no duplicar.",
         );
+      } finally {
+        setAnalyzing(false);
       }
     }
   };
@@ -324,12 +340,18 @@ export default function BulkTurnsLoader({ pharmacies }: Props) {
 
           <button
             onClick={analyze}
-            disabled={!text.trim()}
+            disabled={!text.trim() || analyzing}
             className="rounded-xl bg-secondary px-5 py-2 text-sm font-semibold text-white hover:opacity-90 disabled:opacity-50"
           >
-            Analizar lista
+            {analyzing ? "Analizando…" : "Analizar lista"}
           </button>
         </div>
+
+        {analyzeError && (
+          <p role="alert" className="rounded-xl bg-red-50 p-3 text-sm text-red-600">
+            {analyzeError}
+          </p>
+        )}
 
         {overlapWarning && (
           <p className="rounded-xl bg-amber-50 p-3 text-sm text-amber-700">

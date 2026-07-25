@@ -15,10 +15,23 @@ type Props = {
 
 export default function MessagesManager({ messages }: Props) {
   const [items, setItems] = useState(messages);
+  const [error, setError] = useState<string | null>(null);
 
   const remove = async (id: string) => {
-    await supabaseBrowser.from("contact_messages").delete().eq("id", id);
-    setItems((prev) => prev.filter((m) => m.id !== id));
+    setError(null);
+    // Borrado optimista: sacamos la fila ya y la restauramos si falló
+    const prev = items;
+    setItems((p) => p.filter((m) => m.id !== id));
+
+    const { error: delError } = await supabaseBrowser
+      .from("contact_messages")
+      .delete()
+      .eq("id", id);
+    if (delError) {
+      console.error(delError);
+      setItems(prev);
+      setError("No pudimos borrar el mensaje. Probá de nuevo.");
+    }
   };
 
   if (items.length === 0) {
@@ -31,7 +44,13 @@ export default function MessagesManager({ messages }: Props) {
   }
 
   return (
-    <ul className="space-y-3">
+    <div className="space-y-3">
+      {error && (
+        <p role="alert" className="text-sm text-red-600">
+          {error}
+        </p>
+      )}
+      <ul className="space-y-3">
       {items.map((m) => (
         <li key={m.id} className="rounded-2xl bg-white p-5 shadow-sm space-y-2">
           <div className="flex flex-wrap items-center justify-between gap-2">
@@ -65,6 +84,7 @@ export default function MessagesManager({ messages }: Props) {
           </p>
         </li>
       ))}
-    </ul>
+      </ul>
+    </div>
   );
 }

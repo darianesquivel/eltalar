@@ -23,7 +23,17 @@ export default function DeleteBusiness({
     setError(null);
 
     try {
-      // 1. Fotos del storage (best-effort)
+      // 1. El negocio (horarios, fotos, categorías y reclamos caen en cascada).
+      // Va PRIMERO: si falla (p.ej. sin permiso), las fotos siguen intactas.
+      const { error: delError, count } = await supabaseBrowser
+        .from("businesses")
+        .delete({ count: "exact" })
+        .eq("id", businessId);
+
+      if (delError) throw delError;
+      if (!count) throw new Error("Sin permiso para borrar este negocio");
+
+      // 2. Fotos del storage (best-effort: si falla, quedan huérfanas)
       const marker = "/business-photos/";
       const paths = photoUrls
         .map((url) => {
@@ -35,17 +45,13 @@ export default function DeleteBusiness({
         .filter((p): p is string => Boolean(p));
 
       if (paths.length > 0) {
-        await supabaseBrowser.storage.from("business-photos").remove(paths);
+        const { error: storageError } = await supabaseBrowser.storage
+          .from("business-photos")
+          .remove(paths);
+        if (storageError) {
+          console.error("Error limpiando fotos del storage", storageError);
+        }
       }
-
-      // 2. El negocio (horarios, fotos, categorías y reclamos caen en cascada)
-      const { error: delError, count } = await supabaseBrowser
-        .from("businesses")
-        .delete({ count: "exact" })
-        .eq("id", businessId);
-
-      if (delError) throw delError;
-      if (!count) throw new Error("Sin permiso para borrar este negocio");
 
       window.location.href = "/app?borrado=1";
     } catch (err: any) {

@@ -31,6 +31,7 @@ export default function AddressAutocomplete({
     undefined,
   );
   const seqRef = useRef(0);
+  const abortRef = useRef<AbortController | null>(null);
   const boxRef = useRef<HTMLDivElement>(null);
 
   // Cerrar al clickear afuera
@@ -42,6 +43,15 @@ export default function AddressAutocomplete({
     return () => document.removeEventListener("mousedown", close);
   }, []);
 
+  // Limpieza al desmontar: cancela el debounce y el fetch en vuelo
+  useEffect(
+    () => () => {
+      clearTimeout(debounceRef.current);
+      abortRef.current?.abort();
+    },
+    [],
+  );
+
   const fetchSuggestions = (q: string) => {
     clearTimeout(debounceRef.current);
     if (q.trim().length < 4) {
@@ -51,8 +61,14 @@ export default function AddressAutocomplete({
     }
     debounceRef.current = setTimeout(async () => {
       const seq = ++seqRef.current;
+      // Cancela el fetch anterior si todavía estaba en vuelo
+      abortRef.current?.abort();
+      const controller = new AbortController();
+      abortRef.current = controller;
       try {
-        const res = await fetch(`/api/direcciones?q=${encodeURIComponent(q)}`);
+        const res = await fetch(`/api/direcciones?q=${encodeURIComponent(q)}`, {
+          signal: controller.signal,
+        });
         const data = await res.json();
         if (seq !== seqRef.current) return; // llegó tarde
         setSuggestions(data.suggestions ?? []);

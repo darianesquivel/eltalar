@@ -77,11 +77,14 @@ export default function HoursEditor({
 
       // Con turno no hay horarios fijos que sincronizar
       if (!byAppointment) {
-        // Sync simple: borrar y volver a insertar los 7 días
-        const { error: delError } = await supabaseBrowser
+        // Sync simple: borrar y volver a insertar los 7 días.
+        // Guardamos las filas borradas para restaurarlas si el insert falla
+        // y no dejar al negocio sin horarios.
+        const { data: prevRows, error: delError } = await supabaseBrowser
           .from("business_hours")
           .delete()
-          .eq("business_id", businessId);
+          .eq("business_id", businessId)
+          .select();
         if (delError) throw delError;
 
         const rows = days.map((d, day_of_week) => ({
@@ -96,7 +99,25 @@ export default function HoursEditor({
         const { error: insError } = await supabaseBrowser
           .from("business_hours")
           .insert(rows);
-        if (insError) throw insError;
+        if (insError) {
+          // Falló el insert: intentamos volver a los horarios anteriores
+          if (prevRows && prevRows.length > 0) {
+            const { error: restoreError } = await supabaseBrowser
+              .from("business_hours")
+              .insert(prevRows);
+            if (restoreError) {
+              console.error(
+                "No se pudieron restaurar los horarios anteriores",
+                restoreError,
+              );
+              setError(
+                "No pudimos guardar los horarios y el negocio quedó sin horarios cargados. Volvé a guardar para dejarlos bien.",
+              );
+              return;
+            }
+          }
+          throw insError;
+        }
       }
 
       setSaved(true);

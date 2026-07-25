@@ -90,6 +90,7 @@ export default function AdminBusinesses({ barrioId }: AdminBusinessesProps) {
 
   // Acciones
   const [busy, setBusy] = useState<string | null>(null);
+  const [actionError, setActionError] = useState<string | null>(null);
   const [confirmDelete, setConfirmDelete] = useState<string | null>(null);
   const [confirmRemoveOwner, setConfirmRemoveOwner] = useState<string | null>(
     null,
@@ -220,6 +221,7 @@ export default function AdminBusinesses({ barrioId }: AdminBusinessesProps) {
 
   const setStatus = async (id: string, status: string) => {
     setBusy(id);
+    setActionError(null);
     const { error } = await supabaseBrowser.rpc("admin_set_business_status", {
       p_business_id: id,
       p_status: status,
@@ -228,7 +230,7 @@ export default function AdminBusinesses({ barrioId }: AdminBusinessesProps) {
       refresh();
     } else {
       console.error(error);
-      alert("Error actualizando el estado");
+      setActionError("Error actualizando el estado");
     }
     setBusy(null);
   };
@@ -237,6 +239,7 @@ export default function AdminBusinesses({ barrioId }: AdminBusinessesProps) {
   // de moderación (RPC admin_set_business_active)
   const toggleActive = async (id: string, active: boolean) => {
     setBusy(id);
+    setActionError(null);
     const { error } = await supabaseBrowser.rpc("admin_set_business_active", {
       p_business_id: id,
       p_active: active,
@@ -245,13 +248,14 @@ export default function AdminBusinesses({ barrioId }: AdminBusinessesProps) {
       refresh();
     } else {
       console.error(error);
-      alert("Error cambiando la visibilidad");
+      setActionError("Error cambiando la visibilidad");
     }
     setBusy(null);
   };
 
   const toggleFeatured = async (id: string, featured: boolean) => {
     setBusy(id);
+    setActionError(null);
     const { error } = await supabaseBrowser.rpc("admin_set_featured", {
       p_business_id: id,
       p_featured: featured,
@@ -260,7 +264,7 @@ export default function AdminBusinesses({ barrioId }: AdminBusinessesProps) {
       patchLocal(id, { is_featured: featured });
     } else {
       console.error(error);
-      alert("Error actualizando destacado");
+      setActionError("Error actualizando destacado");
     }
     setBusy(null);
   };
@@ -268,6 +272,7 @@ export default function AdminBusinesses({ barrioId }: AdminBusinessesProps) {
   // Quita el dueño y limpia los reclamos: el negocio vuelve a ser reclamable
   const removeOwner = async (id: string) => {
     setBusy(id);
+    setActionError(null);
     const { error } = await supabaseBrowser.rpc("admin_remove_owner", {
       p_business_id: id,
     });
@@ -275,7 +280,7 @@ export default function AdminBusinesses({ barrioId }: AdminBusinessesProps) {
       patchLocal(id, { owner_id: null });
     } else {
       console.error(error);
-      alert("Error quitando el dueño");
+      setActionError("Error quitando el dueño");
     }
     setBusy(null);
     setConfirmRemoveOwner(null);
@@ -283,12 +288,21 @@ export default function AdminBusinesses({ barrioId }: AdminBusinessesProps) {
 
   const remove = async (id: string) => {
     setBusy(id);
+    setActionError(null);
     try {
-      // Limpia las fotos del storage antes de borrar la fila
+      // Las URLs de las fotos se leen antes (la fila de business_photos cae
+      // en cascada al borrar el negocio), pero el storage se limpia DESPUÉS:
+      // si el borrado de la fila falla, no perdemos los archivos.
       const { data: photos } = await supabaseBrowser
         .from("business_photos")
         .select("url")
         .eq("business_id", id);
+
+      const { error } = await supabaseBrowser
+        .from("businesses")
+        .delete()
+        .eq("id", id);
+      if (error) throw error;
 
       const marker = "/business-photos/";
       const paths = (photos ?? [])
@@ -301,14 +315,14 @@ export default function AdminBusinesses({ barrioId }: AdminBusinessesProps) {
         .filter((p): p is string => Boolean(p));
 
       if (paths.length > 0) {
-        await supabaseBrowser.storage.from("business-photos").remove(paths);
+        const { error: storageError } = await supabaseBrowser.storage
+          .from("business-photos")
+          .remove(paths);
+        if (storageError) {
+          // El negocio ya no existe: solo quedan archivos huérfanos en storage
+          console.error("Error limpiando fotos del storage", storageError);
+        }
       }
-
-      const { error } = await supabaseBrowser
-        .from("businesses")
-        .delete()
-        .eq("id", id);
-      if (error) throw error;
 
       setItems((prev) => prev.filter((b) => b.id !== id));
       setPending((prev) => prev.filter((b) => b.id !== id));
@@ -316,7 +330,7 @@ export default function AdminBusinesses({ barrioId }: AdminBusinessesProps) {
       loadCounts();
     } catch (err) {
       console.error(err);
-      alert("Error borrando el negocio");
+      setActionError("Error borrando el negocio");
     } finally {
       setBusy(null);
       setConfirmDelete(null);
@@ -523,6 +537,15 @@ export default function AdminBusinesses({ barrioId }: AdminBusinessesProps) {
           ))}
         </select>
       </div>
+
+      {actionError && (
+        <p
+          role="alert"
+          className="shrink-0 rounded-xl bg-red-50 px-4 py-2 text-sm text-red-600"
+        >
+          {actionError}
+        </p>
+      )}
 
       {/* Dos tablas lado a lado: todos | pendientes */}
       <div className="grid min-h-0 flex-1 gap-4 lg:grid-cols-2">

@@ -41,20 +41,43 @@ type Props = {
 export default function EventsManager({ barrioId }: Props) {
   const [events, setEvents] = useState<EventItem[]>([]);
   const [loading, setLoading] = useState(true);
+  // Distingue "falló la carga" de "no hay eventos" para no mentir con el vacío
+  const [loadError, setLoadError] = useState(false);
   const [form, setForm] = useState(EMPTY_FORM);
   const [photo, setPhoto] = useState<File | null>(null);
   const [preview, setPreview] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState<string | null>(null);
+  const [actionError, setActionError] = useState<string | null>(null);
   const [confirmDelete, setConfirmDelete] = useState<string | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
+    // Flag de cancelación: si cambia el barrio, la respuesta vieja se descarta
+    let cancelled = false;
+    setLoading(true);
+    setLoadError(false);
     fetch(`/api/admin/eventos?barrio=${barrioId}`)
-      .then((r) => r.json())
-      .then((d) => setEvents(d.events ?? []))
-      .finally(() => setLoading(false));
+      .then((r) => {
+        if (!r.ok) throw new Error(`HTTP ${r.status}`);
+        return r.json();
+      })
+      .then((d) => {
+        if (!cancelled) setEvents(d.events ?? []);
+      })
+      .catch((err) => {
+        if (!cancelled) {
+          console.error(err);
+          setLoadError(true);
+        }
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
   }, [barrioId]);
 
   const set =
@@ -62,10 +85,24 @@ export default function EventsManager({ barrioId }: Props) {
     (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) =>
       setForm({ ...form, [field]: e.target.value });
 
+  // Libera el object URL de la vista previa al desmontar
+  const previewRef = useRef<string | null>(null);
+  previewRef.current = preview;
+  useEffect(
+    () => () => {
+      if (previewRef.current) URL.revokeObjectURL(previewRef.current);
+    },
+    [],
+  );
+
   const onPhoto = (e: React.ChangeEvent<HTMLInputElement>) => {
     const f = e.target.files?.[0] ?? null;
     setPhoto(f);
-    setPreview(f ? URL.createObjectURL(f) : null);
+    setPreview((prev) => {
+      // Al reemplazar la foto, el object URL anterior se libera
+      if (prev) URL.revokeObjectURL(prev);
+      return f ? URL.createObjectURL(f) : null;
+    });
   };
 
   const submit = async (e: React.FormEvent) => {
@@ -88,7 +125,10 @@ export default function EventsManager({ barrioId }: Props) {
       setEvents((prev) => [data.event, ...prev]);
       setForm(EMPTY_FORM);
       setPhoto(null);
-      setPreview(null);
+      setPreview((prev) => {
+        if (prev) URL.revokeObjectURL(prev);
+        return null;
+      });
       if (fileRef.current) fileRef.current.value = "";
     } catch (err: any) {
       setError(err.message);
@@ -99,34 +139,40 @@ export default function EventsManager({ barrioId }: Props) {
 
   const toggleActive = async (ev: EventItem) => {
     setBusy(ev.id);
-    const res = await fetch("/api/admin/eventos", {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ id: ev.id, is_active: !ev.is_active }),
-    });
-    if (res.ok) {
+    setActionError(null);
+    try {
+      const res = await fetch("/api/admin/eventos", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id: ev.id, is_active: !ev.is_active }),
+      });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
       setEvents((prev) =>
         prev.map((e) =>
           e.id === ev.id ? { ...e, is_active: !ev.is_active } : e,
         ),
       );
-    } else {
-      alert("Error actualizando el evento");
+    } catch (err) {
+      console.error(err);
+      setActionError("Error actualizando el evento. Probá de nuevo.");
     }
     setBusy(null);
   };
 
   const remove = async (id: string) => {
     setBusy(id);
-    const res = await fetch("/api/admin/eventos", {
-      method: "DELETE",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ id }),
-    });
-    if (res.ok) {
+    setActionError(null);
+    try {
+      const res = await fetch("/api/admin/eventos", {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id }),
+      });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
       setEvents((prev) => prev.filter((e) => e.id !== id));
-    } else {
-      alert("Error borrando el evento");
+    } catch (err) {
+      console.error(err);
+      setActionError("Error borrando el evento. Probá de nuevo.");
     }
     setBusy(null);
     setConfirmDelete(null);
@@ -322,6 +368,12 @@ export default function EventsManager({ barrioId }: Props) {
         </button>
       </form>
 
+      {actionError && (
+        <p role="alert" className="text-sm text-red-600">
+          {actionError}
+        </p>
+      )}
+
       {/* VIGENTES */}
       <div className="space-y-2">
         <h2 className="text-sm font-semibold text-gray-500">
@@ -332,6 +384,13 @@ export default function EventsManager({ barrioId }: Props) {
         </h2>
         {loading ? (
           <p className="text-sm text-gray-400">Cargando…</p>
+        ) : loadError ? (
+          <p
+            role="alert"
+            className="rounded-xl bg-red-50 px-5 py-3 text-sm text-red-600"
+          >
+            No pudimos cargar los eventos. Recargá la página para reintentar.
+          </p>
         ) : vigentes.length > 0 ? (
           <ul className="space-y-2">{vigentes.map(row)}</ul>
         ) : (
