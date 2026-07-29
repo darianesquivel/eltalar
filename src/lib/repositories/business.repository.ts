@@ -2,8 +2,6 @@ import { supabase } from "../supabase";
 import type { Database } from "../database.types";
 import {
   nowInArgentina,
-  openFromYesterday,
-  openNowToday,
   todayInArgentina,
   type BusinessHour,
 } from "../hours";
@@ -385,84 +383,18 @@ async function getCategoryCountsFallback(
 /**
  * Negocios abiertos EN ESTE MOMENTO, para la home.
  *
- * Dos consultas chicas en vez de una grande: primero los horarios de HOY
- * (una fila por negocio, sin joins de fotos ni ofertas) para saber quién
- * está abierto, y recién después la ficha completa de los pocos que se
- * muestran. Traer 60 negocios enteros para mostrar 4 costaba caro.
+ * Mismo camino que la guía con ?abierto=1: el "está abierto" se resuelve
+ * EN LA BASE (filtro or() + is_overnight) y vuelven solo los `limit` que
+ * se muestran, ya ordenados (pagos > reclamados > resto). El camino viejo
+ * (traer los horarios y decidir en memoria) cortaba en 1000 filas por
+ * orden de uuid y podía dejar un pago afuera de la home.
  */
 export async function getOpenNowBusinesses(
   barrioId: string,
   limit = 4,
 ): Promise<BusinessSummary[]> {
-  const { day, time } = nowInArgentina();
-  // También los tramos de AYER: un nocturno (20:00–02:00) sigue abierto
-  // pasada la medianoche.
-  const yesterday = (day + 6) % 7;
-
-  // El join trae también los campos de ranking: el orden (pagos >
-  // reclamados > resto) se resuelve acá en memoria sobre TODOS los
-  // abiertos. Cortar antes de ordenar (como se hacía, por uuid) podía
-  // dejar un pago afuera de la home.
-  const { data: hours, error } = await supabase
-    .from("business_hours")
-    .select(
-      "business_id, day_of_week, open_time, close_time, is_closed, is_open_24, businesses!inner(barrio_id, is_active, by_appointment, is_featured, has_owner, priority, name)",
-    )
-    .eq("businesses.barrio_id", barrioId)
-    .eq("businesses.is_active", true)
-    .eq("businesses.by_appointment", false)
-    .in("day_of_week", [day, yesterday])
-    .eq("is_closed", false)
-    .order("business_id")
-    .limit(1000);
-
-  if (error || !hours) {
-    console.error("Error getOpenNowBusinesses:", error);
-    return [];
-  }
-
-  const openById = new Map<
-    string,
-    { is_featured: boolean; has_owner: boolean; priority: number; name: string }
-  >();
-  for (const h of hours as any[]) {
-    const isOpen =
-      h.day_of_week === day
-        ? openNowToday(h, time)
-        : openFromYesterday(h, time);
-    if (isOpen) openById.set(h.business_id, h.businesses);
-  }
-
-  const openIds = [...openById.entries()]
-    .sort(([, a], [, b]) => {
-      if (a.is_featured !== b.is_featured) return a.is_featured ? -1 : 1;
-      if (a.has_owner !== b.has_owner) return a.has_owner ? -1 : 1;
-      if ((a.priority ?? 0) !== (b.priority ?? 0))
-        return (b.priority ?? 0) - (a.priority ?? 0);
-      return a.name.localeCompare(b.name);
-    })
-    .slice(0, limit)
-    .map(([id]) => id);
-
-  if (openIds.length === 0) return [];
-
-  const { data, error: detailError } = await supabase
-    .from("businesses")
-    .select(LIST_SELECT)
-    .in("id", openIds);
-
-  if (detailError || !data) {
-    console.error("Error getOpenNowBusinesses (detalle):", detailError);
-    return [];
-  }
-
-  // .in() no garantiza orden: se respeta el ranking calculado arriba
-  const byId = new Map(data.map((d: any) => [d.id, d]));
-  return openIds
-    .map((id) => byId.get(id))
-    .filter(Boolean)
-    .map(toBusiness)
-    .map(({ photos, ...rest }) => rest);
+  const { items } = await getBusinessesPage({ barrioId, limit, openNow: true });
+  return items;
 }
 
 /**
