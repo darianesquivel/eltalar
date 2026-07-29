@@ -399,10 +399,14 @@ export async function getOpenNowBusinesses(
   // pasada la medianoche.
   const yesterday = (day + 6) % 7;
 
+  // El join trae también los campos de ranking: el orden (pagos >
+  // reclamados > resto) se resuelve acá en memoria sobre TODOS los
+  // abiertos. Cortar antes de ordenar (como se hacía, por uuid) podía
+  // dejar un pago afuera de la home.
   const { data: hours, error } = await supabase
     .from("business_hours")
     .select(
-      "business_id, day_of_week, open_time, close_time, is_closed, is_open_24, businesses!inner(barrio_id, is_active, by_appointment)",
+      "business_id, day_of_week, open_time, close_time, is_closed, is_open_24, businesses!inner(barrio_id, is_active, by_appointment, is_featured, has_owner, priority, name)",
     )
     .eq("businesses.barrio_id", barrioId)
     .eq("businesses.is_active", true)
@@ -417,36 +421,48 @@ export async function getOpenNowBusinesses(
     return [];
   }
 
-  const openIdSet = new Set<string>();
+  const openById = new Map<
+    string,
+    { is_featured: boolean; has_owner: boolean; priority: number; name: string }
+  >();
   for (const h of hours as any[]) {
     const isOpen =
       h.day_of_week === day
         ? openNowToday(h, time)
         : openFromYesterday(h, time);
-    if (isOpen) openIdSet.add(h.business_id);
+    if (isOpen) openById.set(h.business_id, h.businesses);
   }
 
-  // Se piden de más porque el orden final (destacados primero) lo
-  // resuelve la segunda consulta
-  const openIds = [...openIdSet].slice(0, limit * 6);
+  const openIds = [...openById.entries()]
+    .sort(([, a], [, b]) => {
+      if (a.is_featured !== b.is_featured) return a.is_featured ? -1 : 1;
+      if (a.has_owner !== b.has_owner) return a.has_owner ? -1 : 1;
+      if ((a.priority ?? 0) !== (b.priority ?? 0))
+        return (b.priority ?? 0) - (a.priority ?? 0);
+      return a.name.localeCompare(b.name);
+    })
+    .slice(0, limit)
+    .map(([id]) => id);
 
   if (openIds.length === 0) return [];
 
   const { data, error: detailError } = await supabase
     .from("businesses")
     .select(LIST_SELECT)
-    .in("id", openIds)
-    .order("is_featured", { ascending: false })
-    .order("has_owner", { ascending: false })
-    .order("priority", { ascending: false })
-    .limit(limit);
+    .in("id", openIds);
 
   if (detailError || !data) {
     console.error("Error getOpenNowBusinesses (detalle):", detailError);
     return [];
   }
 
-  return data.map(toBusiness).map(({ photos, ...rest }) => rest);
+  // .in() no garantiza orden: se respeta el ranking calculado arriba
+  const byId = new Map(data.map((d: any) => [d.id, d]));
+  return openIds
+    .map((id) => byId.get(id))
+    .filter(Boolean)
+    .map(toBusiness)
+    .map(({ photos, ...rest }) => rest);
 }
 
 /**
