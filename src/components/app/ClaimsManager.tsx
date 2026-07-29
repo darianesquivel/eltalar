@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { ExternalLink, Pencil } from "lucide-react";
 import { supabaseBrowser } from "../../lib/supabase/browser";
 
 type Claim = {
@@ -8,12 +9,26 @@ type Claim = {
   message: string | null;
   status: string;
   created_at: string;
-  businesses: { name: string } | null;
+  businesses: {
+    name: string;
+    slug: string;
+    address: string | null;
+    created_at: string | null;
+    owner_id: string | null;
+    is_active: boolean | null;
+  } | null;
 };
 
 type Props = {
   claims: Claim[];
 };
+
+const fmtDate = (d: string) =>
+  new Date(d).toLocaleDateString("es-AR", {
+    day: "2-digit",
+    month: "2-digit",
+    year: "2-digit",
+  });
 
 export default function ClaimsManager({ claims }: Props) {
   const [items, setItems] = useState(claims);
@@ -68,9 +83,22 @@ export default function ClaimsManager({ claims }: Props) {
               <p className="font-semibold">
                 {c.businesses?.name ?? "(negocio borrado)"}
               </p>
+              {c.businesses && (
+                <p className="text-xs text-gray-500">
+                  {c.businesses.address && `${c.businesses.address} · `}
+                  {c.businesses.created_at &&
+                    `cargado el ${fmtDate(c.businesses.created_at)}`}
+                  {c.businesses.owner_id && (
+                    <strong className="text-amber-600">
+                      {" "}
+                      · ya tiene dueño
+                    </strong>
+                  )}
+                </p>
+              )}
               <p className="text-xs text-gray-500">
                 Reclamado por <strong>{c.claimer_email ?? "?"}</strong> ·{" "}
-                {new Date(c.created_at).toLocaleDateString("es-AR")}
+                {fmtDate(c.created_at)}
               </p>
             </div>
             <div className="flex gap-2">
@@ -94,6 +122,26 @@ export default function ClaimsManager({ claims }: Props) {
             <p className="rounded-xl bg-gray-50 p-3 text-sm text-gray-600">
               “{c.message}”
             </p>
+          )}
+          {c.businesses && (
+            <div className="flex gap-4 text-xs font-semibold text-primary">
+              {c.businesses.is_active && (
+                <a
+                  href={`/negocios/${c.businesses.slug}`}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="inline-flex items-center gap-1 hover:underline"
+                >
+                  <ExternalLink size={12} /> Ver ficha pública
+                </a>
+              )}
+              <a
+                href={`/app/negocios/${c.business_id}`}
+                className="inline-flex items-center gap-1 hover:underline"
+              >
+                <Pencil size={12} /> Editar en el panel
+              </a>
+            </div>
           )}
         </li>
       ))}

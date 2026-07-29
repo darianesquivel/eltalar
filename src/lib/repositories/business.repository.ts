@@ -144,7 +144,8 @@ export type BusinessPage = {
   total: number;
 };
 
-/** Orden del listado público. "destacados" = los pagos primero (default). */
+/** Orden del listado público. "destacados" = pagos, después reclamados,
+ *  después el resto (default). */
 export type BusinessOrder = "destacados" | "nombre";
 
 export function parseBusinessOrder(value: string | null): BusinessOrder {
@@ -265,8 +266,11 @@ export async function getBusinessesPage(
   }
 
   if (order === "destacados") {
+    // Pagos primero, después reclamados (has_owner: columna generada sobre
+    // owner_id), después el resto; alfabético adentro de cada grupo.
     query = query
       .order("is_featured", { ascending: false })
+      .order("has_owner", { ascending: false })
       .order("priority", { ascending: false });
   }
 
@@ -433,6 +437,7 @@ export async function getOpenNowBusinesses(
     .select(LIST_SELECT)
     .in("id", openIds)
     .order("is_featured", { ascending: false })
+    .order("has_owner", { ascending: false })
     .order("priority", { ascending: false })
     .limit(limit);
 

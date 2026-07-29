@@ -284,6 +284,7 @@ export type Database = {
           created_at: string | null;
           description: string | null;
           featured_until: string | null;
+          has_owner: boolean | null;
           id: string;
           instagram: string | null;
           is_active: boolean | null;
@@ -772,6 +773,15 @@ export type Database = {
       admin_resolve_claim: {
         Args: { p_approve: boolean; p_claim_id: string };
         Returns: undefined;
+      };
+      admin_business_owner_info: {
+        Args: { p_business_ids: string[] };
+        Returns: {
+          business_id: string;
+          owner_email: string | null;
+          owner_name: string | null;
+          claimed_at: string | null;
+        }[];
       };
       admin_usage_stats: {
         Args: never;

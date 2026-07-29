@@ -25,13 +25,23 @@ type AdminBusiness = {
   status: string;
   is_active: boolean | null;
   is_featured: boolean | null;
+  featured_until: string | null;
   owner_id: string | null;
+  created_at: string | null;
+};
+
+/** Datos del dueño (RPC admin_business_owner_info, lee auth.users). */
+type OwnerInfo = {
+  business_id: string;
+  owner_email: string | null;
+  owner_name: string | null;
+  claimed_at: string | null;
 };
 
 type CategoryOption = { id: string; name: string };
 
 const SELECT =
-  "id, name, slug, address, status, is_active, is_featured, owner_id";
+  "id, name, slug, address, status, is_active, is_featured, featured_until, owner_id, created_at";
 const PAGE_SIZE = 30;
 
 // Estados que separa la tabla principal. "Oculto" = aprobado pero fuera del
@@ -87,6 +97,9 @@ export default function AdminBusinesses({ barrioId }: AdminBusinessesProps) {
   // Tabla derecha: pendientes de aprobación
   const [pending, setPending] = useState<AdminBusiness[]>([]);
   const [pendingTotal, setPendingTotal] = useState(0);
+
+  // Email/nombre del dueño por negocio, cargados de a una tanda por página
+  const [owners, setOwners] = useState<Record<string, OwnerInfo>>({});
 
   // Acciones
   const [busy, setBusy] = useState<string | null>(null);
@@ -185,6 +198,29 @@ export default function AdminBusinesses({ barrioId }: AdminBusinessesProps) {
     loadPending();
     loadCounts();
   }, []);
+
+  // Con la tanda visible ya cargada, pide los datos del dueño que falten
+  // (una sola llamada al RPC por cambio de página/filtro)
+  useEffect(() => {
+    const ids = [...items, ...pending]
+      .filter((b) => b.owner_id && !(b.id in owners))
+      .map((b) => b.id);
+    if (ids.length === 0) return;
+
+    supabaseBrowser
+      .rpc("admin_business_owner_info", { p_business_ids: ids })
+      .then(({ data, error }) => {
+        if (error || !data) {
+          if (error) console.error(error);
+          return;
+        }
+        setOwners((prev) => {
+          const next = { ...prev };
+          for (const row of data as OwnerInfo[]) next[row.business_id] = row;
+          return next;
+        });
+      });
+  }, [items, pending]);
 
   useEffect(() => {
     const t = setTimeout(() => setDebounced(query), 400);
@@ -466,6 +502,15 @@ export default function AdminBusinesses({ barrioId }: AdminBusinessesProps) {
       </>
     );
 
+  const fmtDate = (d: string | null) =>
+    d
+      ? new Date(d).toLocaleDateString("es-AR", {
+          day: "2-digit",
+          month: "2-digit",
+          year: "2-digit",
+        })
+      : null;
+
   const statusLabel = (b: AdminBusiness) =>
     b.status === "approved" ? (
       b.is_active ? (
@@ -494,9 +539,26 @@ export default function AdminBusinesses({ barrioId }: AdminBusinessesProps) {
           title={b.address ?? ""}
         >
           {statusLabel(b)}
+          {b.created_at && ` · alta ${fmtDate(b.created_at)}`}
+          {b.is_featured &&
+            b.featured_until &&
+            ` · ⭐ hasta ${fmtDate(b.featured_until)}`}
           {!b.owner_id && " · sin dueño"}
           {b.address && ` · ${b.address}`}
         </p>
+        {b.owner_id && (
+          <p
+            className="truncate text-[10px] font-medium text-sky-700"
+            title={owners[b.id]?.owner_email ?? undefined}
+          >
+            dueño: {owners[b.id]?.owner_email ?? "…"}
+            {owners[b.id]?.owner_name && ` (${owners[b.id].owner_name})`}
+            {owners[b.id] &&
+              (owners[b.id].claimed_at
+                ? ` · lo gestiona desde ${fmtDate(owners[b.id].claimed_at)}`
+                : " · lo cargó él mismo")}
+          </p>
+        )}
       </td>
       <td className="w-px whitespace-nowrap py-1 pr-3">
         <div className="flex items-center justify-end gap-1">{actions(b)}</div>

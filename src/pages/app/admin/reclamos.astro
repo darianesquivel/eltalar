@@ -11,7 +11,7 @@ const barrio = await getAdminBarrio(Astro);
 const { data: claims } = await supabase
   .from("business_claims")
   .select(
-    "id, business_id, claimer_email, message, status, created_at, businesses!inner ( name, barrio_id )",
+    "id, business_id, claimer_email, message, status, created_at, businesses!inner ( name, slug, address, created_at, owner_id, is_active, barrio_id )",
   )
   .eq("businesses.barrio_id", barrio.id)
   .eq("status", "pending")
